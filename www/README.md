@@ -66,3 +66,59 @@ Le code est dans un état de forte dette technique et présente de graves faille
     *   Utilisation de fonctions dépréciées (ex: `IS_NULL()` en majuscule). Beaucoup de fonctions généreront des *Warnings* ou des *Fatal Errors* (passage de `null` à des fonctions internes, index de tableaux non définis, constructeurs obsolètes style PHP 4 avec le nom de la classe).
 
 En l'état, l'application nécessite un processus de réécriture (Refactoring) massif pour être sécurisée et fonctionnelle sur un serveur moderne.
+
+### Détail des Fonctions par Fichier
+
+#### 1. Fichiers d'Accès aux Données (DAL)
+
+**`db_connect.php`**
+Gère la connexion à MySQL et les sessions.
+*   `Connexion()`, `ExecRequete()`, `LigneSuivante()` : Wrappers rudimentaires autour de `mysql_connect`, `mysql_query`, etc.
+*   `sec()` : Fonction critique et **obsolète** tentant de sécuriser les entrées via `addslashes` et `get_magic_quotes_gpc`.
+*   `CreerSession()`, `ControleAcces()`, `ChercheSession()`, `deconnection()` : Gestion de l'authentification et des sessions personnalisées en base.
+
+**`db_reqfunction.php`**
+Contient l'écrasante majorité des requêtes SQL d'action (INSERT, UPDATE, DELETE).
+*   *Gestion de Portefeuille :* `portefeuille_joueur()`, `joueur_liste_sicav()`, `ModifLiquide()`, `AddHistorique()`, `ModifAction()`, `creer_ordre()`, `addordre()`, `execute_ordre()`.
+*   *Gestion des Groupes/Équipes :* `doajgroupe()`, `dojoingroupe()`, `domodifgroupe()`, `getperfgroupes()`, `increcompensegroupe()`.
+*   *Forums et Messagerie :* `add_msg()`, `dodelmessage()`, `doforum_postmessage()`, `forum_ajoutforum()`, `setsujetlu()`.
+*   *Statistiques et Classements :* `majclassement()`, `insertscore()`, `getplayercapital()`.
+
+**`db_reqtableaux.php`**
+Fonctions SQL retournant des listes (tableaux) pour l'affichage.
+*   `get_messagelist()`, `get_playerconnected()`, `get_lstactions()`, `get_listeforums()`, `get_listesujets()`, `get_listemessages()`.
+
+#### 2. Fichiers de Logique Métier (Business Logic)
+
+**`nt2_function.php`**
+Boîte à outils principale, logique de calcul et formatage.
+*   *Parsers CSV externes :* `traiteeuronextcsv()`, `traiteyahoocsv()`, `traitehtmlsicav()`. (Ces fonctions utilisent des API désormais mortes).
+*   *Logique Boursière :* `updateplayersicav()` (mise à jour du portefeuille), `gettaxe()`, `finjour()` (clôture journalière), `cmd_to_update_liste()`.
+*   *Formatage et Utilitaires :* `bbtohtml()` (parseur BBCode), `envoimail()`, `classtohtmlcolor()`, `leading_zero()`.
+
+**`nt2_adminfunction.php`**
+Logique métier réservée aux administrateurs.
+*   `lstplayeradmin()` (lister les joueurs), `dodelplayers()` (supprimer des joueurs), `admingroupes()`, `modiflstactions()`.
+
+**`progfunc.php` & `progreq.php`**
+Fonctions pour un module "client riche" ou une API XML secondaire (nommé "prog").
+*   `expl()`, `bal()`, `generTab()`, `errorxmlmessage()` : Génération et parsing de flux XML.
+*   `proglogin()`, `progportef()`, `progordre()`, `progachatmax()` : Points d'entrée de l'API XML pour les actions du joueur.
+
+#### 3. Fichiers de Rendu et Contrôleurs (Vues)
+
+**`index.php`**
+Le contrôleur frontal (Routeur).
+*   Il ne contient pas de fonctions, mais un grand `switch ($do)` qui intercepte les requêtes : `case "accueil"`, `case "login"`, `case "formachatvente"`, `case "classement"`, `case "postemessage"`, etc., et appelle les fonctions de rendu appropriées.
+
+**`nt2_pages.php`**
+Fonctions générant les interfaces utilisateur (vues HTML avec concaténation).
+*   *Vues de Bourse :* `achatvente()`, `formlistaction()`, `formachat()`, `formvente()`, `form_list_ordre()`.
+*   *Vues Utilisateur/Groupe :* `formprofil()`, `formclasse()` (classement joueurs), `classementequipes()`, `tabgroupeprofil()`.
+*   *Forums et Textes :* `lstforums()`, `lstsujets()`, `lstposts()`, `txt_faq()`, `txt_regl()`.
+*   *Scripts JS Intégrés :* Contient également des fonctions générant du JavaScript en ligne comme `jscript_av()`, `jscript_ordre()`, `checkForm()`, `emoticon()`.
+
+**`cmd.php` & `prog.php`**
+Points d'entrées secondaires (Contrôleurs).
+*   `cmd.php` : Probablement exécuté en tâche de fond (cron) pour appeler les mises à jour de données (`nt2_function.php`).
+*   `prog.php` : Le routeur du module XML ("prog"), fonctionnant de manière similaire à `index.php`.
