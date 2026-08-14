@@ -71,4 +71,5 @@ document.write(Xt_i+'&ref='+Xt_r.replace(/[<>\"]/g, '').replace(/&/g, '$')+'\" t
 setlocale (LC_TIME, "fr");
  define ("ADDREURONEXT","http://www.euronext.com/search/download/trapridownloadpopup.jcsv?pricesearchresults=actif&filter=1&lan=FR&mep=8629&belongsToList=eligibility_SRD&resultsTitle=Paris%20-%20SRD%20eligible&cha=1800&format=txt&formatDecimal=.&formatDate=dd/MM/yy");
  define ("CONSIDERER_OUTDATED_SICAV",4); //considerer email perim� en jour
+  define ("ALPHA_VANTAGE_API_KEY", getenv("ALPHA_VANTAGE_API_KEY") ?: "demo");
 ?>

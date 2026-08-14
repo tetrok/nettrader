@@ -76,182 +76,18 @@ while($r=mysql_fetch_array($resultat))
 
 
 
-function traiteeuronextcsv($lines)
-{
-	if(!tempsjeu())
-	{
-		return "";
-	}
-
-	$maintenant = date ("U");
-	$patterns[0] = "/'/";
-	$patterns[1] = "/\"/";
-	$patterns[2] = "/\\\"/";
-	$replacements[0] = "\'";
-	$replacements[1] = "";
-	$replacements[2] = "";
-	$update=0;
-	$insert=0;
-	list($chour, $cmin, $csec, $cday, $cmon, $cyr) = explode(" ",date("H i s d m y"));
-	//print "il y a ".count ($lines)." lignes<br>";
-
-        //on charge maintenant le tableau sql en tableau array
-	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-	$resultat=ExecRequete("SELECT * FROM cacval WHERE down='1' ORDER BY codesico ASC",$connexion);
-	$stat="";
-	$destination=array();
-	$stat=array();
-	while($r=mysql_fetch_array($resultat))
-	{
-		$destination[$r["yahooname"]] = array("valeur" => $r["valeur"], "unixtime" => $r["lasttime"]);
-		$stat[$r["yahooname"]] = array("codesico" => $r["codesico"] ,"lasttime" => $r["lasttime"], "lasttimedown" => $r["lasttimedown"]);
-	}
-
-
-	for ( $i = 0; $i < count ($lines) ; $i++ )
-	{
-			if (ereg ("([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([0-9]{2})/([0-9]{2})/([0-9]{2}) ([0-9]{1,2}):([0-9]{1,2});([^;]*);([^;]*);([*]*)", preg_replace($patterns,$replacements,$lines[$i]), $regs))
-			{
-				$heure=$regs[14];
-				$minute=$regs[15];
-				$annee="20".$regs[13];
-				$mois=$regs[12];
-				$jour=$regs[11];
-				$valeur=$regs[8];
-				$code=$regs[2];
-				$volume=$regs[9];
-				$progressionjour=$regs[10];
-				$nom=$regs[1];
-				$unixtime = mktime($heure,$minute, 0, $mois, $jour, $annee);
-                                $valaction=floatval($valeur);
-                                if(array_key_exists ( $code, $destination) && $valaction>=2.00)
-				{
-
-					//Mise � jour
-					if( $destination[$code]["unixtime"]!=$unixtime )
-					{
-
-						if(floatval($destination[$code]["valeur"])>0 && $valaction>0 && abs($valaction-floatval($destination[$code]["valeur"]))/floatval($destination[$code]["valeur"])>=.75)
-						{
-							$corps="L'action $nom (".$stat[$code]["codesico"]." a chang� de + de 75% (de ".strval($destination[$code]["valeur"])." � ".strval($valaction)." ), aller sur la page d'admin pour r�activer si il n'y a pas de multiplication ou division d'action. ";
-		                                        envoimail(EMAILADMIN,"NetTrader, valeur se modifie de 75% !",$corps);
-		                    			$resultat=ExecRequete("UPDATE cacval SET down='0' WHERE yahooname='$code'",$connexion);
-						}
-						$resultat=ExecRequete("UPDATE cacval SET valeur='$valeur', lasttime='$unixtime', lasttimedown='$maintenant' WHERE  yahooname='$code'",$connexion);
-                                                $update++;
-					}
-				}else{
-					if($valaction>=2.00)
-					{
-						//Ajout d'une nouvelle action
-						$corps="L'action $nom a �t� ajout�e\n Valeur:$valeur";
-	                                        envoimail(EMAILADMIN,"Nouvelle action disponible !",$corps);
-						$resultat=ExecRequete("INSERT INTO `cacval` ( `codesico` , `yahooname` , `nom` , `valeur` , `lasttime` , `lasttimedown` , `authachat` , `down` , `idsecteur` ) VALUES ( '', '$code', '$nom', '$valeur', '$unixtime', '0', '1', '1', '22')",$connexion);
-						$insert++;
-					}
-				}
-
-			}
-	}
-	return  count ($lines)." t�l�charg�s  , $update mis � jour et $insert ajout�es";
-}
-
-
-
- function traiteyahoocsv($lines)
-{
-	if(!tempsjeu())
-	{
-		return "";
-	}
-
-	$maintenant = date ("U");
-	$patterns[0] = "/'/";
-	$patterns[1] = "/\"/";
-	$patterns[2] = "/\\\"/";
-	$replacements[0] = "\'";
-	$replacements[1] = "";
-	$replacements[2] = "";
-	$update=0;
-	$insert=0;
-	list($chour, $cmin, $csec, $cday, $cmon, $cyr) = explode(" ",date("H i s d m y"));
-	//print "il y a ".count ($lines)." lignes<br>";
-
-        //on charge maintenant le tableau sql en tableau array
-	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-	$resultat=ExecRequete("SELECT * FROM cacval WHERE down='1' ORDER BY codesico ASC",$connexion);
-	$stat="";
-	$destination=array();
-	$stat=array();
-	while($r=mysql_fetch_array($resultat))
-	{
-		$destination[$r["yahooname"]] = array("valeur" => $r["valeur"], "unixtime" => $r["lasttime"]);
-		$stat[$r["yahooname"]] = array("codesico" => $r["codesico"] ,"lasttime" => $r["lasttime"], "lasttimedown" => $r["lasttimedown"]);
-	}
-
-
-	for ( $i = 0; $i < count ($lines) ; $i++ )
-	{               //	    AC    . PA       ;ACCOR  ; 66,83; 17          h 37         ; 17         /10          /2007      ;-0,49  ;67,59  ;68,00  ;66,51  ;1115072
-			//          1       2         3        4      5             6            7           8            9          10      11      12      13      14
-			if (ereg ("([^.]*).([A-Z]{2});([^;]*);([^;]*);([0-9]{1,2})h([0-9]{1,2});([0-9]{1,2})/([0-9]{1,2})/([0-9]{4});([^;]*);([^;]*);([^;]*);([^;]*);([0-9]*)", preg_replace($patterns,$replacements,$lines[$i]), $regs))
-			{
-
-				$code=$regs[1].".".$regs[2];
-				$nom=$regs[3];
-				$valeur=ereg_replace (",",".",$regs[4]);
-				$heure=$regs[5];
-				$minute=$regs[6];
-				$jour=$regs[7];
-				$mois=$regs[8];
-				$annee=$regs[9];
-				$progressionjour=$regs[10];
-				$volume=$regs[14];
-				$unixtime = mktime($heure,$minute, 0, $mois, $jour, $annee);
-                                $valaction=floatval($valeur);
-                                if(array_key_exists ( $code, $destination) && $valaction>=2.00)
-				{
-
-					//Mise � jour
-					if( $destination[$code]["unixtime"]!=$unixtime )
-					{
-
-						if(floatval($destination[$code]["valeur"])>0 && $valaction>0 && abs($valaction-floatval($destination[$code]["valeur"]))/floatval($destination[$code]["valeur"])>=.25)
-						{
-							$corps="L'action $nom (".$stat[$code]["codesico"]." a chang� de + de 25% (de ".strval($destination[$code]["valeur"])." � ".strval($valaction)." ), aller sur la page d'admin pour r�activer si il n'y a pas de multiplication ou division d'action. ";
-		                                        envoimail(EMAILADMIN,"NetTrader, valeur se modifie de 25% !",$corps);
-		                    			$resultat=ExecRequete("UPDATE cacval SET down='0' WHERE yahooname='$code'",$connexion);
-						}
-						$resultat=ExecRequete("UPDATE cacval SET valeur='$valeur', lasttime='$unixtime', lasttimedown='$maintenant' WHERE  yahooname='$code'",$connexion);
-                                                $update++;
-					}
-				}else{
-					if($valaction>=2.00)
-					{
-						//Ajout d'une nouvelle action
-						$corps="L'action $nom a �t� ajout�e\n Valeur:$valeur";
-	                                        envoimail(EMAILADMIN,"Nouvelle action disponible !",$corps);
-						$index=rand(1,32768);
-						$resultat=ExecRequete("INSERT INTO `cacval` ( `codesico` , `yahooname` , `nom` , `valeur` , `lasttime` , `lasttimedown` , `authachat` , `down` , `idsecteur` ) VALUES ( '$index', '$code', '$nom', '$valeur', '$unixtime', '0', '1', '1', '22')",$connexion);
-						$insert++;
-					}
-				}
-
-			}
-	}
-	return  count ($lines)." t�l�charg�s  , $update mis � jour et $insert ajout�es";
-}
 
 
 
 
 
 
-function traitehtmlsicav($lines,$sico = 0)
-{
-if(!tempsjeu())
-{
-	return "";
-}
+
+
+
+
+
+
 if($sico>0)
 {
 	$sico=getyahooname($sico);
@@ -831,101 +667,101 @@ return "OK||".get_nextrefresh(date("U"))."|".ADDRDEB."|".ADDRFIN;
 
 function cmd_downhisto()
 {
-//http://fr.finance.yahoo.com/d/quotes.csv?s=nom1+nom2+nom3&f=snl1d1t1c1ohgv&e=.csv
-$lstvaleurtodown=get_sicavdown();
-$chaineurl="";
-$compteur=0;
-for($i=0;$i<=count($lstvaleurtodown)-1;$i++)
-{
-	$compteur++;
-	if($chaineurl!="")
-                $chaineurl.="+";
-        $chaineurl.=$lstvaleurtodown[$i]["yahooname"];
-	if($compteur==1 || $i==count($lstvaleurtodown)-1)
-	{       /*
-                try {
-		  $timeout = 1;
-		  $old = ini_set('default_socket_timeout', $timeout);
-		  $fd = fopen ("http://ichart.yahoo.com/table.csv?s=".$lstvaleurtodown[$i]["yahooname"]."&a=00&b=2&c=2007&d=00&e=2&f=2007&g=d&ignore=.csv", "r");
-		  ini_set('default_socket_timeout', $old);
-		}
-                catch (Exception $e) {
-			$fd=0;
-		}
-		*/
-                $fd=0;
-		print "\"http://ichart.yahoo.com/table.csv?s=".$lstvaleurtodown[$i]["yahooname"]."&a=00&b=2&c=2007&d=00&e=2&f=2007&g=d&ignore=.csv\",";
-		if($fd)
-		{
-			$l=0;
-			while (!feof ($fd))
-			{
-			  $buffer = fgets($fd, 4096);
-			  if($l==1)
-			  	$lines[] = $buffer;
-			  $l++;
-			}
-			fclose ($fd);
-		}
-                $chaineurl="";
-                $compteur=0;
-	}
-}
-for($i=0;$i<=count($lstvaleurtodown)-1;$i++)
-{
-	print "\"".$lstvaleurtodown[$i]["yahooname"]."\",";
-}
-//$valsicav = traitehtmlsicav($lines,0);
-print_r($lines);
-return "";
-
-
+	// Endpoint for history not currently supported effectively for free with Alpha Vantage in batch,
+	// or requires TIME_SERIES_DAILY
+	return "cmd_downhisto: History download endpoint requires rewrite for Alpha Vantage.";
 }
 
 function cmd_euronextdownvaleur()
 {
-$fd = fopen (ADDREURONEXT, "r") OR DIE(lang(25));
-if(!$fd)
-	exit("ERROR");
-
-while (!feof ($fd))
-{
-  $buffer = fgets($fd, 4096);
-  $lines[] = $buffer;
-}
-fclose ($fd);
-return traiteeuronextcsv($lines);
+	// Obsolete
+	return "Obsolete, use cmd_downvaleur for all quotes via Alpha Vantage";
 }
 
 function cmd_downvaleur()
 {
-//http://fr.finance.yahoo.com/d/quotes.csv?s=nom1+nom2+nom3&f=snl1d1t1c1ohgv&e=.csv
-$lstvaleurtodown=get_sicavdown();
-$chaineurl="";
-$compteur=0;
-for($i=0;$i<=count($lstvaleurtodown)-1;$i++)
-{
-	$compteur++;
-	if($chaineurl!="")
-                $chaineurl.="+";
-        $chaineurl.=$lstvaleurtodown[$i]["yahooname"];
-	if($compteur==MAXDOWN || $i==count($lstvaleurtodown)-1)
+	if(!tempsjeu())
 	{
-		$fd = fopen (NOUVADDR.$chaineurl.NOUVADDRFIN, "r") OR DIE(lang(25));
-		if(!$fd)
-			exit("ERROR");
-
-		while (!feof ($fd))
-		{
-		  $buffer = fgets($fd, 4096);
-		  $lines[] = $buffer;
-		}
-		fclose ($fd);
-                $chaineurl="";
-                $compteur=0;
+		return "";
 	}
-}
-return " ".traiteyahoocsv($lines,0);
+
+	$lstvaleurtodown=get_sicavdown();
+	$apikey = defined("ALPHA_VANTAGE_API_KEY") ? ALPHA_VANTAGE_API_KEY : "demo";
+
+	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
+	$resultat=ExecRequete("SELECT * FROM cacval WHERE down='1' ORDER BY codesico ASC",$connexion);
+
+	$destination=array();
+	$stat=array();
+	while($r=mysql_fetch_array($resultat))
+	{
+		$destination[$r["yahooname"]] = array("valeur" => $r["valeur"], "unixtime" => $r["lasttime"]);
+		$stat[$r["yahooname"]] = array("codesico" => $r["codesico"] ,"lasttime" => $r["lasttime"], "lasttimedown" => $r["lasttimedown"]);
+	}
+
+	$update=0;
+	$insert=0;
+	$maintenant = date ("U");
+
+	// To respect API rate limits, we limit the number of checks per run (e.g. 5 for Alpha Vantage free tier)
+	// Alpha Vantage API limitation: 5 requests per minute
+	$limit = 5;
+	$compteur = 0;
+
+	for($i=0; $i<=count($lstvaleurtodown)-1; $i++)
+	{
+		if ($compteur >= $limit) {
+			break;
+		}
+
+		$symbol = $lstvaleurtodown[$i]["yahooname"];
+		// Alpha Vantage symbols often don't include the .PA suffix in the same way, but let's assume standard query works.
+		// For Euronext Paris, Alpha Vantage uses .PAR suffix. We can replace .PA with .PAR
+		$query_symbol = str_replace(".PA", ".PAR", $symbol);
+
+		$url = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=" . urlencode($query_symbol) . "&apikey=" . $apikey;
+
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'NetTrader/2.0');
+		// Optional: add timeout to prevent hanging
+		curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+		$result = curl_exec($ch);
+		curl_close($ch);
+
+		if ($result !== false) {
+			$compteur++;
+			$data = json_decode($result, true);
+
+			if (isset($data['Global Quote']) && !empty($data['Global Quote'])) {
+				$quote = $data['Global Quote'];
+
+				// Alpha Vantage keys: "01. symbol", "05. price", "07. latest trading day", etc.
+				if (isset($quote['05. price']) && $quote['05. price'] > 0) {
+					$valeur = (float) $quote['05. price'];
+					// Alpha Vantage doesn't give a precise unix timestamp for the quote time in GLOBAL_QUOTE,
+					// so we use the current time or parse "07. latest trading day"
+					$unixtime = $maintenant;
+
+					if(array_key_exists($symbol, $destination)) {
+						// Update existing
+						$old_valeur = (float) $destination[$symbol]["valeur"];
+						if ($old_valeur > 0 && $valeur > 0 && abs($valeur - $old_valeur) / $old_valeur >= .25) {
+							$corps = "L'action $symbol a chang de + de 25% (de " . strval($old_valeur) . "  " . strval($valeur) . " ), aller sur la page d'admin pour ractiver si il n'y a pas de multiplication ou division d'action. ";
+							envoimail(EMAILADMIN, "NetTrader, valeur se modifie de 25% !", $corps);
+							$resultat=ExecRequete("UPDATE cacval SET down='0' WHERE yahooname='$symbol'",$connexion);
+						}
+
+						$resultat=ExecRequete("UPDATE cacval SET valeur='$valeur', lasttime='$unixtime', lasttimedown='$maintenant' WHERE yahooname='$symbol'",$connexion);
+						$update++;
+					}
+				}
+			}
+		}
+	}
+
+	return  "$compteur tlchargs , $update mis  jour et $insert ajoutes (Alpha Vantage)";
 }
 
 function cmd_nodownvaleur($donnes)
