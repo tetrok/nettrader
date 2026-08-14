@@ -1,49 +1,68 @@
 # NetTrader 2
 ## Architecture de l'application
-NetTrader 2 est une ancienne application web (probablement un jeu de simulation boursière/gestion de portefeuille) développée en PHP natif sans framework apparent. L'architecture repose sur un point d'entrée principal (`index.php`) qui gère le routage vers différentes fonctions via un paramètre `do` en GET. L'affichage est géré par des fonctions de génération de HTML et des inclusions de fichiers de "skin" (`skin/default/include_interface.php`).
 
-Les fichiers clés sont :
-*   `index.php` : Point d'entrée, gestionnaire de sessions et contrôleur principal.
-*   `const.php` / `constbdd.php` : Configuration (constantes globales et accès base de données).
-*   `db_connect.php`, `db_reqfunction.php`, `db_reqtableaux.php` : Couche d'accès aux données.
-*   `nt2_function.php`, `nt2_pages.php`, `nt2_adminfunction.php` : Logique métier et génération de pages HTML.
+NetTrader 2 est une ancienne application web (probablement un jeu de simulation boursière/gestion de portefeuille) développée en PHP natif procédural, sans framework moderne (comme Symfony ou Laravel).
+
+L'architecture repose sur un modèle de type "Front Controller" simplifié où un point d'entrée principal (`index.php`) gère le routage vers différentes fonctions via un paramètre `do` passé en GET (`?do=...`). L'affichage (la vue) n'est pas strictement séparé de la logique métier, bien que des fonctions de génération de code HTML et des fichiers de "skin" (`skin/default/include_interface.php`) soient utilisés pour structurer le rendu.
+
+### Structure des fichiers principaux
+
+*   `index.php` : C'est le cœur de l'application. Il initialise la session, charge les dépendances, gère l'authentification rudimentaire et contient un gigantesque `switch` sur la variable `$do` pour exécuter les actions (ex: `login`, `formachatvente`, `classement`, `postemessage`, etc.).
+*   `const.php` / `constbdd.php` : Fichiers de configuration contenant les constantes globales du jeu (capital de départ, adresses des API, règles) et les identifiants de connexion à la base de données.
+*   `cmd.php` : Un script CLI ou un point d'entrée secondaire probablement utilisé pour les tâches planifiées (cron jobs) pour la mise à jour des cours de bourse ou la clôture journalière.
+
+### Modules et Librairies
+
+Le code n'utilise pas Composer ni de librairies tierces modernes. Il s'appuie sur des fonctions internes réparties dans plusieurs fichiers :
+
+*   **Couche d'accès aux données (DAL) :**
+    *   `db_connect.php` : Gère la connexion au serveur MySQL et la sécurisation rudimentaire des entrées (fonction `sec()`).
+    *   `db_reqfunction.php` : Contient l'immense majorité des requêtes SQL de l'application sous forme de fonctions (ex: `portefeuille_joueur()`, `AddHistorique()`, `creer_ordre()`, `doforum_postmessage()`).
+    *   `db_reqtableaux.php` : Regroupe des requêtes spécifiques retournant des tableaux de données.
+*   **Logique métier (Business Logic) :**
+    *   `nt2_function.php` : Contient des fonctions utilitaires diverses : manipulation de chaînes (BBCode, formatage), calculs (taxes, valeur du portefeuille, statistiques), génération de portions HTML (tableaux, messages) et la logique d'import CSV depuis Euronext/Yahoo (ex: `traiteeuronextcsv`, `traiteyahoocsv`).
+    *   `nt2_progfunction.php` / `progfunc.php` / `progreq.php` : Fonctions liées à l'exécution asynchrone ou à un module de "programmation" interne au jeu.
+*   **Contrôleurs et Vues :**
+    *   `nt2_pages.php` : Contient les fonctions générant le code HTML complet pour des vues spécifiques, comme le formulaire d'achat/vente (`achatvente()`).
+    *   `nt2_adminfunction.php` : Regroupe les fonctions dédiées à l'interface d'administration du jeu.
 
 ## Dépendances et Prérequis
-*   **PHP** : Le code utilise la très vieille extension `mysql_` (qui a été retirée dans PHP 7.0). Actuellement, la machine cible est sous PHP 8.3.6. **Le code ne fonctionnera pas sur cette version de PHP sans réécriture majeure ou ajout d'une extension de rétrocompatibilité (très déconseillé).** Il a été conçu pour PHP 4 ou 5 (utilisation des short open tags `<?` au lieu de `<?php`, fonctions dépréciées, etc.).
-*   **Base de données** : Serveur MySQL. Les constantes de connexion doivent être définies dans `constbdd.php`.
-*   **Réseau/APIs externes** : L'application tente de récupérer des données financières (CSV) via de vieilles API Yahoo Finance (`http://fr.old.finance.yahoo.com/d/quotes.csv`) et Euronext. Ces API sont probablement obsolètes ou ont changé de format.
+
+*   **PHP** : Le code a été écrit pour PHP 4/5. Il utilise la très vieille extension `mysql_` (qui a été retirée dans PHP 7.0) et les *short open tags* (`<?`). Actuellement, la machine cible est sous PHP 8.3.6. **Le code ne fonctionnera pas sur cette version de PHP sans réécriture majeure.**
+*   **Base de données** : Un serveur MySQL 5.x. Les tables doivent être créées (le schéma SQL n'est pas fourni dans le répertoire `www/`). Les constantes de connexion doivent être définies dans `constbdd.php`.
+*   **Réseau/APIs externes** : L'application dépendait de flux CSV pour les cours de la bourse via d'anciennes adresses :
+    *   `http://fr.old.finance.yahoo.com/d/quotes.csv`
+    *   `http://www.euronext.com/search/download/trapridownloadpopup.jcsv`
+    *   `http://www.bourse-de-paris.fr/servlet/graph.intraDay3`
 
 ## Obsolescences, Mauvaises Pratiques et Modifications Urgentes
 
-1.  **Obsolescence : Extension `mysql_`**
-    *   **Problème :** L'application utilise abondamment l'extension `mysql_*` (`mysql_connect`, `mysql_query`, `mysql_fetch_array`, etc.). Cette extension est supprimée depuis PHP 7.
-    *   **Action urgente :** Remplacer toutes les occurrences par `mysqli_*` ou, de préférence, par `PDO` pour bénéficier des requêtes préparées.
+Le code est dans un état de forte dette technique et présente de graves failles de sécurité.
 
-2.  **Mauvaise Pratique : Short Open Tags (`<?`)**
-    *   **Problème :** Les fichiers (ex: `index.php`, `db_connect.php`) s'ouvrent avec `<?` au lieu de `<?php`. Cela dépend de la directive `short_open_tag` dans le `php.ini`, qui est souvent désactivée par défaut aujourd'hui.
-    *   **Action urgente :** Remplacer tous les `<?` en début de fichier par `<?php`.
+1.  **Obsolescence fatale : Extension `mysql_`**
+    *   L'application utilise massivement `mysql_connect()`, `mysql_query()`, `mysql_fetch_array()`, etc. Ces fonctions n'existent plus en PHP 8.
+    *   **Action urgente :** Remplacer toutes les occurrences par l'extension `mysqli` ou migrer vers `PDO`.
 
-3.  **Faille de sécurité : Injections SQL (Magic Quotes et `addslashes`)**
-    *   **Problème :** La fonction de sécurisation `sec()` (dans `db_connect.php`) repose sur `get_magic_quotes_gpc()` (fonction dépréciée et retirée depuis PHP 5.4/8.0) et `addslashes()`. `addslashes()` n'est pas suffisant pour protéger contre les injections SQL, surtout selon l'encodage de la base.
-    *   **Action urgente :** Supprimer la dépendance à `magic_quotes_gpc`. Utiliser `mysqli_real_escape_string()` ou mieux, migrer vers des requêtes préparées avec PDO/MySQLi pour toutes les interactions avec la base de données. L'échappement HTML (`htmlentities`) ne doit se faire qu'à l'affichage (XSS), pas avant l'insertion en BDD.
+2.  **Faille de sécurité majeure : Injections SQL**
+    *   La fonction de sécurisation `sec()` dans `db_connect.php` repose sur `get_magic_quotes_gpc()` (fonction dépréciée et retirée de PHP) et `addslashes()`. Ce n'est pas suffisant pour protéger contre les injections SQL, en particulier avec certains encodages (comme GBK) et cela ne protège pas les requêtes non entourées de quotes.
+    *   **Action urgente :** Utiliser des requêtes préparées avec PDO ou MySQLi pour toutes les interactions avec la base de données.
 
-4.  **Mauvaise Pratique : Utilisation de variables superglobales par référence et de manière globale**
-    *   **Problème :** `index.php` utilise `global $do; $do=&$_GET['do'];` etc. C'est une très mauvaise pratique qui pollue l'espace global, crée des dépendances cachées et des potentiels bugs. L'accès aux superglobales doit être direct ou encapsulé correctement.
-    *   **Action urgente :** Nettoyer le passage de paramètres. Arrêter de mettre tout en `global`. Utiliser des filtres comme `filter_input()`.
+3.  **Mauvaise Pratique : Short Open Tags (`<?`)**
+    *   Les fichiers PHP commencent par `<?` au lieu de `<?php`. Cela nécessite l'activation de `short_open_tag` dans `php.ini`, ce qui est désactivé par défaut.
+    *   **Action urgente :** Remplacer tous les `<?` par `<?php`.
 
-5.  **Faille de sécurité (XSS) / Mauvaise Pratique HTML**
-    *   **Problème :** Génération de HTML directement dans le code PHP via concaténation (ex: fonctions `opentab`, `msgtab`). Pas de séparation claire entre la vue et le contrôleur/modèle (MVC absent). Utilisation d'anciennes balises HTML (`<center>`, attributs de style en ligne).
-    *   **Action à moyen terme :** Refactoriser pour utiliser un système de templates (ex: Twig, Blade) ou au moins séparer le code PHP de l'HTML (fichiers `.phtml`). Échapper correctement les variables lors de l'affichage avec `htmlspecialchars()`.
+4.  **Mauvaise Pratique de Programmation : Variables superglobales globales**
+    *   `index.php` et d'autres fichiers manipulent les superglobales avec le mot-clé `global` (ex: `global $do; $do=&$_GET['do'];`). C'est dangereux, source de bugs difficiles à tracer et va à l'encontre des bonnes pratiques d'encapsulation. L'utilisation du passage par référence `&` sur ces variables est également inutile et obsolète.
+    *   **Action urgente :** Utiliser directement `$_GET['do']` avec des filtres (`filter_input` ou l'opérateur de coalescence `??`).
 
-6.  **Obsolescence : APIs tierces**
-    *   **Problème :** Les URL `http://fr.old.finance.yahoo.com...` et `http://www.euronext.com/...` définies dans `const.php` sont très probablement mortes. L'application ne pourra pas mettre à jour ses cours de bourse.
-    *   **Action urgente :** Vérifier l'état de ces APIs et trouver des alternatives modernes (Alpha Vantage, IEX Cloud, Yahoo Finance API via RapidAPI, etc.) et réécrire les fonctions d'import de données correspondantes.
+5.  **Failles de sécurité (XSS) et génération HTML spaghetti**
+    *   Le code génère du HTML (tableaux, formulaires, balises obsolètes comme `<center>`) directement dans les fonctions PHP via concaténation, sans séparation MVC. Les données issues de la base ou de l'utilisateur ne sont pas toujours échappées avec `htmlspecialchars()` lors de l'affichage.
 
-7.  **Mauvaise Pratique : `IS_NULL` au lieu de `is_null()` ou `isset()`**
-    *   **Problème :** Utilisation de `IS_NULL()` en majuscule dans `index.php`. En PHP 8, générer des avertissements si la variable n'existe pas.
-    *   **Action urgente :** Utiliser `isset()` ou l'opérateur de coalescence nulle `??` pour vérifier l'existence des variables provenant de `$_GET` ou `$_POST` avant de les utiliser.
+6.  **Obsolescence : APIs tierces mortes**
+    *   Les URL des API Yahoo Finance et Euronext définies dans `const.php` sont obsolètes et retournent des erreurs 404. L'application est incapable de mettre à jour les cours boursiers.
+    *   **Action urgente :** Intégrer de nouvelles API financières (Alpha Vantage, IEX Cloud, Yahoo Finance non-officiel via RapidAPI) et réécrire les parseurs (`traiteyahoocsv`, `traiteeuronextcsv`).
 
-8.  **Problèmes potentiels PHP 8.x**
-    *   Beaucoup de fonctions dépréciées (ex: passage de paramètres null à des fonctions internes, accès à des offsets de tableaux non définis) vont lancer des erreurs fatales ou des `TypeError` en PHP 8.
+7.  **Incompatibilités PHP 8.x**
+    *   Utilisation de fonctions dépréciées (ex: `IS_NULL()` en majuscule). Beaucoup de fonctions généreront des *Warnings* ou des *Fatal Errors* (passage de `null` à des fonctions internes, index de tableaux non définis, constructeurs obsolètes style PHP 4 avec le nom de la classe).
 
-En résumé, l'application est dans un état de forte dette technique, non fonctionnelle sur un environnement PHP moderne (PHP 8+) et présente de sérieuses failles de sécurité potentielles. Une réécriture majeure ou une migration minutieuse (avec des outils comme RectorPHP pour la mise à niveau du code) est indispensable avant toute mise en production.
+En l'état, l'application nécessite un processus de réécriture (Refactoring) massif pour être sécurisée et fonctionnelle sur un serveur moderne.
