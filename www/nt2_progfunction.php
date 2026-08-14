@@ -24,7 +24,7 @@ WHERE idcompte=$internaute->idcompte ORDER BY datecreation DESC";
 
 function sorttableauprog($resultat)
 {
-$qte=mysql_num_fields($resultat);/*nombre de champs s�lectionn�s*/
+$qte=$resultat->columnCount();/*nombre de champs s�lectionn�s*/
 $echo="";
 	for ($i=0;$i<$qte;$i++)
 	{
@@ -32,9 +32,9 @@ $echo="";
 		 {
 		 $echo.=";";
 		 }
-		 $echo.=mysql_field_name($resultat,$i);/*les noms des champs*/
+		 $echo.=(($meta = $resultat->getColumnMeta($i)) ? $meta['name'] : false);/*les noms des champs*/
 	}
-	while ($row =   mysql_fetch_array($resultat,MYSQL_ASSOC))
+	while ($row =   $resultat->fetch(PDO::FETCH_ASSOC))
 	{/*array des donn�es*/
 		$echo.=chr(13);
 		$i=0;

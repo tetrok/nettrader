@@ -14,21 +14,41 @@ ligne 239: joueur_liste_sicav([idCompte]) retourne toutes les sicav qui doivent 
 */
 function sec($input="")
 {
-if (get_magic_quotes_gpc())
-{
-	$output = htmlentities($input);
-}else{
 	if(is_array($input))
 	{
+		$output = [];
 		foreach ($input as $key => $champ)
 		{
-			$output[$key]=sec($champ);//ouah de la r�cursivit�e !
+			$output[$key]=sec($champ);//ouah de la recursivitée !
 		}
 	}else{
-		$output=htmlentities(addslashes($input));
+		// Connexion PDO active
+		$connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+
+		// PDO::quote ajoute des guillemets simples autour de la chaine
+		// L'ancienne fonction utilisait addslashes.
+		// Beaucoup de requêtes dans le code utilisent déjà des quotes, ex: WHERE id = '$var'
+		// Si on utilise PDO::quote, ça donnerait WHERE id = ''value'' ce qui casse la requête.
+		// On va donc utiliser une méthode pour simuler addslashes/mysqli_real_escape_string de manière sûre avec PDO :
+		// On quote, puis on retire le premier et le dernier guillemet ajoutés par PDO.
+
+		if ($input === '' || $input === null) {
+			$quoted = "''";
+		} else {
+			$quoted = $connexion->quote($input);
+		}
+
+		// Enlever les quotes ajoutées par PDO au début et à la fin
+		// Note : si $input contenait des quotes internes, PDO s'est occupé de les échapper proprement.
+		if (strlen($quoted) >= 2 && substr($quoted, 0, 1) === "'" && substr($quoted, -1) === "'") {
+			$escaped = substr($quoted, 1, -1);
+		} else {
+			$escaped = $quoted;
+		}
+
+		$output = htmlentities($escaped);
 	}
-}
-return $output;
+	return $output;
 }
 function echoadmin($message)
 {
@@ -93,29 +113,27 @@ if (!isset ($FichierConnexion))
 	function Connexion ($pNom, $pMotPasse, $pBase, $pServeur)
 	{
 	static $connectbdd;
-	// Connexion au serveur 
 	if(!$connectbdd)
 	{
-	  $connexion = mysql_connect ($pServeur, $pNom, $pMotPasse);
-	  if (!$connexion) 
-	  {
-	    echo "D�sol�, connexion au serveur impossible\n";
-	    exit;
-	  }
-	   if (!mysql_select_db ($pBase, $connexion)) 
-	  {
-	    echo "D�sol�, acc�s � la base impossible\n";
-	    echoadmin( "<B>Message de MySQL :</B> " . mysql_error($connexion));
-	    exit;
+	  try {
+        $dsn = "mysql:host=$pServeur;dbname=$pBase;charset=utf8mb4";
+        $options = [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_SILENT,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ];
+        $connexion = new PDO($dsn, $pNom, $pMotPasse, $options);
+	  } catch (\PDOException $e) {
+	    echo "Désolé, connexion au serveur impossible\n";
+	    die();
 	  }
 	  $connectbdd=$connexion;
 	}else{
 	  $connexion=$connectbdd;
 	}
-  // On renvoie la variable de connexion
   return $connexion;
  } // Fin de la fonction
-} // Fin du test sur $FichierConnexion
+} // Fin du test sur $FichierConnexion // Fin du test sur $FichierConnexion
 
 if (!isset ($FichierExecRequete))
 {
@@ -123,33 +141,41 @@ if (!isset ($FichierExecRequete))
 
  // Ex�cution d'une requ�te avec MySQL
 
- function ExecRequete ($requete, $connexion)
+  function ExecRequete ($requete, $connexion)
  {
-  global $nbreqexecuted,$tempssql;
+  global $nbreqexecuted,$tempssql, $last_pdo_stmt;
   $nbreqexecuted++;
   //echoadmin("  [$requete]  ");
   //$nbreqexecuted.="|".$requete."|";
   $tempdeb=getmicrotime();
-  $resultat = mysql_query ($requete, $connexion);
-	$tempssql=$tempssql+round((getmicrotime()-$tempdeb),2);
-  if ($resultat)
-   return $resultat;
+
+  if (!($connexion instanceof PDO)) {
+      $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+  }
+
+  $resultat = $connexion->query($requete);
+  $tempssql=$tempssql+round((getmicrotime()-$tempdeb),2);
+
+  if ($resultat !== false) {
+      $last_pdo_stmt = $resultat;
+      return $resultat;
+  }
   else 
   {  
   	global $internaute,$do;
-    echoadmin("<B>Erreur dans l'ex�cution de la requ�te '$requete'.</B><BR>");
-    echoadmin("<B>Message de MySQL :</B> ".mysql_error($connexion));
+    $errorInfo = $connexion->errorInfo();
+    $errorMsg = $errorInfo[2] ?? 'Erreur PDO inconnue';
 
-	$corps="Joueur: $internaute->pseudonyme \n
-	 <B>Message de MySQL :</B> ".mysql_error($connexion)."
-	 /n Erreur dans l'ex�cution de la requ�te '$requete' \n
+    echoadmin("<B>Erreur dans l'exécution de la requête '$requete'.</B><BR>");
+    echoadmin("<B>Message de MySQL :</B> ".$errorMsg);
+
+	$corps="Joueur: " . (is_object($internaute) ? $internaute->pseudonyme : 'Inconnu') . " \n
+	 <B>Message de MySQL :</B> ".$errorMsg."
+	 /n Erreur dans l'exécution de la requête '$requete' \n
 	 do=$do";
         envoimail(EMAILADMIN,"NetTrader, Erreur MySql",$corps);
-	 //echo "<B>Erreur dans l'ex�cution de la requ�te '$requete'.</B><BR>";
-         //echo "<B>Message de MySQL :</B> ".mysql_error($connexion);
-	//to do: envoyer un mail � moi si cette erreur ce produit
-	echo "Une erreur c'est produite, l'auteur r�glera ce probl�me dans les plus bref d�lais.";
-    exit;
+	echo "Une erreur c'est produite, l'auteur réglera ce problème dans les plus bref délais.";
+    die();
   }  
  } // Fin de la fonction ExecRequete
 
@@ -157,7 +183,10 @@ if (!isset ($FichierExecRequete))
 
  function LigneSuivante ($resultat)
  {
-   return  mysql_fetch_object ($resultat);
+   if ($resultat instanceof PDOStatement) {
+       return $resultat->fetch(PDO::FETCH_OBJ);
+   }
+   return false;
  } // Fin de la fonction LigneSuivante
 
 } // Fin du test 
