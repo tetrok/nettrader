@@ -96,16 +96,16 @@ if (!isset ($FichierConnexion))
 	// Connexion au serveur 
 	if(!$connectbdd)
 	{
-	  $connexion = mysql_connect ($pServeur, $pNom, $pMotPasse);
+	  $connexion = mysqli_connect ($pServeur, $pNom, $pMotPasse);
 	  if (!$connexion) 
 	  {
 	    echo "D�sol�, connexion au serveur impossible\n";
 	    exit;
 	  }
-	   if (!mysql_select_db ($pBase, $connexion)) 
+	   if (!mysqli_select_db ($connexion, $pBase))
 	  {
 	    echo "D�sol�, acc�s � la base impossible\n";
-	    echoadmin( "<B>Message de MySQL :</B> " . mysql_error($connexion));
+	    echoadmin( "<B>Message de MySQL :</B> " . mysqli_error($connexion));
 	    exit;
 	  }
 	  $connectbdd=$connexion;
