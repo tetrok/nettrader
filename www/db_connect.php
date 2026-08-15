@@ -130,7 +130,7 @@ if (!isset ($FichierExecRequete))
   //echoadmin("  [$requete]  ");
   //$nbreqexecuted.="|".$requete."|";
   $tempdeb=getmicrotime();
-  $resultat = mysql_query ($requete, $connexion);
+  $resultat = mysqli_query ($connexion, $requete);
 	$tempssql=$tempssql+round((getmicrotime()-$tempdeb),2);
   if ($resultat)
    return $resultat;
@@ -138,15 +138,15 @@ if (!isset ($FichierExecRequete))
   {  
   	global $internaute,$do;
     echoadmin("<B>Erreur dans l'ex�cution de la requ�te '$requete'.</B><BR>");
-    echoadmin("<B>Message de MySQL :</B> ".mysql_error($connexion));
+    echoadmin("<B>Message de MySQL :</B> ".mysqli_error($connexion));
 
 	$corps="Joueur: $internaute->pseudonyme \n
-	 <B>Message de MySQL :</B> ".mysql_error($connexion)."
+	 <B>Message de MySQL :</B> ".mysqli_error($connexion)."
 	 /n Erreur dans l'ex�cution de la requ�te '$requete' \n
 	 do=$do";
         envoimail(EMAILADMIN,"NetTrader, Erreur MySql",$corps);
 	 //echo "<B>Erreur dans l'ex�cution de la requ�te '$requete'.</B><BR>";
-         //echo "<B>Message de MySQL :</B> ".mysql_error($connexion);
+         //echo "<B>Message de MySQL :</B> ".mysqli_error($connexion);
 	//to do: envoyer un mail � moi si cette erreur ce produit
 	echo "Une erreur c'est produite, l'auteur r�glera ce probl�me dans les plus bref d�lais.";
     exit;
@@ -157,7 +157,7 @@ if (!isset ($FichierExecRequete))
 
  function LigneSuivante ($resultat)
  {
-   return  mysql_fetch_object ($resultat);
+   return  mysqli_fetch_object ($resultat);
  } // Fin de la fonction LigneSuivante
 
 } // Fin du test 
