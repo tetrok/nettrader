@@ -30,11 +30,12 @@
   define ("ADSENSEKEYWORD","trading");
   define ("MAXDOWN",190);
   define ("MAX_MESSAGE_TEMPS","24"); //pour la limite de message envoy�, nombre d'heure o� un message est comptabilis� comme nouveau
+  $do_param = isset($_GET['do']) ? $_GET['do'] : '';
   define ("LIGNEPARTENAIRES","<a href=\"http://www.finaperf.com/\" target=\"_blank\">Annuaire finance et bourse</a> | 
   <a href=\"http://www.xiti.com/xiti.asp?s=309232\" title=\"WebAnalytics\">
 <script type=\"text/javascript\">
 <!--
-Xt_param = 's=309232&p=".$_GET['do']."';
+Xt_param = 's=309232&p=".$do_param."';
 try {Xt_r = top.document.referrer;}
 catch(e) {Xt_r = document.referrer; }
 Xt_h = new Date();
@@ -47,7 +48,7 @@ document.write(Xt_i+'&ref='+Xt_r.replace(/[<>\"]/g, '').replace(/&/g, '$')+'\" t
 //-->
 </script>
 <noscript>
-<img width=\"39\" height=\"25\" src=\"http://logv16.xiti.com/hit.xiti?s=309232&p=".$_GET['do']."\" alt=\"WebAnalytics\" />
+<img width=\"39\" height=\"25\" src=\"http://logv16.xiti.com/hit.xiti?s=309232&p=".$do_param."\" alt=\"WebAnalytics\" />
 </noscript></a>");
   define ("TITRE_JEU","Jeu de gestion de portefeuille - NetTrader");
   define ("FINCONC","9999999999");
