@@ -14,10 +14,7 @@ ligne 239: joueur_liste_sicav([idCompte]) retourne toutes les sicav qui doivent 
 */
 function sec($input="")
 {
-if (get_magic_quotes_gpc())
-{
-	$output = htmlentities($input);
-}else{
+
 	if(is_array($input))
 	{
 		foreach ($input as $key => $champ)
@@ -27,7 +24,6 @@ if (get_magic_quotes_gpc())
 	}else{
 		$output=htmlentities(addslashes($input));
 	}
-}
 return $output;
 }
 function echoadmin($message)
