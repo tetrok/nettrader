@@ -132,7 +132,7 @@ function proglogin($pseudo,$pass)
 	$maintenant = date ("U");
         $tempsLimite = $maintenant + (3600 * 24);
 	$idsession=md5(getmicrotime()+rand(1,200));
-        $insSession = "INSERT INTO Session (idSession, idcompte"
+        $insSession = "INSERT INTO session (idSession, idcompte"
                      . ",tempsLimite,tempsconnect) VALUES ('$idsession', "
                      . "'$internaute->idcompte',"
                      . "'$tempsLimite','$maintenant')";
@@ -159,7 +159,7 @@ function progdeco()
 {
 	global $internaute;
 	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $requete  = "DELETE FROM Session WHERE idcompte='$internaute->idcompte' OR tempsLimite<UNIX_TIMESTAMP()";
+    $requete  = "DELETE FROM session WHERE idcompte='$internaute->idcompte' OR tempsLimite<UNIX_TIMESTAMP()";
 	$resultat = ExecRequete ($requete, $connexion);
 	$tag=md5(getmicrotime());
     $requete = "UPDATE compte SET cookiesess='$tag' WHERE idcompte='$internaute->idcompte'";

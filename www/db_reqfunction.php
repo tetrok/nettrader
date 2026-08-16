@@ -2031,7 +2031,7 @@ function incarnerjoueur($idcomptejoueur)
     global $internaute;
     if(!is_object($internaute)) return;
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $query="UPDATE `Session` SET `idcompte` = '$idcomptejoueur' WHERE `idcompte` = '$internaute->idcompte'";
+    $query="UPDATE `session` SET `idcompte` = '$idcomptejoueur' WHERE `idcompte` = '$internaute->idcompte'";
     ExecRequete ($query, $connexion);
 }
 

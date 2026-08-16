@@ -71,7 +71,7 @@ function cookievalide($idSession)
                 $maintenant = date("U");
                 $tempsLimite = $maintenant + (3600 * 24); 
 
-                $insSession = "INSERT INTO Session (idSession, idcompte, tempsLimite, tempsconnect) "
+                $insSession = "INSERT INTO session (idSession, idcompte, tempsLimite, tempsconnect) "
                             . "VALUES ('$idSession', '$idcompte', '$tempsLimite', '$maintenant')";       
                 ExecRequete($insSession, $connexion);
                 forum_majtoutvuforum($idcompte);
@@ -180,7 +180,7 @@ function nbessai($idcompte)
 function ChercheSession($idSession, $connexion) 
 {
     $idSession = sec($idSession);    
-    $requete = "SELECT * FROM Session,compte,skin,niveau WHERE idSession = '$idSession' AND Session.idcompte = compte.idcompte AND compte.skin = skin.idskin AND compte.idniveau=niveau.idniveau ORDER BY tempsLimite DESC";
+    $requete = "SELECT * FROM session,compte,skin,niveau WHERE idSession = '$idSession' AND session.idcompte = compte.idcompte AND compte.skin = skin.idskin AND compte.idniveau=niveau.idniveau ORDER BY tempsLimite DESC";
     $resultat = ExecRequete($requete, $connexion);
     return LigneSuivante($resultat);
 }
@@ -195,13 +195,13 @@ function SessionValide($connexion, $session)
         setcookie("nettrader2session", "", time() + 3600 * 24 * 30, "/");
         if (is_object($session)) {
             $sessId = sec($session->idSession);
-            $requete = "DELETE FROM Session WHERE idSession='$sessId' OR tempsLimite<'$maintenant'";
+            $requete = "DELETE FROM session WHERE idSession='$sessId' OR tempsLimite<'$maintenant'";
             ExecRequete($requete, $connexion);
         }
         return false;
     } else {
         if ($session->tempsconnect < $maintenant - 5 * 60) {
-            $requete = "UPDATE Session SET tempsconnect = '$maintenant' WHERE idcompte='$session->idcompte'";
+            $requete = "UPDATE session SET tempsconnect = '$maintenant' WHERE idcompte='$session->idcompte'";
             ExecRequete($requete, $connexion);
             forum_majtoutvuforum($session->idcompte);
             $requete = "UPDATE compte SET dateactivite = '$maintenant' WHERE idcompte='$session->idcompte'";
@@ -226,7 +226,7 @@ function CreerSession($connexion, $email, $motDePasse, $idSession, $souvenir)
             $maintenant = date("U");
             $tempsLimite = $maintenant + (3600 * 24); 
 
-            $insSession = "INSERT INTO Session (idSession, idcompte, tempsLimite, tempsconnect) "
+            $insSession = "INSERT INTO session (idSession, idcompte, tempsLimite, tempsconnect) "
                         . "VALUES ('$idSession', '$internaute->idcompte', '$tempsLimite', '$maintenant')";       
             ExecRequete($insSession, $connexion);
             forum_majtoutvuforum($internaute->idcompte);
@@ -293,7 +293,7 @@ function deconnection()
     if (!is_object($internaute)) return "";
     effacvieuxordres();
     $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
-    $requete = "DELETE FROM Session WHERE idcompte='$internaute->idcompte' OR tempsLimite<UNIX_TIMESTAMP()";
+    $requete = "DELETE FROM session WHERE idcompte='$internaute->idcompte' OR tempsLimite<UNIX_TIMESTAMP()";
     setcookie("nettrader2session", "", time() - 3600, "/");
     ExecRequete($requete, $connexion);
     $tag = md5(getmicrotime());
