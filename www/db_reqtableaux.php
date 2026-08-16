@@ -21,7 +21,7 @@ ORDER BY messages.idcompte,datemess DESC LIMIT $debligne,$nbligne";
 	$run_query =  ExecRequete ($query, $connexion);	
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {   $return[$i++] = $run_result;
    }
 return $return;
@@ -39,7 +39,7 @@ ORDER BY messages.idcompte,datemess DESC";
 	$run_query =  ExecRequete ($query, $connexion);	
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {   $return[$i++] = $run_result;
    }
 return $return;
@@ -57,7 +57,7 @@ ORDER BY tempsconnect DESC";
 	$run_query =  ExecRequete ($query, $connexion);	
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {   $return[$i++] = $run_result;
    }
 return $return;

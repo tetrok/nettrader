@@ -261,7 +261,7 @@ $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 if(INCONC)
 {
 	$resultat=ExecRequete("SELECT pseudonyme, adresse FROM compte WHERE pseudonyme like '$pseudo' OR adresse like '$adresse' ",$connexion);
-	while($r=mysql_fetch_array($resultat))
+	while($r=$resultat->fetch(PDO::FETCH_BOTH))
 	{
 		if(strtolower($r["adresse"])==strtolower($adresse))
 		{
@@ -272,7 +272,7 @@ if(INCONC)
 	}
 }else{
 	$resultat=ExecRequete("SELECT pseudonyme,email FROM compte WHERE pseudonyme like '$pseudo' or email='$mail' ",$connexion);
-	while($r=mysql_fetch_object($resultat))
+	while($r=$resultat->fetch(PDO::FETCH_OBJ))
 	{	
 		if($r->pseudonyme==$pseudo)
 		{

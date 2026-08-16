@@ -62,7 +62,7 @@ function getvaleur($sico,$nouv=0) //$nouv = 1 si action � ajouter
 $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 $resultat=ExecRequete("SELECT valeur FROM cacval WHERE codesico = '$sico'",$connexion);
 $lastval = 0;
-while($r=mysql_fetch_array($resultat))
+while($r=$resultat->fetch(PDO::FETCH_BOTH))
 {
 	$lastval=$r["valeur"];
 	return $lastval;
@@ -101,7 +101,7 @@ function traiteeuronextcsv($lines)
 	$stat="";
 	$destination=array();
 	$stat=array();
-	while($r=mysql_fetch_array($resultat))
+	while($r=$resultat->fetch(PDO::FETCH_BOTH))
 	{
 		$destination[$r["yahooname"]] = array("valeur" => $r["valeur"], "unixtime" => $r["lasttime"]);
 		$stat[$r["yahooname"]] = array("codesico" => $r["codesico"] ,"lasttime" => $r["lasttime"], "lasttimedown" => $r["lasttimedown"]);
@@ -183,7 +183,7 @@ function traiteeuronextcsv($lines)
 	$stat="";
 	$destination=array();
 	$stat=array();
-	while($r=mysql_fetch_array($resultat))
+	while($r=$resultat->fetch(PDO::FETCH_BOTH))
 	{
 		$destination[$r["yahooname"]] = array("valeur" => $r["valeur"], "unixtime" => $r["lasttime"]);
 		$stat[$r["yahooname"]] = array("codesico" => $r["codesico"] ,"lasttime" => $r["lasttime"], "lasttimedown" => $r["lasttimedown"]);
@@ -296,7 +296,7 @@ ksort($source,0);
 $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 $resultat=ExecRequete("SELECT * FROM cacval WHERE down='1' ORDER BY codesico ASC",$connexion);
 $stat="";
-while($r=mysql_fetch_array($resultat))
+while($r=$resultat->fetch(PDO::FETCH_BOTH))
 {
 	$destination[$r["yahooname"]] = array("valeur" => $r["valeur"], "unixtime" => $r["lasttime"]);
 	$stat[$r["yahooname"]] = array("codesico" => $r["codesico"] ,"lasttime" => $r["lasttime"], "lasttimedown" => $r["lasttimedown"]);
@@ -387,7 +387,7 @@ $datedown=$letimestamp->datedown;
 $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 $resultat=ExecRequete("SELECT valeur FROM cacval WHERE codesico = '$sico' AND (lasttime > '$datesql' OR lasttimedown > '$datedown')  ",$connexion);
 $lastval = 0;
-while($r=mysql_fetch_array($resultat))
+while($r=$resultat->fetch(PDO::FETCH_BOTH))
 {
 	$lastval=$r["valeur"];
 	return $lastval;
@@ -396,7 +396,7 @@ while($r=mysql_fetch_array($resultat))
 $resultat=ExecRequete("SELECT nom,lasttimedown,lasttime,valeur FROM cacval WHERE codesico = '$sico'",$connexion);
 $lastval = 0;
 $lenom="";
-while($r=mysql_fetch_array($resultat))
+while($r=$resultat->fetch(PDO::FETCH_BOTH))
 {
 	$derndown=$r["lasttimedown"];
 	$derndate=$r["lasttime"];
@@ -537,19 +537,19 @@ function sorttableau($resultat,$titre,$largeur="90")
 	$html="";
 	if($resultat)
 	{
-	$qte=mysql_num_fields($resultat);/*nombre de champs s�lectionn�s*/
+	$qte=$resultat->columnCount();/*nombre de champs s�lectionn�s*/
 	$html= opentab(" align=center width=\"$largeur%\"  ");
 	$html.= openligne("","titre2").opencol("colspan=\"$qte\"").$titre.closecol().closeligne();	
 	$html.= openligne("","titre");/*couleur grise*/
 	for ($i=0;$i<$qte;$i++)
 	{
 		 $html.= opencol();
-		 $html.= mysql_field_name($resultat,$i);/*les noms des champs*/
+		 $html.= (($meta = $resultat->getColumnMeta($i)) ? $meta['name'] : false);/*les noms des champs*/
 		 $html.= closecol();
 	}
 	$html.= closeligne();
 	
-	while ($row =   mysql_fetch_array($resultat,MYSQL_ASSOC))
+	while ($row =   $resultat->fetch(PDO::FETCH_ASSOC))
 	{/*array des donn�es*/
 		$html.= openligne();
 		foreach ($row as $elem)

@@ -39,7 +39,7 @@ $idcompte=$internaute->idcompte;
 	$run_query =  ExecRequete ($query, $connexion);	
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {   $return[$i++] = $run_result;
    }
    return $return;
@@ -65,7 +65,7 @@ $datedown=$letimestamp->datedown+$timemodif;
 $run_query =  ExecRequete ($query, $connexion);
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {   $return[$i++] = $run_result;
    }
    return $return;
@@ -90,7 +90,7 @@ $query = "SELECT cashback
           WHERE idcompte = '$idjoueur'";
 	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 	$run_query =  ExecRequete ($query, $connexion);
-$objet=	mysql_fetch_array ($run_query);
+$objet=	$run_query->fetch(PDO::FETCH_BOTH);
 return $objet[0];
 }
 
@@ -290,7 +290,7 @@ global $internaute;
 	$run_query =  ExecRequete ($query, $connexion);	
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {   $return[$i++] = $run_result;
    }
    return $return;
@@ -352,7 +352,7 @@ function listmenu($type="menu") //retourne tout les champs du menu
 	$run_query =  ExecRequete ($query, $connexion);
 	$i=0;
 	$return="";
-	while ( $run_result = mysql_fetch_array($run_query) )
+	while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
 	{   $return[$i++] = $run_result;
 	}
 	return $return;
@@ -371,7 +371,7 @@ if($depuis>0) $reqsup=" and historique.temps>'$depuis'";
 	$run_query =  ExecRequete ($query, $connexion);	
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {   $return[$i++] = $run_result;
    }
    return $return;
@@ -510,7 +510,7 @@ $i=0;
    $all="";
    $specified="";
    $pseudotrouv=-1;
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {
      $all[$l] = $run_result;
      $h=0;
@@ -554,7 +554,7 @@ function gettabjoueursenequipes()
 	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 	$run_query =  ExecRequete ($query, $connexion);
    $return=array();
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {   $return[$run_result["idcompte"]] = array($run_result["initialgroupe"],$run_result["idgroupe"]);
    }
    return $return;
@@ -645,7 +645,7 @@ if(INCONC)
    $all="";
    $specified="";
    $pseudotrouv=-1;
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {
      $all[$l] = $run_result;
      $h=0;
@@ -710,7 +710,7 @@ $datedown=$letimestamp->datedown;
 	$run_query =  ExecRequete ($query, $connexion);	
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {   $return[$i++] = $run_result;
    }
    return $return;
@@ -734,7 +734,7 @@ function get_dernier_timestamp()
 	$run_query =  ExecRequete ($query, $connexion);	
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {
 		$timestamp->lasttime=$run_result["laststamp"];
    		$timestamp->lasttimedown=$run_result["lastdownstamp"];
@@ -792,7 +792,7 @@ WHERE ordre.codesico = cacval.codesico AND ( lasttime > '$datesql' OR lasttimedo
 	$run_query =  ExecRequete ($query, $connexion);	
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {   $return[$i++] = $run_result;
    }
 return $return;
@@ -833,7 +833,7 @@ function efface_ordre($codesico,$idcompte,$datecreation)
 $query = "UPDATE `ordre` SET etat='0' WHERE `codesico` = '$codesico' AND `idcompte` = '$idcompte' AND CONCAT(`datecreation`) = '$datecreation' LIMIT 1";
 $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 $run_query =  ExecRequete ($query, $connexion);
-return mysql_affected_rows();
+return ($GLOBALS['last_pdo_stmt'] ? $GLOBALS['last_pdo_stmt']->rowCount() : 0);
 }
 
 function get_ordrelist($condition="")
@@ -850,7 +850,7 @@ WHERE ordre.codesico = cacval.codesico and idcompte=$internaute->idcompte $condi
 	$run_query =  ExecRequete ($query, $connexion);	
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_assoc($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_ASSOC) )
    {   $return[$i++] = $run_result;
    }
 return $return;
@@ -1097,7 +1097,7 @@ function get_tempsbourse()
 	$run_query =  ExecRequete ($query, $connexion);	
    $i=0;
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {
 		$timestamp=$run_result["laststamp"];
    }
@@ -1111,7 +1111,7 @@ function listskin() //retourne la liste des skin
 	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 	$run_query =  ExecRequete ($query, $connexion);	
    $return="";
-   while ( $run_result = mysql_fetch_array($run_query) )
+   while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
    {   $return[$run_result['idskin']] = $run_result['nomskin'];
    }
    return $return;
@@ -1123,7 +1123,7 @@ $query = "SELECT *
           FROM skin where idskin='$idskin'";
 	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 	$run_query =  ExecRequete ($query, $connexion);	
-if(mysql_num_rows($run_query)==0)
+if($run_query->rowCount()==0)
 {
    return 0;
 }else{
@@ -1250,7 +1250,7 @@ function listmoisclass()
 	$valuedate=date($format);
 	$titredate=tomoisfr(date($format3)).date($format2);
    	$listmois[$valuedate] = $titredate;
-	while ( $run_result = mysql_fetch_array($run_query) )
+	while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
     {
 
    		list($yr,$mon,$day) = explode("-",$run_result['datescore']);
@@ -1280,7 +1280,7 @@ ORDER BY datescore DESC";
 	$valuedate=date($format);
 	$titredate=tomoisfr(date($format3)).date($format2);
    	$listmois[$valuedate] = $titredate;
-	while ( $run_result = mysql_fetch_array($run_query) )
+	while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
     {
    		list($yr,$mon,$day) = explode("-",$run_result['datescore']);
 		$date1 = mktime("01", "01", "01", $mon-1, "1", $yr);
@@ -1313,7 +1313,7 @@ global $internaute;
 	$run_query =  ExecRequete ($query, $connexion);
    $i=0;
    $return="";
-   while ( $r = mysql_fetch_object($run_query) )
+   while ( $r = $run_query->fetch(PDO::FETCH_OBJ) )
    {
         if($i==1)
         {
@@ -1935,7 +1935,7 @@ if($groupe->idgroupe==0)
 		  '', '$idcompte', '$titregroupe', '$initialgroupe', '$urlsite', 'inactif', '$descriptiongroupe', '0', '0', '0', UNIX_TIMESTAMP( ), '$idforum')";
 		$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 		$run_query =  ExecRequete ($query, $connexion);
-      		$query = "INSERT INTO `membregroupe` ( `idcompte` , `idgroupe` , `datejoint`,`capitalinscr` ) VALUES ('$idcompte', '".mysql_insert_id()."', UNIX_TIMESTAMP( ),'".getscorejoueur($idcompte)."')";
+		$query = "INSERT INTO `membregroupe` ( `idcompte` , `idgroupe` , `datejoint`,`capitalinscr` ) VALUES ('$idcompte', '".Connexion(NOM, PASSE, BASE, SERVEUR)->lastInsertId()."', UNIX_TIMESTAMP( ),'".getscorejoueur($idcompte)."')";
 		$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 		$run_query =  ExecRequete ($query, $connexion);
  		envoimail($player->email, lang(187),lang(195).lang(196)."\n\n".$commentaireadmin);
@@ -2006,7 +2006,7 @@ function get_sicavdown()
 	$run_query =  ExecRequete ($query, $connexion);
 	$i=0;
 	$return="";
-	while ( $run_result = mysql_fetch_array($run_query) )
+	while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
 	{   $return[$i++] = $run_result;
 	}
 	return $return;
@@ -2134,7 +2134,7 @@ function istableexist($nomtable)
 $query = "SHOW TABLES LIKE '$nomtable'";
 $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 $run_query =  ExecRequete ($query, $connexion);
-if(mysql_num_rows($run_query)==1)
+if($run_query->rowCount()==1)
 	return true;
 else
 	return false;
@@ -2292,7 +2292,7 @@ $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 $query="INSERT INTO `f_forum` ( `idsection` , `nomforum` , `descriptionforum` , `nbsujets` , `nbmessages` , `idlastmessage` , `authread` , `authwrite` )
 VALUES ( '$idsection', '$nomforum', '$descriptionforum', '0', '0', '0', '$authread', '$authwrite')";
 $run_query =  ExecRequete ($query, $connexion);
-return mysql_insert_id($connexion);
+return $connexion->lastInsertId();
 }
 
 function forum_newgroupeforum($nomggroupe)
@@ -2357,13 +2357,13 @@ if($edit)
 	( `idforum` , `idcompteauteur` , `s_nbmessages` , `txtsujet` , `idlastmessage` , `nblectures` )
 	VALUES ( '$idforum', '$internaute->idcompte', '0', '$sujet', '0', '0')";
 		$run_query =  ExecRequete ($query, $connexion);
-		$idsujet=mysql_insert_id($connexion);
+		$idsujet=$connexion->lastInsertId();
 	}
 
 	setsujetpaslu($idsujet);
 	$query="INSERT INTO `f_message` (`idsujet`, `datepost`, `idcompte`) VALUES ('$idsujet', UNIX_TIMESTAMP(), '$internaute->idcompte')";
 	$run_query =  ExecRequete ($query, $connexion);
-	$nummess=mysql_insert_id($connexion);
+	$nummess=$connexion->lastInsertId();
 
 	$query="INSERT INTO `f_corps` ( `idmessage` , `contenu` ) VALUES ('$nummess', '$corps')";
 	$run_query =  ExecRequete ($query, $connexion);
