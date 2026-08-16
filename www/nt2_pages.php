@@ -222,84 +222,87 @@ function dovente($idcompte,$sicav,$nombre,$dernvaleur)
     return "OK";
 }
 
-function inscrjeu($pseudo,$nom,$prenom,$adresse,$cp,$ville,$tel,$mail,$etab,$niveau,$mailsemaine,$mailjour)
+function inscrjeu($pseudo, $nom, $prenom, $adresse, $cp, $ville, $tel, $mail, $etab, $niveau, $mailsemaine, $mailjour)
 {
-    if(defined('FINCONC') && date("U") >= FINCONC)
-    {
+    if (defined('FINCONC') && date("U") >= FINCONC) {
         return lang(69);
     }
 
-    $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    if(defined('INCONC') && INCONC)
-    {
-        $resultat = ExecRequete("SELECT pseudonyme, adresse FROM compte WHERE pseudonyme like '$pseudo' OR adresse like '$adresse' ",$connexion);
-        while($r = $resultat->fetch(PDO::FETCH_BOTH))
-        {
-            if(strtolower($r["adresse"]) == strtolower($adresse))
-            {
+    $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+    
+    // Vérification existence
+    if (defined('INCONC') && INCONC) {
+        $resultat = ExecRequete("SELECT pseudonyme, adresse FROM compte WHERE pseudonyme LIKE '$pseudo' OR adresse LIKE '$adresse'", $connexion);
+        while ($r = $resultat->fetch(PDO::FETCH_BOTH)) {
+            if (strtolower($r["adresse"]) == strtolower($adresse)) {
                 return "Un seul compte par foyer autorisé, cette adresse est déjà utilisée par un autre joueur.";
             } else {
-                return "Le pseudonyme saisi existe déjà veuillez en entrer un différent, cliquez sur le bouton précédent de votre navigateur.";
+                return "Le pseudonyme saisi existe déjà, veuillez en entrer un différent.";
             }
         }
     } else {
-        $resultat = ExecRequete("SELECT pseudonyme,email FROM compte WHERE pseudonyme like '$pseudo' or email='$mail' ",$connexion);
-        while($r = $resultat->fetch(PDO::FETCH_OBJ))
-        {    
-            if($r->pseudonyme == $pseudo)
-            {
+        $resultat = ExecRequete("SELECT pseudonyme, email FROM compte WHERE pseudonyme LIKE '$pseudo' OR email='$mail'", $connexion);
+        while ($r = $resultat->fetch(PDO::FETCH_OBJ)) {    
+            if ($r->pseudonyme == $pseudo) {
                 return lang(85);
             } else {
                 return lang(92);
             }
         }
     }
-    if(!($niveau > 0))
-    {
+
+    if (!($niveau > 0)) {
         return "Niveau incorrect";
     }
-    if(trim($pseudo) == "" || !($mailsemaine == 0 || $mailsemaine == 1) || !($mailjour == 0 || $mailjour == 1))
-    {
+    if (trim($pseudo) == "" || !($mailsemaine == 0 || $mailsemaine == 1) || !($mailjour == 0 || $mailjour == 1)) {
         return lang(170);
     }
 
     $passe = substr(md5(getmicrotime()), 0, 5);
     $cryptpasse = md5($passe);
     $maintenant = date("U");
-    if(defined('INCONC') && INCONC)
-    {
-        ExecRequete("INSERT INTO `compte` ( `pseudonyme` , `nom` , `prenom` ,`passe`, `dateinscr`, `adresse` , `cp` , `ville` , `tel` , `email` , `etablissement`, `idniveau`, `cashback`)
-        VALUES (
-        '$pseudo', '$nom', '$prenom','$cryptpasse', '$maintenant', '$adresse', '$cp', '$ville', '$tel', '$mail', '$etab', '$niveau', '".CAPDEB."')
-        ",$connexion);
+    $capdeb = defined('CAPDEB') ? CAPDEB : '10000';
+
+    if (defined('INCONC') && INCONC) {
+        $sql = "INSERT INTO `compte` (
+            `pseudonyme`, `nom`, `prenom`, `passe`, `dateinscr`, 
+            `adresse`, `cp`, `ville`, `tel`, `email`, 
+            `etablissement`, `idniveau`, `cashback`, `lastpostaction`, `dateactivite`
+        ) VALUES (
+            '$pseudo', '$nom', '$prenom', '$cryptpasse', '$maintenant', 
+            '$adresse', '$cp', '$ville', '$tel', '$mail', 
+            '$etab', '$niveau', '$capdeb', '0', '$maintenant'
+        )";
     } else {
-        ExecRequete("INSERT INTO `compte` ( `pseudonyme` ,`passe`, `dateinscr`, `email` , `cashback`, `idniveau`, `maildaily`, `mailweekly`)
-        VALUES (
-        '$pseudo','$cryptpasse', '$maintenant', '$mail', '".CAPDEB."', '$niveau', '$mailsemaine', '$mailjour')
-        ",$connexion);
+        $sql = "INSERT INTO `compte` (
+            `pseudonyme`, `nom`, `prenom`, `passe`, `dateinscr`, 
+            `adresse`, `cp`, `ville`, `tel`, `email`, 
+            `etablissement`, `idniveau`, `cashback`, `maildaily`, `mailweekly`, 
+            `lastpostaction`, `dateactivite`
+        ) VALUES (
+            '$pseudo', '$nom', '$prenom', '$cryptpasse', '$maintenant', 
+            '$adresse', '$cp', '$ville', '$tel', '$mail', 
+            '$etab', '$niveau', '$capdeb', '$mailjour', '$mailsemaine', 
+            '0', '$maintenant'
+        )";
     }
 
-    if(defined('INCONC') && INCONC)
-    {    
-        $corps = "<Message généré automatiquement>\n<CONSERVEZ CE MESSAGE>\n\n  Bienvenue à Transac'Challenge, \n\n Votre inscription a été prise en compte et vous pouvez dès maintenant jouer , voici les informations pour vous identifier: \n Login: $mail \n Mot de Passe: $passe  \n\n Vous pouvez à tout moment modifier toutes vos informations via le site de NetTrader Transac'Challenge:\n ".(defined('ADDRNTTRANSAC') ? ADDRNTTRANSAC : '');
+    ExecRequete($sql, $connexion);
+
+    // Envoi de l'email
+    if (defined('INCONC') && INCONC) {    
+        $corps = "<Message généré automatiquement>\n<CONSERVEZ CE MESSAGE>\n\n  Bienvenue à Transac'Challenge, \n\n Votre inscription a été prise en compte et vous pouvez dès maintenant jouer, voici les informations pour vous identifier:\n Login: $mail \n Mot de Passe: $passe\n\n Vous pouvez à tout moment modifier toutes vos informations via le site de NetTrader Transac'Challenge:\n " . (defined('ADDRNTTRANSAC') ? ADDRNTTRANSAC : '');
         $titre = "Bienvenue à NetTrader - Transac'Challenge";            
     } else {
         $corps = "
 <Message généré automatiquement>\n
-<CONSERVEZ CE MESSAGE>\n
-\n
-  Bienvenue dans NetTrader 2, \n
-\n
- Votre inscription a été prise en compte et vous pouvez dès maintenant jouer , voici les informations pour vous identifier: \n
+<CONSERVEZ CE MESSAGE>\n\n
+  Bienvenue dans NetTrader 2, \n\n
+ Votre inscription a été prise en compte et vous pouvez dès maintenant jouer, voici les informations pour vous identifier:\n
  Login: $mail \n
- Mot de Passe: $passe  \n
-\n
+ Mot de Passe: $passe\n\n
  Vous pouvez à tout moment modifier toutes vos informations via le site de NetTrader 2:\n
- ".(defined('ADDRNT') ? ADDRNT : '')."
-
-Sachez que les comptes sont supprimés au bout de deux mois d'inactivités, pour conserver votre compte, il suffit de vous \n
-identifier sur le site ou dans le logiciel au moins une fois tout les 59 jours.Vous ne serez pas avertis si votre compte est sur le point d'être supprimé.\n
-La suppression d'un compte entraîne également l'effacement de celui-ci du classement des mois écoulés.
+ " . (defined('ADDRNT') ? ADDRNT : '') . "
 
 Bon Jeu ;)
 
@@ -307,8 +310,9 @@ L'auteur, FORTIN Nicolas
 ";
         $titre = "Bienvenue dans NetTrader II";        
     }
-    envoimail($mail, $titre,$corps);
-    return "<br><br>Vous êtes inscrit, vous recevrez dans quelques minutes l'ensemble des informations concernant votre compte par email.";
+
+    envoimail($mail, $titre, $corps);
+    return "<br><br>Vous êtes inscrit ! Votre mot de passe temporaire généré est : <b>$passe</b> (un récapitulatif a été envoyé par email).";
 }
 
 function jscript_av($nombre)

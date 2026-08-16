@@ -18,12 +18,12 @@ USE `nettrader`;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `Session`
+-- Table structure for table `session`
 --
-DROP TABLE IF EXISTS `Session`;
+DROP TABLE IF EXISTS `session`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `Session` (
+CREATE TABLE `session` (
   `idSession` char(40) NOT NULL DEFAULT '',
   `idcompte` smallint(5) unsigned NOT NULL DEFAULT '0',
   `tempsLimite` decimal(10,0) NOT NULL DEFAULT '0',
@@ -33,13 +33,13 @@ CREATE TABLE `Session` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `Session`
+-- Dumping data for table `session`
 --
 
-LOCK TABLES `Session` WRITE;
-/*!40000 ALTER TABLE `Session` DISABLE KEYS */;
-INSERT INTO `Session` VALUES ('efeb397f9923d2a334799572f0415c98',933,1407054215,1406967815),('f3c33e00c4f43639bad2ac4109ee0ec5',29485,1407028774,1406942712),('78b26b101d891e2c991492d99ec37e88',933,1407052813,1406966413);
-/*!40000 ALTER TABLE `Session` ENABLE KEYS */;
+LOCK TABLES `session` WRITE;
+/*!40000 ALTER TABLE `session` DISABLE KEYS */;
+INSERT INTO `session` VALUES ('efeb397f9923d2a334799572f0415c98',933,1407054215,1406967815),('f3c33e00c4f43639bad2ac4109ee0ec5',29485,1407028774,1406942712),('78b26b101d891e2c991492d99ec37e88',933,1407052813,1406966413);
+/*!40000 ALTER TABLE `session` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -160,30 +160,37 @@ UNLOCK TABLES;
 DROP TABLE IF EXISTS `compte`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `compte` (
-  `idcompte` mediumint(8) unsigned NOT NULL AUTO_INCREMENT,
-  `cookiesess` varchar(10) NOT NULL DEFAULT '',
-  `dateinscr` decimal(10,0) NOT NULL DEFAULT '0',
-  `dateactivite` decimal(10,0) unsigned NOT NULL DEFAULT '0',
-  `lastpostaction` decimal(10,0) unsigned NOT NULL,
+CREATE TABLE IF NOT EXISTS `compte` (
+  `idcompte` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
   `pseudonyme` varchar(30) NOT NULL DEFAULT '',
+  `nom` varchar(50) NOT NULL DEFAULT '',
+  `prenom` varchar(50) NOT NULL DEFAULT '',
   `passe` varchar(32) NOT NULL DEFAULT '',
-  `cashback` float(20,2) NOT NULL DEFAULT '100000.00',
-  `email` varchar(60) NOT NULL DEFAULT '',
-  `authlevel` enum('1','2','3') NOT NULL DEFAULT '1',
-  `skin` tinyint(2) unsigned NOT NULL DEFAULT '1',
-  `idniveau` enum('1','2','3','4') NOT NULL DEFAULT '2',
-  `classenbl` tinyint(3) unsigned NOT NULL DEFAULT '30',
-  `msgnbl` tinyint(3) unsigned NOT NULL DEFAULT '5',
-  `histonbl` tinyint(3) unsigned NOT NULL DEFAULT '30',
-  `avautrepage` enum('0','1') NOT NULL DEFAULT '0',
-  `portefvisu` enum('prive','public') NOT NULL DEFAULT 'prive',
-  `toutvuforum` decimal(10,0) unsigned NOT NULL,
-  `nbpostforum` smallint(5) unsigned NOT NULL,
-  `maildaily` enum('1','0') NOT NULL DEFAULT '0',
-  `mailweekly` enum('1','0') NOT NULL DEFAULT '1',
-  PRIMARY KEY (`idcompte`)
-) ENGINE=MyISAM AUTO_INCREMENT=29487 DEFAULT CHARSET=latin1;
+  `dateinscr` decimal(10,0) NOT NULL DEFAULT '0',
+  `adresse` varchar(100) NOT NULL DEFAULT '',
+  `cp` varchar(10) NOT NULL DEFAULT '',
+  `ville` varchar(50) NOT NULL DEFAULT '',
+  `tel` varchar(20) NOT NULL DEFAULT '',
+  `email` varchar(100) NOT NULL DEFAULT '',
+  `etablissement` varchar(100) NOT NULL DEFAULT '',
+  `idniveau` tinyint(3) unsigned NOT NULL DEFAULT '1',
+  `cashback` decimal(10,2) NOT NULL DEFAULT '10000.00',
+  `maildaily` tinyint(1) NOT NULL DEFAULT '0',
+  `mailweekly` tinyint(1) NOT NULL DEFAULT '0',
+  `lastpostaction` decimal(10,0) NOT NULL DEFAULT '0',
+  `dateactivite` decimal(10,0) NOT NULL DEFAULT '0',
+  `authlevel` tinyint(1) NOT NULL DEFAULT '1',
+  `histonbl` smallint(5) unsigned NOT NULL DEFAULT '20',
+  `msgnbl` smallint(5) unsigned NOT NULL DEFAULT '10',
+  `classenbl` smallint(5) unsigned NOT NULL DEFAULT '30',
+  `idskin` tinyint(3) unsigned NOT NULL DEFAULT '1',
+  `cookiesess` varchar(32) NOT NULL DEFAULT '',
+  `nbpostforum` int(10) unsigned NOT NULL DEFAULT '0',
+  `toutvuforum` decimal(10,0) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`idcompte`),
+  UNIQUE KEY `pseudonyme` (`pseudonyme`),
+  KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

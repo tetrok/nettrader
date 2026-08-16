@@ -6,20 +6,15 @@
 * @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
 * @author Nicolas Fortin <nfortin@nettrader.fr>
 */
-/*
-Fonction Liste:
-ligne 239: joueur_liste_sicav([idCompte]) retourne toutes les sicav qui doivent être mis à jour [pour un joueur]
-*/
 
 function sec($input="")
 {
     if (is_array($input)) {
         $output = [];
         foreach ($input as $key => $champ) {
-            $output[$key] = sec($champ); // Récursivité
+            $output[$key] = sec($champ);
         }
     } else {
-        // Connexion PDO active
         $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
 
         if ($input === '' || $input === null) {
@@ -28,7 +23,6 @@ function sec($input="")
             $quoted = $connexion->quote($input);
         }
 
-        // Enlever les quotes ajoutées par PDO au début et à la fin
         if (strlen($quoted) >= 2 && substr($quoted, 0, 1) === "'" && substr($quoted, -1) === "'") {
             $escaped = substr($quoted, 1, -1);
         } else {
@@ -43,7 +37,9 @@ function sec($input="")
 function echoadmin($message)
 {
     global $internaute;
-    if ($internaute->idcompte == 1 || $_SERVER['REMOTE_ADDR'] == "127.0.0.1") {
+    $id_compte = (is_object($internaute) && isset($internaute->idcompte)) ? $internaute->idcompte : 0;
+    $remote_addr = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
+    if ($id_compte == 1 || $remote_addr == "127.0.0.1") {
         echo $message;
     }
     return 1;
@@ -57,35 +53,37 @@ function getmicrotime()
   
 function cookievalide($idSession)
 {
-    $chainecookie = &$_COOKIE["nettrader2session"];
     if (isset($_COOKIE["nettrader2session"])) {
+        $chainecookie = $_COOKIE["nettrader2session"];
         $exploded_ligne = explode("-", $chainecookie);
+        if (count($exploded_ligne) < 2) return 0;
+        
         $idcompte = $exploded_ligne[0];
         $chainemd5 = $exploded_ligne[1];
         $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
         $tempinternaute = ChercheInternaute($idcompte, $connexion);
-        list($hour, $min, $sec, $day, $mon, $yr) = explode(" ", date("H i s d m y"));
-        $date3 = mktime(0, 0, 0, 0, 0, $yr);
         
-        if (md5($tempinternaute->idcompte . $date3 . $tempinternaute->passe . $tempinternaute->cookiesess) == $chainemd5) {
-            $maintenant = date("U");
-            $tempsLimite = $maintenant + (3600 * 24); 
-
-            $insSession = "INSERT INTO Session (idSession, idcompte, tempsLimite, tempsconnect) "
-                        . "VALUES ('$idSession', '$idcompte', '$tempsLimite', '$maintenant')";       
-            $resultat = ExecRequete($insSession, $connexion);
-            forum_majtoutvuforum($idcompte);
+        if (is_object($tempinternaute)) {
+            list($hour, $min, $sec, $day, $mon, $yr) = explode(" ", date("H i s d m y"));
+            $date3 = mktime(0, 0, 0, 0, 0, $yr);
             
-            $requete = "UPDATE compte SET dateactivite = '$maintenant' WHERE idcompte='$idcompte'";
-            $resultat = ExecRequete($requete, $connexion);
-            session_register("$idcompte");
-            return $idcompte;
-        } else {
-            return 0;
+            if (md5($tempinternaute->idcompte . $date3 . $tempinternaute->passe . $tempinternaute->cookiesess) == $chainemd5) {
+                $maintenant = date("U");
+                $tempsLimite = $maintenant + (3600 * 24); 
+
+                $insSession = "INSERT INTO Session (idSession, idcompte, tempsLimite, tempsconnect) "
+                            . "VALUES ('$idSession', '$idcompte', '$tempsLimite', '$maintenant')";       
+                ExecRequete($insSession, $connexion);
+                forum_majtoutvuforum($idcompte);
+                
+                $requete = "UPDATE compte SET dateactivite = '$maintenant' WHERE idcompte='$idcompte'";
+                ExecRequete($requete, $connexion);
+                $_SESSION['idcompte'] = $idcompte;
+                return $idcompte;
+            }
         }
-    } else {
-        return 0;
     }
+    return 0;
 }
 
 if (!isset($FichierConnexion)) {
@@ -139,15 +137,11 @@ if (!isset($FichierExecRequete)) {
             $errorInfo = $connexion->errorInfo();
             $errorMsg = $errorInfo[2] ?? 'Erreur PDO inconnue';
 
-            echoadmin("<B>Erreur dans l'exécution de la requête '$requete'.</B><BR>");
-            echoadmin("<B>Message de MySQL :</B> " . $errorMsg);
-
-            $corps = "Joueur: " . (is_object($internaute) ? $internaute->pseudonyme : 'Inconnu') . " \n"
-                   . "<B>Message de MySQL :</B> " . $errorMsg . "\n"
-                   . "Erreur dans l'exécution de la requête '$requete' \n"
-                   . "do=$do";
-            envoimail(EMAILADMIN, "NetTrader, Erreur MySql", $corps);
-            echo "Une erreur s'est produite, l'auteur réglera ce problème dans les plus brefs délais.";
+            // Affichage direct pour déboguer le problème en local
+            echo "<div style='background:#fff; color:#b00; padding:15px; border:2px solid #b00; font-family:monospace;'>";
+            echo "<b>Erreur dans l'exécution de la requête :</b><br><code>" . htmlspecialchars($requete) . "</code><br><br>";
+            echo "<b>Message de MySQL :</b> " . htmlspecialchars($errorMsg) . "<br>";
+            echo "</div>";
             die();
         }  
     }
@@ -180,7 +174,7 @@ function nbessai($idcompte)
     $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
     $run_query = ExecRequete($query, $connexion);
     $resultat = LigneSuivante($run_query);
-    return $resultat->nbessai;
+    return is_object($resultat) ? $resultat->nbessai : 0;
 }
 
 function ChercheSession($idSession, $connexion) 
@@ -194,22 +188,26 @@ function ChercheSession($idSession, $connexion)
 function SessionValide($connexion, $session)
 {
     $maintenant = date("U");
-    if ($session->tempsLimite < $maintenant) {
-        session_destroy();
+    if (!is_object($session) || $session->tempsLimite < $maintenant) {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
         setcookie("nettrader2session", "", time() + 3600 * 24 * 30, "/");
-        $session->idSession = sec($session->idSession);
-        $requete = "DELETE FROM Session WHERE idSession='$session->idSession' OR tempsLimite<'$maintenant'";
-        $resultat = ExecRequete($requete, $connexion);
-        return FALSE;
+        if (is_object($session)) {
+            $sessId = sec($session->idSession);
+            $requete = "DELETE FROM Session WHERE idSession='$sessId' OR tempsLimite<'$maintenant'";
+            ExecRequete($requete, $connexion);
+        }
+        return false;
     } else {
         if ($session->tempsconnect < $maintenant - 5 * 60) {
             $requete = "UPDATE Session SET tempsconnect = '$maintenant' WHERE idcompte='$session->idcompte'";
-            $resultat = ExecRequete($requete, $connexion);
+            ExecRequete($requete, $connexion);
             forum_majtoutvuforum($session->idcompte);
             $requete = "UPDATE compte SET dateactivite = '$maintenant' WHERE idcompte='$session->idcompte'";
-            $resultat = ExecRequete($requete, $connexion);
+            ExecRequete($requete, $connexion);
         }
-        return TRUE;
+        return true;
     }
 }
 
@@ -230,22 +228,22 @@ function CreerSession($connexion, $email, $motDePasse, $idSession, $souvenir)
 
             $insSession = "INSERT INTO Session (idSession, idcompte, tempsLimite, tempsconnect) "
                         . "VALUES ('$idSession', '$internaute->idcompte', '$tempsLimite', '$maintenant')";       
-            $resultat = ExecRequete($insSession, $connexion);
+            ExecRequete($insSession, $connexion);
             forum_majtoutvuforum($internaute->idcompte);
             $requete = "UPDATE compte SET dateactivite = '$maintenant' WHERE idcompte='$internaute->idcompte'";
-            $resultat = ExecRequete($requete, $connexion);
+            ExecRequete($requete, $connexion);
             
             list($hour, $min, $sec, $day, $mon, $yr) = explode(" ", date("H i s d m y"));
             $date3 = mktime(0, 0, 0, 0, 0, $yr);
             if ($souvenir == 1) {
                 setcookie("nettrader2session", "$internaute->idcompte-" . md5($internaute->idcompte . $date3 . $internaute->passe . $internaute->cookiesess), time() + 3600 * 24 * 30, "/");
             }
-            session_register("$internaute->idcompte");
+            $_SESSION['idcompte'] = $internaute->idcompte;
             return "TRUE";
         }
         $maintenant = date("U");
         $insSession = "INSERT INTO `tabforcing` (`idcompte`, `dateforcing`) VALUES ('$internaute->idcompte', '$maintenant');";       
-        $resultat = ExecRequete($insSession, $connexion); 
+        ExecRequete($insSession, $connexion); 
         $internaute = "";
         include_once("lang/lang_fr.php"); 
         return "<B>" . lang(26) . "<P></B>\n";
@@ -277,7 +275,7 @@ function ControleAcces(&$email, &$motDePasse, &$emailInternaute, $idSession, $so
         }
     }
 
-    if (isset($email)) {
+    if (!empty($email)) {
         $email = sec($email);
         $message = CreerSession($connexion, $email, $motDePasse, $idSession, $souvenir);
         if ($message == "TRUE") {
@@ -292,15 +290,18 @@ function ControleAcces(&$email, &$motDePasse, &$emailInternaute, $idSession, $so
 function deconnection()
 {
     global $internaute;
+    if (!is_object($internaute)) return "";
     effacvieuxordres();
     $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
     $requete = "DELETE FROM Session WHERE idcompte='$internaute->idcompte' OR tempsLimite<UNIX_TIMESTAMP()";
     setcookie("nettrader2session", "", time() - 3600, "/");
-    $resultat = ExecRequete($requete, $connexion);
+    ExecRequete($requete, $connexion);
     $tag = md5(getmicrotime());
     $requete = "UPDATE compte SET cookiesess='$tag' WHERE idcompte='$internaute->idcompte'";
-    $resultat = ExecRequete($requete, $connexion);
-    session_destroy();
+    ExecRequete($requete, $connexion);
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_destroy();
+    }
     $internaute = "";
     return lang(37);
 }
