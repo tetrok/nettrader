@@ -104,7 +104,7 @@ if (!isset($FichierConnexion)) {
                 ];
                 $connexion = new PDO($dsn, $pNom, $pMotPasse, $options);
             } catch (\PDOException $e) {
-                echo "Désolé, connexion au serveur impossible\n";
+                echo "Désolé, connexion au serveur impossible : " . $e->getMessage() . "\n";
                 die();
             }
             $connectbdd = $connexion;

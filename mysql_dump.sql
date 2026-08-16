@@ -20,11 +20,10 @@ USE `nettrader`;
 --
 -- Table structure for table `Session`
 --
-
 DROP TABLE IF EXISTS `Session`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `session` (
+CREATE TABLE `Session` (
   `idSession` char(40) NOT NULL DEFAULT '',
   `idcompte` smallint(5) unsigned NOT NULL DEFAULT '0',
   `tempsLimite` decimal(10,0) NOT NULL DEFAULT '0',
