@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  db:
+    image: mariadb:10.5
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: nettrader
+      MYSQL_USER: nettrader_user
+      MYSQL_PASSWORD: nettrader_password
+    volumes:
+      - ./mysql_dump.sql:/docker-entrypoint-initdb.d/mysql_dump.sql
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      DB_HOST: db
+      DB_NAME: nettrader
+      DB_USER: nettrader_user
+      DB_PASSWORD: nettrader_password
+    depends_on:
+      - db
+    restart: unless-stopped

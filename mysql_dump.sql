@@ -1,8 +1,8 @@
-CREATE DATABASE  IF NOT EXISTS `fnicolas` /*!40100 DEFAULT CHARACTER SET latin1 */;
-USE `fnicolas`;
+CREATE DATABASE  IF NOT EXISTS `nettrader` /*!40100 DEFAULT CHARACTER SET latin1 */;
+USE `nettrader`;
 -- MySQL dump 10.13  Distrib 5.6.17, for Win32 (x86)
 --
--- Host: localhost    Database: fnicolas
+-- Host: localhost    Database: nettrader
 -- ------------------------------------------------------
 -- Server version	5.6.20
 
