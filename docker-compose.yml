@@ -23,6 +23,7 @@ services:
       DB_PASSWORD: nettrader_password
     depends_on:
       - db
+      - mailpit
     restart: unless-stopped
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -35,3 +36,10 @@ services:
     depends_on:
       - db
     restart: unless-stopped
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025" # Interface Web pour lire les e-mails
+      - "1025:1025" # Port SMTP interne utilisé par msmtp

@@ -159,9 +159,9 @@ function ChercheInternaute($idcompte = 0, $connexion, $mail = "")
 {
     $mail = sec($mail);
     if ($mail == "") {
-        $requete = "SELECT * FROM compte,skin,niveau WHERE idcompte = '$idcompte' AND compte.skin = skin.idskin AND compte.idniveau = niveau.idniveau";
+        $requete = "SELECT * FROM compte,skin,niveau WHERE idcompte = '$idcompte' AND compte.idskin = skin.idskin AND compte.idniveau = niveau.idniveau";
     } else {
-        $requete = "SELECT * FROM compte,skin,niveau WHERE email = '$mail' AND compte.skin = skin.idskin AND compte.idniveau = niveau.idniveau";
+        $requete = "SELECT * FROM compte,skin,niveau WHERE email = '$mail' AND compte.idskin = skin.idskin AND compte.idniveau = niveau.idniveau";
     }
     $resultat = ExecRequete($requete, $connexion);
     return LigneSuivante($resultat);
@@ -180,7 +180,7 @@ function nbessai($idcompte)
 function ChercheSession($idSession, $connexion) 
 {
     $idSession = sec($idSession);    
-    $requete = "SELECT * FROM session,compte,skin,niveau WHERE idSession = '$idSession' AND session.idcompte = compte.idcompte AND compte.skin = skin.idskin AND compte.idniveau=niveau.idniveau ORDER BY tempsLimite DESC";
+    $requete = "SELECT * FROM session,compte,skin,niveau WHERE idSession = '$idSession' AND session.idcompte = compte.idcompte AND compte.idskin = skin.idskin AND compte.idniveau = niveau.idniveau ORDER BY tempsLimite DESC";
     $resultat = ExecRequete($requete, $connexion);
     return LigneSuivante($resultat);
 }

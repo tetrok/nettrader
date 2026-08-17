@@ -49,8 +49,8 @@ ORDER BY messages.idcompte,datemess DESC";
 function get_playerconnected()
 {
     $query = "SELECT compte.pseudonyme AS Pseudo
-FROM compte,Session
-WHERE compte.idcompte = Session.idcompte AND tempsconnect>UNIX_TIMESTAMP() - 305 and compte.authlevel='1'
+FROM compte,session
+WHERE compte.idcompte = session.idcompte AND tempsconnect>UNIX_TIMESTAMP() - 305 and compte.authlevel='1'
 GROUP BY pseudonyme
 ORDER BY tempsconnect DESC";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
