@@ -24,3 +24,14 @@ services:
     depends_on:
       - db
     restart: unless-stopped
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+    depends_on:
+      - db
+    restart: unless-stopped
