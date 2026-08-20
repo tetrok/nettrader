@@ -41,13 +41,13 @@ $cherche = isset($_REQUEST['cherche']) ? $_REQUEST['cherche'] : "";
 
 $dateclasstmp1 = isset($_POST['moisclasse']) ? $_POST['moisclasse'] : null;
 $dateclasstmp2 = isset($_GET['moisclasse']) ? $_GET['moisclasse'] : null;
-if(is_null($dateclasstmp1))
+if($dateclasstmp1 === null)
 {
     $dateclass = $dateclasstmp2;
 } else {
     $dateclass = $dateclasstmp1;
 }
-if(is_null($dateclass) || $dateclass == '')
+if($dateclass === null || $dateclass === '')
 {
     $dateclass = date("m-Y");
 }
@@ -133,31 +133,31 @@ switch ($do) //Tous
         echo msgtab(formsendpass(sec($_POST['pseudo'])), lang(105));
         break;
     case "rtrmdp":
-        echo msgtab(dosendpass(sec($_GET['c']), sec($_GET['m'])), lang(105));
+        echo msgtab(dosendpass(sec($_GET['c'] ?? ""), sec($_GET['m'] ?? "")), lang(105));
         break;
     case "classementequipe":
         echo classementequipes(sec(intval($numligne)), sec($dateclass), sec($cherche));
         break;
     case "viewgroupeprofil":
-        echo tabgroupeprofil(sec($_GET['idgroupe']));
+        echo tabgroupeprofil(sec($_GET['idgroupe'] ?? ""));
         break;
     case "showlstforums":
         echo lstforums();
         break;
     case "showlstsujets":
-        echo lstsujets(sec(intval($_GET['idforum'])), sec(intval($numligne)));
+        echo lstsujets(sec(intval($_GET['idforum'] ?? 0)), sec(intval($numligne)));
         break;
     case "showlstposts":
-        echo lstposts(sec(intval($_GET['idsujet'])), sec(intval($numligne)), sec(tabvaleurouzero($_GET, 'last')));
+        echo lstposts(sec(intval($_GET['idsujet'] ?? 0)), sec(intval($numligne)), sec(tabvaleurouzero($_GET, 'last')));
         break;
     case "unabledailystats":
-        echo disabledaily(sec(intval($_GET['idcompte'])), sec($_GET['checkstr']));
+        echo disabledaily(sec(intval($_GET['idcompte'] ?? 0)), sec($_GET['checkstr'] ?? ""));
         break;
     case "unableweeklystats":
-        echo disableweekly(sec(intval($_GET['idcompte'])), sec($_GET['checkstr']));
+        echo disableweekly(sec(intval($_GET['idcompte'] ?? 0)), sec($_GET['checkstr'] ?? ""));
         break;
     case "junksicav":
-        echo junkoldsicav(sec(intval($_GET['idcompte'])), sec($_GET['checkstr']), sec(intval($_GET['codesico'])));
+        echo junkoldsicav(sec(intval($_GET['idcompte'] ?? 0)), sec($_GET['checkstr'] ?? ""), sec(intval($_GET['codesico'] ?? 0)));
         break;
     default:
         $public = 0;
@@ -192,7 +192,7 @@ if(is_object($internaute) && isset($internaute->authlevel) && $internaute->authl
         case "achataction":
             if(sec($_POST['codesicav']) <> "")
             {
-                echo msgtab(creer_ordre(sec($_POST['sens']), sec($_POST['codesicav']), sec(intval($_POST['nbr'])), sec(str_replace(",", ".", $_POST['valmin'])), sec(str_replace(",", ".", $_POST['valmax'])), sec($_POST['tempsmin']), sec($_POST['select']), sec($_POST['ansval']), sec($_POST['seuil']), sec($_POST['nb2'])), lang(86));
+                echo msgtab(creer_ordre(sec($_POST['sens']), sec($_POST['codesicav']), sec(intval($_POST['nbr'])), sec(str_replace(",", ".", $_POST['valmin'] ?? "")), sec(str_replace(",", ".", $_POST['valmax'] ?? "")), sec($_POST['tempsmin']), sec($_POST['select']), sec($_POST['ansval']), sec($_POST['seuil']), sec($_POST['nb2'])), lang(86));
             }
             echo "<br><br>";
             echo achatvente(sec($sicavselecta), sec($sicavselectv));
@@ -212,7 +212,7 @@ if(is_object($internaute) && isset($internaute->authlevel) && $internaute->authl
             echo achatvente(sec($sicavselecta), sec($sicavselectv));
             break;
         case "supprordre":
-            echo msgtab(supprordre(sec($_GET['idordre'])), lang(86));
+            echo msgtab(supprordre(sec($_GET['idordre'] ?? "")), lang(86));
             echo "<br><br>";
             echo achatvente(sec($sicavselecta), sec($sicavselectv));
             break;
@@ -235,23 +235,23 @@ if(is_object($internaute) && isset($internaute->authlevel) && $internaute->authl
             echo lstAction(sec($format));
             break;
         case "suppcomment":
-            delcommentaire(sec($_GET['idcomment']));
+            delcommentaire(sec($_GET['idcomment'] ?? ""));
             echo txt_help(sec(intval(tabvaleurouzero($_GET, 'idaide'))));
             break;
         case "postemessage":
             ajoutcommentaire(sec($_POST['message']), sec($_POST['idaide']));
-            echo txt_help(sec(intval($_GET['idaide'])));
+            echo txt_help(sec(intval($_GET['idaide'] ?? 0)));
             break;
         case "suppcommentfaq":
-            delcommentairefaq(sec($_GET['idcomment']));
-            echo txt_faq(sec(intval($_GET['idaide'])));
+            delcommentairefaq(sec($_GET['idcomment'] ?? ""));
+            echo txt_faq(sec(intval($_GET['idaide'] ?? 0)));
             break;
         case "postemessagefaq":
             ajoutcommentairefaq(sec($_POST['message']), sec($_POST['idaide']));
-            echo txt_faq(sec(intval($_GET['idaide'])));
+            echo txt_faq(sec(intval($_GET['idaide'] ?? 0)));
             break;
         case "profilaction":
-            echo profilaction(sec($_GET['yn']));
+            echo profilaction(sec($_GET['yn'] ?? ""));
             break;
         case "invitejoueur": //inviter un joueur à rejoindre un groupe
             if(estadmingroupe($internaute->idcompte)) echo doinvitejoueur(sec(intval($_POST['idjoueur'])));
@@ -264,7 +264,7 @@ if(is_object($internaute) && isset($internaute->authlevel) && $internaute->authl
             echo form_messagerie(sec(intval($numligne)));
             break;
         case "delmessage":
-            echo dodelmessage(sec(intval($_GET['idmessage'])));
+            echo dodelmessage(sec(intval($_GET['idmessage'] ?? 0)));
             echo form_messagerie(sec(intval($numligne))); 
             break;
         case "ajgroupe":
@@ -281,8 +281,8 @@ if(is_object($internaute) && isset($internaute->authlevel) && $internaute->authl
             echo doajgroupe($internaute->idcompte, sec($_POST['titreeq']), sec($_POST['titreeqcourt']), sec($_POST['urlsite']), sec($_POST['corps']));
             break;
         case "acceptinvite":
-            echo dojoingroupe(sec(intval($_GET['idgroupe'])));
-            echo tabgroupeprofil(sec($_GET['idgroupe']));
+            echo dojoingroupe(sec(intval($_GET['idgroupe'] ?? 0)));
+            echo tabgroupeprofil(sec($_GET['idgroupe'] ?? ""));
             break;
         case "supprtoutinvite":
             echo doundoallinvitegroupe();
@@ -321,7 +321,7 @@ if(is_object($internaute) && isset($internaute->authlevel) && $internaute->authl
     switch ($do)
     {
         case "addsico":
-            echo getvaleur(sec($_GET['sico']));
+            echo getvaleur(sec($_GET['sico'] ?? ""));
             break;  
         case "updatenom":
             echo updatenomsicav();
@@ -333,7 +333,7 @@ if(is_object($internaute) && isset($internaute->authlevel) && $internaute->authl
             echo formadmin();
             break;
         case "exeadmin":
-            echo afficheadminres(sec($_GET['idreq']));
+            echo afficheadminres(sec($_GET['idreq'] ?? ""));
             break;
         case "lstusertodel":
             echo lstplayeradmin();
@@ -363,15 +363,15 @@ if(is_object($internaute) && isset($internaute->authlevel) && $internaute->authl
             majlistmoisclass();
             break;
         case "syncforum":
-            forumsyncquantity(sec($_GET['idforum']));
-            forumsyncidlastmessage(sec($_GET['idforum']));
+            forumsyncquantity(sec($_GET['idforum'] ?? ""));
+            forumsyncidlastmessage(sec($_GET['idforum'] ?? ""));
             break;
         case "forumtogroupes":
             forum_giveforumtogroups();
             print msgtab("OK", "OK");
             break;
         case "incarner":
-            incarnerjoueur(sec($_GET['idcompte']));
+            incarnerjoueur(sec($_GET['idcompte'] ?? ""));
             break;
         default:
             $admin = 0;

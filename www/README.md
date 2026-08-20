@@ -63,7 +63,7 @@ Le code est dans un état de forte dette technique et présente de graves faille
     *   **Action urgente :** Intégrer de nouvelles API financières (Alpha Vantage, IEX Cloud, Yahoo Finance non-officiel via RapidAPI) et réécrire les parseurs (`traiteyahoocsv`, `traiteeuronextcsv`).
 
 7.  **Incompatibilités PHP 8.x**
-    *   Utilisation de fonctions dépréciées (ex: `IS_NULL()` en majuscule). Beaucoup de fonctions généreront des *Warnings* ou des *Fatal Errors* (passage de `null` à des fonctions internes, index de tableaux non définis, constructeurs obsolètes style PHP 4 avec le nom de la classe).
+    *   Utilisation de fonctions dépréciées (ex: `is_null()` en majuscule). Beaucoup de fonctions généreront des *Warnings* ou des *Fatal Errors* (passage de `null` à des fonctions internes, index de tableaux non définis, constructeurs obsolètes style PHP 4 avec le nom de la classe).
 
 En l'état, l'application nécessite un processus de réécriture (Refactoring) massif pour être sécurisée et fonctionnelle sur un serveur moderne.
 

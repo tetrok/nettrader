@@ -14,7 +14,7 @@ include_once ("const.php");
 include_once ("constbdd.php");
 include_once ("db_connect.php");
 
-$url=sec($_GET['url']);
+$url=sec(($_GET['url'] ?? ""));
 function get_ip(){
 if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])){
 $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];}

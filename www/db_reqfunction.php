@@ -361,7 +361,7 @@ function listclassementequipe($mois,$ligncour,$maxligne,$cherche="")
     $date1 = mktime(1, 1, 1, $mon, 1, $yr);
     $ladate=date("Y-m-d",$date1);
 
-    list($yr,$mon,$jour) = explode("-",$mois);
+    if($mois !== null) list($yr,$mon,$jour) = explode("-",$mois); else { $yr=0; $mon=0; $jour=0; }
     $date2 = mktime(1, 1, 1, $mon+1, 1, $yr);
     $ladateap=date("Y-m-d",$date2);
 
@@ -469,11 +469,11 @@ function listclassement($mois,$ligncour,$maxligne,$cherche="")
     $date1 = mktime(1, 1, 1, $mon, 1, $yr);
     $ladate=date("Y-m-d",$date1);
 
-    list($yr,$mon,$jour) = explode("-",$mois);
+    if($mois !== null) list($yr,$mon,$jour) = explode("-",$mois); else { $yr=0; $mon=0; $jour=0; }
     $date2 = mktime(1, 1, 1, $mon+1, 1, $yr);
     $ladateap=date("Y-m-d",$date2);
 
-    list($yr,$mon,$jour) = explode("-",$mois);
+    if($mois !== null) list($yr,$mon,$jour) = explode("-",$mois); else { $yr=0; $mon=0; $jour=0; }
     $date3 = mktime(1, 1, 1, $mon, 1, $yr);
     $ladatesel=date("Y-m-d",$date3);
 
@@ -1055,7 +1055,7 @@ function listmoisclass()
     if ($run_query) {
         while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
         {
-            list($yr,$mon,$day) = explode("-",$run_result['datescore']);
+            if($run_result['datescore'] !== null) list($yr,$mon,$day) = explode("-",$run_result['datescore']); else { $yr=0; $mon=0; $day=0; }
             $date1 = mktime(1, 1, 1, $mon-1, 1, $yr);
             $valuedate=date($format,$date1);
             $titredate=tomoisfr(date($format3,$date1)).date($format2,$date1);
@@ -1084,7 +1084,7 @@ function listmoisclassequipe()
     if ($run_query) {
         while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
         {
-            list($yr,$mon,$day) = explode("-",$run_result['datescore']);
+            if($run_result['datescore'] !== null) list($yr,$mon,$day) = explode("-",$run_result['datescore']); else { $yr=0; $mon=0; $day=0; }
             $date1 = mktime(1, 1, 1, $mon-1, 1, $yr);
             $valuedate=date($format,$date1);
             $titredate=tomoisfr(date($format3,$date1)).date($format2,$date1);
@@ -1961,7 +1961,7 @@ function doforum_postmessage($sujet,$corps,$idforum,$idsujet=0,$edit=0,$idmessag
     if($idsujet==0)
     {
         $nouvsujet=true;
-        if(strlen(trim($sujet))==0)
+        if(strlen(trim((string)$sujet))==0)
             return msgtab(lang(267),lang(256)).forum_postmessage($idforum,$idsujet,0,$corps);
     } else {
         $infosujet=get_infosujet($idsujet);
