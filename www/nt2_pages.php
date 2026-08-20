@@ -554,7 +554,7 @@ function list_ordre_sens($sens)
         if(is_array($taba) && count($taba) > 0)
         {   
             $retour .= form_list_ordrefe($taba,lang(129));
-            $nbattordres = count($taba);
+            $nbattordres = is_array($taba) ? count($taba) : 0;
         }
         
         $nblimitordres = 0;
@@ -564,7 +564,7 @@ function list_ordre_sens($sens)
             if(is_array($tabb) && count($tabb) > 0)
             {
                 $retour .= form_list_ordrefe($tabb,lang(130),1);
-                $nblimitordres = count($tabb);
+                $nblimitordres = is_array($tabb) ? count($tabb) : 0;
             }
         }
         if($nbtotordres - $nbattordres - $nblimitordres > 0)
@@ -1015,7 +1015,7 @@ function classementequipes($ligncour,$moisan,$cherche="")
         $chaffiche = $cherche;
     }
 
-    list($mon, $yr) = explode("-",$moisan);
+    if($moisan !== null) { list($mon, $yr) = explode("-",$moisan); } else { $mon=0; $yr=0; }
     $date1 = mktime(1, 1, 1, $mon, 1, $yr);
     $ladate = date("Y-m-d",$date1);
 
@@ -1082,7 +1082,7 @@ function formclasse($ligncour,$moisan,$cherche="")
         $chaffiche = $cherche;
     }
 
-    list($mon, $yr) = explode("-",$moisan);
+    if($moisan !== null) { list($mon, $yr) = explode("-",$moisan); } else { $mon=0; $yr=0; }
     $date1 = mktime(1, 1, 1, $mon, 1, $yr);
     $ladate = date("Y-m-d",$date1);
 
@@ -1169,7 +1169,7 @@ function sous_formclasse($ligncour,$pos,$theliste,$cherche,$nomsgroupes)
     }
     $retour .= closeligne();
     $i = $ligncour;
-    $cnt = count($theliste);
+    $cnt = is_array($theliste) ? count($theliste) : 0;
     for($li = 0; $li < $cnt; $li++)
     {
         $value = $theliste[$li];
@@ -1247,7 +1247,7 @@ function form_messagerie($ligncour,$ouvre=0)
         $html .= barrepage($numligne,$maxligne,$ligncour)."<br>";
         foreach ($liste as $key => $value)
         {
-            $corps = str_replace(array("&quot;"),array("\""), stripslashes($value["corps"]));
+            $corps = str_replace(array("&quot;"),array("\""), stripslashes(isset($value["corps"]) ? $value["corps"] : ""));
             $html .= opentab("width=\"90%\" align=\"center\" ").openligne("","titre").opencol().lang(56).$value["pseudonyme"].closecol().opencol().lang(57).date("j/m/y H:i:s",$value["datemess"]).closecol().opencol().lang(58).$value["titre"].closecol().closeligne();
             if($ouvre == $value["idmsg"] && $value["etat"] == "non lu")
                 upd_msgetat($value["idmsg"]);
@@ -1269,7 +1269,7 @@ function form_messagerie($ligncour,$ouvre=0)
         $html .= "<br>".lang(178)." :<br><br>";
         foreach ($liste_env as $key => $value)
         {
-            $corps = str_replace(array("&quot;"),array("\""), stripslashes($value["corps"]));
+            $corps = str_replace(array("&quot;"),array("\""), stripslashes(isset($value["corps"]) ? $value["corps"] : ""));
             $html .= opentab("width=\"90%\" align=\"center\" ").openligne("","titre").opencol().lang(219).$value["pseudonyme"].closecol().opencol().lang(57).date("j/m/y H:i:s",$value["datemess"]).closecol().opencol().lang(58).$value["titre"].closecol().closeligne();
             $html .= openligne().opencol("colspan=\"3\"").bbtohtml($corps).closecol().closeligne();
             $html .= openligne().opencol("colspan=\"3\"")."<center><a href=\"index.php?do=delmessage&idmessage=".$value["idmsg"]."\" >".lang(179)."</a></center>".closecol().closeligne();
@@ -1850,7 +1850,7 @@ function newpart($titre,$contenu1="",$contenu2="",$contenu3="",$contenu4="",$con
     if($contenu7 != "") $html .= $contenu7.imgdot();
     if($contenu8 != "") $html .= $contenu8.imgdot();
     $html .= closecol().closeligne();
-    if(strlen($contenu1.$contenu2.$contenu3.$contenu4.$contenu5.$contenu6) > 0)
+    if(strlen((string)($contenu1.$contenu2.$contenu3.$contenu4.$contenu5.$contenu6)) > 0)
         return $html;
     else
         return "";
@@ -1929,7 +1929,7 @@ function formrecuppass()
 
 function formsendpass($pseudo)
 {
-    if(strlen(strchr($pseudo,"@")) == 0)
+    if(strlen((string)strchr((string)$pseudo,"@")) == 0)
     {
         $player = getinternauteinfo($pseudo);
     } else {
@@ -2015,7 +2015,7 @@ function lstAction($typeAffiche="")
     if(is_array($portef) && count($portef) > 0)
     {
         $tot = 0;
-        $cnt_portef = count($portef);
+        $cnt_portef = is_array($portef) ? count($portef) : 0;
         for($i=0; $i<$cnt_portef; $i++)
         {
             $tot += $portef[$i]["valtotsicav"] * sign(sign($portef[$i]["valtotsicav"])+1);
@@ -2352,7 +2352,7 @@ function lstposts($idsujet,$numligne,$seelast=false)
     while($lignefo = LigneSuivante($reqforums))
     {
         $html .= openligne("","").opencol("width=\"20%\" valign=\"top\"").retiftrue("<a name=\"last\"></a>",$lignefo->idmessage==$infosujet->idlastmessage)."<STRONG>".$lignefo->auteur."</STRONG><br>".retiftrue(print_reward($lignefo->medor,$lignefo->medargent,$lignefo->medbronze)."<br><a href=\"?do=viewgroupeprofil&idgroupe=$lignefo->idgroupe\"><font class=\"gain\">[$lignefo->initialgroupe]</font></a>",$lignefo->idgroupe)."<br><br>".lang(244).": $lignefo->nbpostforum"."<br>".lang(22).": ".round(floatval($lignefo->prog),2)." %".closecol().
-        opencol("valign=\"top\"")."<span class=\"gensmall\">".retiftrue("<div style=\"display: inline;float: right;\">".retiftrue(html_lien(lang(268),"do=forumpostmessage&idmessage=$lignefo->idmessage&idsujet=$lignefo->idsujet&edit=1")." ",forum_peut_editer($lignefo,$infosujet)).html_lien(lang(257),"do=forumpostmessage&idmessage=$lignefo->idmessage&idsujet=$lignefo->idsujet")."</div>",$peutposter).date("j M Y H:i a",$lignefo->datepost)."</span><hr>".bbtohtml(str_replace(array("&quot;"),array("\""), stripslashes($lignefo->contenu))).closecol().closeligne();
+        opencol("valign=\"top\"")."<span class=\"gensmall\">".retiftrue("<div style=\"display: inline;float: right;\">".retiftrue(html_lien(lang(268),"do=forumpostmessage&idmessage=$lignefo->idmessage&idsujet=$lignefo->idsujet&edit=1")." ",forum_peut_editer($lignefo,$infosujet)).html_lien(lang(257),"do=forumpostmessage&idmessage=$lignefo->idmessage&idsujet=$lignefo->idsujet")."</div>",$peutposter).date("j M Y H:i a",$lignefo->datepost)."</span><hr>".bbtohtml(str_replace(array("&quot;"),array("\""), stripslashes(isset($lignefo->contenu) ? $lignefo->contenu : ""))).closecol().closeligne();
     }
 
     $html .= closetab()."<br>$barre";

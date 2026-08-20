@@ -133,7 +133,7 @@ return $code;
 
 function dodelplayers($lst)
 {
-if(count($lst)>0)
+if(is_array($lst) && count($lst)>0)
 {
         $liste="";
 	foreach ($lst as $key => $champ)

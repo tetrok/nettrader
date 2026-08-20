@@ -21,11 +21,11 @@ $skinrep="skin/default";
 include_once ($skinrep."/include_interface.php");
 
 //$truc=cmd_downvaleur();
-if($_GET['do']=="testscript")
+if(($_GET['do'] ?? "")=="testscript")
 {
 	echo cmd_downhisto();
 }
-elseif($_GET['do']=="executeorder" && date("U")<FINCONC)
+elseif(($_GET['do'] ?? "")=="executeorder" && date("U")<FINCONC)
 {
  	global $internaute;
         $internaute->idcompte=1;
@@ -36,7 +36,7 @@ elseif($_GET['do']=="executeorder" && date("U")<FINCONC)
 	majclassement();
 	checkoutdated();
 }
-elseif($_GET['do']=="checkscore" && date("U")<FINCONC)
+elseif(($_GET['do'] ?? "")=="checkscore" && date("U")<FINCONC)
 {
  	global $internaute;
         $internaute->idcompte=1;
@@ -44,7 +44,7 @@ elseif($_GET['do']=="checkscore" && date("U")<FINCONC)
 	if(tempsjeu())
             checkscore();
 }
-elseif($_GET['do']=="webupdate" && date("U")<FINCONC)
+elseif(($_GET['do'] ?? "")=="webupdate" && date("U")<FINCONC)
 {
  	global $internaute;
         $internaute->idcompte=1;
@@ -59,7 +59,7 @@ elseif($_GET['do']=="webupdate" && date("U")<FINCONC)
 	majclassement();
 	checkoutdated();
 }
-elseif($_GET['do']=="localwebupdate" )
+elseif(($_GET['do'] ?? "")=="localwebupdate" )
 {
 		echo cmd_downvaleur(); //refresh des valeurs de tous les joueurs
 }

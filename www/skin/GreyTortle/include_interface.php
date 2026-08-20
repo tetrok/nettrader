@@ -271,7 +271,7 @@ foreach ($liste as $key => $value)
 		{
 			//$retour.=$head."<a href=".$value["link_menu"]."><b>".lang($value["text_id"])."</b></a>".$footer;
 			//if($value["text_id"]==intval($idpic))
-			if((!(strpos($value["alldo"],"|".$do."|"  ) === false) AND $do<>"") or $do==$value["do"])
+			if((!(strpos((string)$value["alldo"],"|".$do."|"  ) === false) AND $do<>"") or $do==$value["do"])
 			{
 				//$retour.=$head."<img src=\"$skinrep/men".$value["idmenu"].".jpg\" border=\"\" >".$footer;
 				$retour.=$head."<a href=".$value["link_menu"]."><img src=\"$skinrep/men".$value["text_id"].".jpg\" title=\"".lang($value["text_id"])."\" border=\"\" ></a>".$footer;

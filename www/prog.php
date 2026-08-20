@@ -21,9 +21,9 @@ $explorer=0;
 $explorer=&intval($_GET['explorer']);
 $internaute="";
 $do="";
-$do=&$_GET['do'];
+$do=($_GET['do'] ?? "");
 $sess="";
-$sess=&$_GET['sess'];
+$sess=($_GET['sess'] ?? "");
 
 if($do<>"login")
 {
@@ -32,13 +32,13 @@ if($do<>"login")
 		$mess= ControleProgAcces(sec($sess));
 	}
 }else{
-	$mess= proglogin($_GET['pseudo'],$_GET['pass']);
+	$mess= proglogin(($_GET['pseudo'] ?? ""),($_GET['pass'] ?? ""));
 }
 echo "<xml><flux>".$mess;
 switch($do) //sans etre logg�
 {
 	case "infomsg": //message d'info
-                echo proginfomess(sec($_GET['progver']),sec($_GET['progtyp']));
+                echo proginfomess(sec(($_GET['progver'] ?? "")),sec(($_GET['progtyp'] ?? "")));
 		break;
 }
 
@@ -63,25 +63,25 @@ if($internaute->authlevel>=1)
 			echo progactionslist();
 			break;
 		case "sendachatvente":
-			echo "<messageordre>".creer_ordre(sec($_GET['sens']),sec($_GET['codesicav']),sec(intval($_GET['nbr'])),sec($_GET['valmin']),sec($_GET['valmax']),sec($_GET['tempsmin']),sec($_GET['select']),sec($_GET['ansval']),sec($_GET['seuil']),sec($_GET['nb2']))."</messageordre>";
+			echo "<messageordre>".creer_ordre(sec(($_GET['sens'] ?? "")),sec(($_GET['codesicav'] ?? "")),sec(intval(($_GET['nbr'] ?? ""))),sec(($_GET['valmin'] ?? "")),sec(($_GET['valmax'] ?? "")),sec(($_GET['tempsmin'] ?? "")),sec(($_GET['select'] ?? "")),sec(($_GET['ansval'] ?? "")),sec(($_GET['seuil'] ?? "")),sec(($_GET['nb2'] ?? "")))."</messageordre>";
 			break;
 		case "getachatmax":
-			echo progachatmax(sec($_GET['codesico']));
+			echo progachatmax(sec(($_GET['codesico'] ?? "")));
 			break;
 		case "getventemax":
-			echo progventemax(sec($_GET['codesico']));
+			echo progventemax(sec(($_GET['codesico'] ?? "")));
 			break;
 		case "lsthisto":
-			echo proglsthisto(sec($_GET['depuis']));
+			echo proglsthisto(sec(($_GET['depuis'] ?? "")));
 			break;
 		case "supprordre":
-			echo "<messagesuppr>".supprordre(get_FromFormatedTime(sec($_GET['idordre'])))."</messagesuppr>";
+			echo "<messagesuppr>".supprordre(get_FromFormatedTime(sec(($_GET['idordre'] ?? ""))))."</messagesuppr>";
 			break;
 		case "getlienprofilaction":
-			echo "<urlaide>".geturlaide(getyahooname(sec($_GET['codesico'])))."</urlaide>";
+			echo "<urlaide>".geturlaide(getyahooname(sec(($_GET['codesico'] ?? ""))))."</urlaide>";
 			break;
 		case "getinfoaction":     //retourne un maximum d'information sur une action
-			echo progallinfo(sec($_GET['codesico']));
+			echo progallinfo(sec(($_GET['codesico'] ?? "")));
 			break;
 		//todo getscoreplayerhisto retourne l'historique de la valeur du portefeuille
 	}

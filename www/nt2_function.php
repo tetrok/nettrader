@@ -86,7 +86,7 @@ function traiteeuronextcsv($lines)
         }
     }
 
-    $cnt = count($lines);
+    $cnt = is_array($lines) ? count($lines) : 0;
     for ($i = 0; $i < $cnt; $i++)
     {
         $line_clean = preg_replace($patterns, $replacements, $lines[$i]);
@@ -128,7 +128,7 @@ function traiteeuronextcsv($lines)
             }
         }
     }
-    return count($lines)." téléchargés, $update mis à jour et $insert ajoutées";
+    return (is_array($lines) ? count($lines) : 0)." téléchargés, $update mis à jour et $insert ajoutées";
 }
 
 function traiteyahoocsv($lines)
@@ -157,7 +157,7 @@ function traiteyahoocsv($lines)
         }
     }
 
-    $cnt = count($lines);
+    $cnt = is_array($lines) ? count($lines) : 0;
     for ($i = 0; $i < $cnt; $i++)
     {
         $line_clean = preg_replace($patterns, $replacements, $lines[$i]);
@@ -165,7 +165,7 @@ function traiteyahoocsv($lines)
         {
             $code = $regs[1].".".$regs[2];
             $nom = $regs[3];
-            $valeur = str_replace(",", ".", $regs[4]);
+            $valeur = str_replace(",", ".", $regs[4] ?? '');
             $heure = $regs[5];
             $minute = $regs[6];
             $jour = $regs[7];
@@ -198,7 +198,7 @@ function traiteyahoocsv($lines)
             }
         }
     }
-    return count($lines)." téléchargés, $update mis à jour et $insert ajoutées";
+    return (is_array($lines) ? count($lines) : 0)." téléchargés, $update mis à jour et $insert ajoutées";
 }
 
 function traitehtmlsicav($lines,$sico = 0)
@@ -217,14 +217,14 @@ function traitehtmlsicav($lines,$sico = 0)
     list($chour, $cmin, $csec, $cday, $cmon, $cyr) = explode(" ",date("H i s d m y"));
 
     $source = [];
-    $cnt = count($lines);
+    $cnt = is_array($lines) ? count($lines) : 0;
     for ($i = 0; $i < $cnt; $i++)
     {
         $line_clean = preg_replace($patterns, $replacements, $lines[$i]);
         if (preg_match("#([^.]*)\.([A-Z]{2}),([^,]*),([^,]*),([^0-9]*)([0-9]{1,2}):([0-9]{1,2})([A-Z]{2})#", $line_clean, $regs))
         {
             $sourcecode = $regs[1].".".$regs[2];
-            $valeur = str_replace(",", ".", $regs[4]);
+            $valeur = str_replace(",", ".", $regs[4] ?? '');
             $heure = $regs[6] + 6;
             $minute = $regs[7];
             if($regs[8] == "PM")
@@ -324,17 +324,17 @@ function ansgetvaleur($sico,$nouv=0)
     $NomSico = "";
     $valsicav = "";
     $UnixStampTime = 0;
-    $cnt = count($lines);
+    $cnt = is_array($lines) ? count($lines) : 0;
     for ($i = 0; $i < $cnt; $i++)
     {
-        if(strpos($lines[$i], 'name=') !== false)
+        if(strpos((string)$lines[$i], 'name=') !== false)
         {
             if (preg_match("/name=(.*)/", $lines[$i], $regs))
             {
                 $NomSico = sec($regs[1]);
             }
         }
-        if(strpos($lines[$i], 'title') !== false)
+        if(strpos((string)$lines[$i], 'title') !== false)
         {
             if (preg_match("/title=([0-9]{1,2})\/([0-9]{1,2})\/([0-9]{4})/", $lines[$i], $regs))
             {
@@ -343,9 +343,9 @@ function ansgetvaleur($sico,$nouv=0)
                 $day = $regs[1];
             }
         }
-        if(strpos($lines[$i], 'EndData') !== false && isset($lines[$i-1]))
+        if(strpos((string)$lines[$i], 'EndData') !== false && isset($lines[$i-1]))
         {
-            $exploded_ligne = explode(" ", $lines[$i-1]);
+            $exploded_ligne = ($lines[$i-1] !== null) ? explode(" ", $lines[$i-1]) : array();
             $valsicav = isset($exploded_ligne[1]) ? $exploded_ligne[1] : 0;
             if (isset($exploded_ligne[0]) && preg_match("/([0-9]{2})([0-9]{2})([0-9]{2})/", $exploded_ligne[0], $regs))
             {
@@ -377,7 +377,7 @@ function ansgetvaleur($sico,$nouv=0)
 function leading_zero($aNumber, $intPart, $floatPart=NULL, $dec_point=NULL, $thousands_sep=NULL) 
 {
     $formattedNumber = $aNumber;
-    if (!is_null($floatPart)) {
+    if (!$floatPart === null) {
         $formattedNumber = number_format($formattedNumber, $floatPart, $dec_point, $thousands_sep);
     }
     $len = strlen(strval(floor(floatval($formattedNumber))));
@@ -763,12 +763,12 @@ function cmd_downvaleur()
 function cmd_nodownvaleur($donnes)
 {
     sauveipadress($_SERVER['REMOTE_ADDR']);
-    $lines = explode("\r\n", $donnes);
+    $lines = ($donnes !== null) ? explode("\r\n", $donnes) : array();
     $sublines = [];
-    $cnt = count($lines);
+    $cnt = is_array($lines) ? count($lines) : 0;
     for($i = 0; $i <= $cnt-1; $i++)
     {
-        if (strpos($lines[$i], ',') !== false)
+        if (strpos((string)$lines[$i], ',') !== false)
         {
             $sublines[] = $lines[$i];
         }
@@ -779,16 +779,16 @@ function cmd_nodownvaleur($donnes)
 
 function cmd_setvaleur($codesico,$valeur,$ladate,$lheure)
 {
-    $sico_list = explode('|', $codesico);
-    $valeur_list = explode('|', $valeur);
-    $date_list = explode('|', $ladate);
-    $heure_list = explode('|', $lheure);
-    if(count($sico_list) != count($valeur_list) || count($valeur_list) != count($date_list) || count($date_list) != count($heure_list))
+    $sico_list = ($codesico !== null) ? explode('|', (string)$codesico) : array();
+    $valeur_list = ($valeur !== null) ? explode('|', (string)$valeur) : array();
+    $date_list = ($ladate !== null) ? explode('|', (string)$ladate) : array();
+    $heure_list = ($lheure !== null) ? explode('|', (string)$lheure) : array();
+    if(!is_array($sico_list) || !is_array($valeur_list) || count($sico_list) != count($valeur_list) || count($valeur_list) != count($date_list) || count($date_list) != count($heure_list))
     {
         return "OK Nombre d'element incompatible|120";
     }
     $return = "";
-    $cnt = count($sico_list);
+    $cnt = is_array($sico_list) ? count($sico_list) : 0;
     for ($i = 0; $i < $cnt; $i++)
     {
         $ladate = $date_list[$i];
@@ -890,7 +890,7 @@ function couleurfonctionclasse($tab)
 {
     $tabs = [];
     if(!is_array($tab)) return $tabs;
-    $nb = count($tab);
+    $nb = is_array($tab) ? count($tab) : 0;
     asort($tab);
     $c = 1;
     foreach($tab as $k => $v)
@@ -1127,7 +1127,7 @@ function bbtohtml($text)
         "<img src=\"$skinrep/smiles/icon_neutral.gif\" title=\"Neutral\" border=\"0\">",
         "<img src=\"$skinrep/smiles/icon_mrgreen.gif\" title=\"Mr. Green\" border=\"0\">"
     ];
-    $newtext = str_replace($bbcode, $htmlcode, $text);
+    $newtext = str_replace($bbcode, $htmlcode, $text ?? '');
     return nl2br($newtext);
 }
 

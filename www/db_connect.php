@@ -23,8 +23,8 @@ function sec($input="")
             $quoted = $connexion->quote($input);
         }
 
-        if (strlen($quoted) >= 2 && substr($quoted, 0, 1) === "'" && substr($quoted, -1) === "'") {
-            $escaped = substr($quoted, 1, -1);
+        if (strlen((string)$quoted) >= 2 && substr((string)$quoted, 0, 1) === "'" && substr((string)$quoted, -1) === "'") {
+            $escaped = substr((string)$quoted, 1, -1);
         } else {
             $escaped = $quoted;
         }
@@ -55,8 +55,8 @@ function cookievalide($idSession)
 {
     if (isset($_COOKIE["nettrader2session"])) {
         $chainecookie = $_COOKIE["nettrader2session"];
-        $exploded_ligne = explode("-", $chainecookie);
-        if (count($exploded_ligne) < 2) return 0;
+        $exploded_ligne = ($chainecookie !== null) ? explode("-", $chainecookie) : array();
+        if (!is_array($exploded_ligne) || count($exploded_ligne) < 2) return 0;
         
         $idcompte = $exploded_ligne[0];
         $chainemd5 = $exploded_ligne[1];
