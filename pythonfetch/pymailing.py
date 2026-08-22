@@ -27,16 +27,16 @@ def f_sendmail(emailfrom,pseudofrom,emailto,pseudoto,titre,corps):
     if C_SENDMAILFORREAL:
         
         p = os.popen("%s -t" % SENDMAIL, "w")
-	p.write("From: "+pseudofrom+" <"+emailfrom+">\n")
+        p.write("From: "+pseudofrom+" <"+emailfrom+">\n")
         p.write("Reply-To: "+pseudofrom+" <"+emailfrom+">\n")
         p.write("To: "+emailto+"\n")
         p.write("Subject: "+titre+"\n")
-	p.write("Content-Type: text/plain; charset=UTF-8; format=flowed\n")
-        p.write("Content-Transfer-Encoding: 8bit\n")	
+        p.write("Content-Type: text/plain; charset=UTF-8; format=flowed\n")
+        p.write("Content-Transfer-Encoding: 8bit\n")
         p.write("\n")
         p.write(corps)
         p.close()
-	return True
+        return True
     else:
         print("From: "+pseudofrom+" <"+emailfrom+">\n") 
         print("Reply-To: "+pseudofrom+" <"+emailfrom+">\n")
@@ -54,7 +54,7 @@ col={"idmail" : 0 , "from_mail" : 1, "from_pseudo" : 2, "to_mail" : 3 , "to_pseu
 db = MySQLdb.connect(host=C_HOST, user=C_USER, passwd=C_PWD, db=C_DBNAME)
 while 1:
     cursor = db.cursor()
-    db.query("UPDATE mail_tosend SET etat='traitement' WHERE etat='attente' and dateenvoi<UNIX_TIMESTAMP()")
+    cursor.execute("UPDATE mail_tosend SET etat='traitement' WHERE etat='attente' and dateenvoi<UNIX_TIMESTAMP()")
     db.commit()
     cursor.execute("SELECT `idmail` , `from_mail` , `from_pseudo` , `to_mail` , `to_pseudo` , `titre` , `corps` , `etat`  FROM mail_tosend where etat='traitement'") 
     numrows = int(cursor.rowcount)
@@ -64,19 +64,19 @@ while 1:
         started=1
         row = cursor.fetchone()
         #On traite l'envoie de l'email
-	if not f_sendmail(sec(row[col["from_mail"]]),sec(row[col["from_pseudo"]]),sec(row[col["to_mail"]]),sec(row[col["to_pseudo"]]),row[col["titre"]],row[col["corps"]]):
-            db.query("UPDATE mail_tosend SET etat='erreur' WHERE idmail='"+str(row[col["idmail"]])+"'")
+        if not f_sendmail(sec(row[col["from_mail"]]),sec(row[col["from_pseudo"]]),sec(row[col["to_mail"]]),sec(row[col["to_pseudo"]]),row[col["titre"]],row[col["corps"]]):
+            cursor.execute("UPDATE mail_tosend SET etat='erreur' WHERE idmail='"+str(row[col["idmail"]])+"'")
         else:       
-            db.query("UPDATE mail_tosend SET etat='traite' WHERE idmail='"+str(row[col["idmail"]])+"'")
+            cursor.execute("UPDATE mail_tosend SET etat='traite' WHERE idmail='"+str(row[col["idmail"]])+"'")
             mailsendwithouterror+=1
         db.commit()
         time.sleep(TIME_BETWEENMAIL)
-    cursor.close()
     if started:
-        db.query("DELETE FROM mail_tosend WHERE etat='traite'")
+        cursor.execute("DELETE FROM mail_tosend WHERE etat='traite'")
         db.commit()
         messInfo=str(mailsendwithouterror)+" emails envoye avec succes, "+str(numrows-mailsendwithouterror)+" mails en erreur."
-	f_sendmail("statsweek@nettrader.fr","admin","statsweek@nettrader.fr","admin","mails envoy�s",messInfo)
+        f_sendmail("statsweek@nettrader.fr","admin","statsweek@nettrader.fr","admin","mails envoyes",messInfo)
+    cursor.close()
     #check stats semaine
     if time.localtime()[3]==18 and time.strftime("%w")=='5':
         cursor = db.cursor()
@@ -88,8 +88,8 @@ while 1:
         lastsend=getValue(ligne,"valeur")
         ilastsend=int(lastsend)
         if lastsend!="" and ilastsend<time.time()-(6*24*3600):
-            print "Debut creation des enregistrements"
-            db.query("UPDATE conf SET valeur=UNIX_TIMESTAMP() WHERE libel='lastenvoiemailhebdo'")
+            print("Debut creation des enregistrements")
+            cursor.execute("UPDATE conf SET valeur=UNIX_TIMESTAMP() WHERE libel='lastenvoiemailhebdo'")
             db.commit()
             statsengine=Stats_Weekly(db)
             cursor.execute("SELECT idcompte,pseudonyme,email FROM compte WHERE mailweekly='1' ORDER BY idcompte")
@@ -109,13 +109,13 @@ while 1:
                     VALUES ( '', '%s' , '%s', 'Administrateur', '%s', '%s\
                              ', '%s', '%s', 'attente')"\
                              % (str(dateunix_sendmail),FROMMAILWEEK,getValue(ligne,"email"),convtomysl(getValue(ligne,"pseudonyme")),convtomysl(getValue(ligne,"pseudonyme"))+", vos statistiques de la semaine",convtomysl(bodymail.encode("latin1")))
-                    db.query(sql)
+                    cursor.execute(sql)
                     nbmailprepare+=1
                 except:
                     nbmailprepareerr+=1
                 row = cursor.fetchone()
             db.commit()
-            print str(nbmailprepare)+" mail prepare en % secondes et %s en erreur" % (time.time()-debcreation,str(nbmailprepareerr))
+            print(str(nbmailprepare)+" mail prepare en %s secondes et %s en erreur" % (str(time.time()-debcreation),str(nbmailprepareerr)))
             del statsengine
         cursor.close()
     #check stats jour
@@ -129,8 +129,8 @@ while 1:
         lastsend=getValue(ligne,"valeur")
         ilastsend=int(lastsend)
         if lastsend!="" and ilastsend<time.time()-(12*3600):
-            print "Debut creation des enregistrements"
-            db.query("UPDATE conf SET valeur=UNIX_TIMESTAMP() WHERE libel='lastenvoiemailquotidien'")
+            print("Debut creation des enregistrements")
+            cursor.execute("UPDATE conf SET valeur=UNIX_TIMESTAMP() WHERE libel='lastenvoiemailquotidien'")
             db.commit()
             statsengine=Stats_Daily(db)
             cursor.execute("SELECT idcompte,pseudonyme,email FROM compte WHERE maildaily='1' ORDER BY idcompte")
@@ -147,13 +147,13 @@ while 1:
                     VALUES ( '', UNIX_TIMESTAMP( ) , '%s', 'Administrateur', '%s', '%s\
                              ', '%s', '%s', 'attente')"\
                              % (FROMMAILWEEK,getValue(ligne,"email"),convtomysl(getValue(ligne,"pseudonyme")),convtomysl(getValue(ligne,"pseudonyme"))+", vos statistiques de la journee",convtomysl(bodymail.encode("latin1")))
-                    db.query(sql)
+                    cursor.execute(sql)
                     nbmailprepare+=1
                 except:
                     nbmailprepareerr+=1
                 row = cursor.fetchone()
             db.commit()
-            print str(nbmailprepare)+" mail prepare en % secondes et %s en erreur" % (time.time()-debcreation,str(nbmailprepareerr))
+            print(str(nbmailprepare)+" mail prepare en %s secondes et %s en erreur" % (str(time.time()-debcreation),str(nbmailprepareerr)))
             del statsengine
         cursor.close()
     time.sleep(C_CHECKTIME)        
