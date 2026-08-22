@@ -1,5 +1,7 @@
 FROM python:3.9-slim
 
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
 # Install system dependencies if required (e.g. for some pip packages)
