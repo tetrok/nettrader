@@ -12,6 +12,9 @@ import time
 import re
 import urllib.request as urllib
 import yfinance as yf
+import pandas as pd
+import contextlib
+import io
 
 import traceback
 from pyconst import *
@@ -79,8 +82,13 @@ def DownloadParisMarkedData(db):
         tickers = " ".join(batch)
         
         try:
-            # Download using yfinance
-            data = yf.download(tickers, group_by="ticker", period="1d", threads=False)
+            # Download using yfinance while suppressing its stdout and stderr
+            f = io.StringIO()
+            with contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
+                data = yf.download(tickers, group_by="ticker", period="1d", threads=False, progress=False)
+
+            success_count = 0
+            error_count = 0
             
             for yname in batch:
                 try:
@@ -89,17 +97,17 @@ def DownloadParisMarkedData(db):
                     else:
                         ticker_data = data[yname] if yname in data else None
                         
-                    if ticker_data is None or ticker_data.empty:
-                        DisableAction(db, yname)
+                    if ticker_data is None or ticker_data.empty or 'Close' not in ticker_data or pd.isna(ticker_data['Close'].iloc[-1]):
+                        print("[ERREUR] %s: Aucune donnée trouvée ou action potentiellement délistée." % yname)
+                        error_count += 1
                         continue
                         
                     cours = ticker_data['Close'].iloc[-1]
-                    
-                    if str(cours) == "nan":
-                         DisableAction(db, yname)
-                         continue
-                         
                     fval = float(cours)
+
+                    print("[SUCCÈS] %s: Données récupérées (valeur = %.4f)" % (yname, fval))
+                    success_count += 1
+
                     aujourdhui = time.time()
                     
                     if yname in action_dict:
@@ -114,7 +122,9 @@ def DownloadParisMarkedData(db):
                             DisableAction(db, yname)
                             mail_error_text += "L'action %s a change de 25%% entre deux maj. Elle a ete desactivee.\n" % (yname)
                 except Exception as e:
+                    error_count += 1
                     mail_error_text += "Erreur de traitement pour %s: %s\n" % (yname, str(e))
+            print(f"Batch termine : {success_count} succes, {error_count} echecs.")
         except Exception as e:
             mail_error_text += "Erreur de telechargement du batch: %s\n" % (str(e))
             
