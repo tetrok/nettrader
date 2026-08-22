@@ -6,13 +6,11 @@
 # @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
 # @author Nicolas Fortin <nfortin@nettrader.fr>
 import os
-import MySQLdb
+import pymysql
 import time
 from pyconst import *
-import md5
+import hashlib
 SIZETAB=8
-CAPDEB="10000"
-URLINDEX="http://www.nettrader.fr/"
 
 def getRowDict(rowData,desc):
     dicodata={}
@@ -124,19 +122,15 @@ class Stats_Daily:
             footer=u"Vous pouvez vous connecter au jeu a l'adresse suivante :\n%s\n\n" % (URLINDEX+"?do=frmlogin")
             #Verification si le joueur a des actions perimes
             cursor.execute("SELECT * FROM warn_old_sicav WHERE idcompte='"+str(idcompte)+"'")
-            row = cursor.fetchone()
+            rows = cursor.fetchall()
             desc=cursor.description
-            if row!=None:
+            if len(rows) > 0:
                 footer+=u"\n Certaines des actions que vous avez en portefeuille ne sont plus mis a jour, pour vous en separer au prix d'achat et sans frais cliquez sur les liens suivant :\n"
-                while row!=None:
+                for row in rows:
                     ligne=getRowDict(row,desc)
                     footer+=getValue(ligne,"link")+"\n"
-                    row = cursor.fetchone()
                     
-
-
-            
-            footer+=u"Cliquez ici pour desactiver les mails journalier :\n%s" % (URLINDEX+"?do=unabledailystats&idcompte="+str(idcompte)+"&checkstr="+md5.new(str(idcompte)+str(getValue(joueur,"dateinscr"))).hexdigest())
+            footer+=u"Cliquez ici pour desactiver les mails journalier :\n%s" % (URLINDEX+"?do=unabledailystats&idcompte="+str(idcompte)+"&checkstr="+hashlib.md5((str(idcompte)+str(getValue(joueur,"dateinscr"))).encode("utf-8")).hexdigest())
             body =\
 u"Bonjour %s\n\
 Voici les statistiques du %s :\n\n\
@@ -159,7 +153,7 @@ Vous avez %s nouveau(x) messages.\n\
 %s\n\
 \n\
 " \
-% (joueur["pseudonyme"].decode("latin1"),today,todayprog,todayhisto,todayincome,monthrank,todayrank,todaybestplayer.decode("latin1"),newmsg,footer) 
+% (joueur["pseudonyme"],today,todayprog,todayhisto,todayincome,monthrank,todayrank,todaybestplayer,newmsg,footer) 
             return body
 
             
@@ -254,34 +248,29 @@ class Stats_Weekly:
             `scores` WHERE `idcompte`='"+str(idcompte)+"' and \
             `datescore`>=FROM_UNIXTIME( UNIX_TIMESTAMP( )-(3*24*3600), '%Y-%m-%d' ) ORDER BY datescore ASC")
             desc=cursor.description
-            row = cursor.fetchone()
+            rows = cursor.fetchall()
             histoscore="Date"+chr(9)+chr(9)+"Capital\n"
-            while row!=None:
+            for row in rows:
                 ligne=getRowDict(row,desc)
                 thisday=getValue(ligne,"datescore")
                 histoscore+=getValue(ligne,"datescore")+chr(9)+getValue(ligne,"capitalscores")+" \n"
-                row = cursor.fetchone()
             cursor.execute("SELECT capital FROM statsclassement WHERE idcompte='"+str(idcompte)+"';")
             progj=getRowDict(cursor.fetchone(),cursor.description)
             histoscore+=todayother+chr(9)+getValue(progj,"capital")+" \n"
             #footer
             footer=u"Vous pouvez vous connecter au jeu a l'adresse suivante :\n%s\n\n" % (URLINDEX+"?do=frmlogin")
-            footer+=u"Si vous avez oublie votre mot de passe rendez-vous a l'adresse suivante (email a saisir:%s) :\n%s\n\n" % (getValue(joueur,"email").decode("latin1"),URLINDEX+"?do=formrecuppass")
+            footer+=u"Si vous avez oublie votre mot de passe rendez-vous a l'adresse suivante (email a saisir:%s) :\n%s\n\n" % (getValue(joueur,"email"),URLINDEX+"?do=formrecuppass")
             #Verification si le joueur a des actions perimes
             cursor.execute("SELECT * FROM warn_old_sicav WHERE idcompte='"+str(idcompte)+"'")
-            row = cursor.fetchone()
+            rows = cursor.fetchall()
             desc=cursor.description
-            if row!=None:
+            if len(rows) > 0:
                 footer+=u"\n Certaines des actions que vous avez en portefeuille ne sont plus mis a jour, pour vous en separer au prix d'achat et sans frais cliquez sur les liens suivant :\n"
-                while row!=None:
+                for row in rows:
                     ligne=getRowDict(row,desc)
                     footer+=getValue(ligne,"link")+"\n"
-                    row = cursor.fetchone()
                     
-
-
-            
-            footer+=u"Si vous desirez ne plus recevoir vos statistiques,cliquez ici pour vous desinscrire des mails hebdomadaire :\n%s" % (URLINDEX+"?do=unableweeklystats&idcompte="+str(idcompte)+"&checkstr="+md5.new(str(idcompte)+str(getValue(joueur,"dateinscr"))).hexdigest())
+            footer+=u"Si vous desirez ne plus recevoir vos statistiques,cliquez ici pour vous desinscrire des mails hebdomadaire :\n%s" % (URLINDEX+"?do=unableweeklystats&idcompte="+str(idcompte)+"&checkstr="+hashlib.md5((str(idcompte)+str(getValue(joueur,"dateinscr"))).encode("utf-8")).hexdigest())
             body =\
 u"Bonjour %s\n\
 Voici les statistiques du %s au %s :\n\n\
@@ -302,13 +291,13 @@ Si les informations dans ce mail ne s'affichent pas correctement c'est que vous 
 %s\n\
 \n\
 " \
-% (joueur["pseudonyme"].decode("latin1"),sinceoneweek,today,todayprog,weekincome,monthrank,weekrank,weekbestplayer.decode("latin1"),histoscore,footer) 
+% (joueur["pseudonyme"],sinceoneweek,today,todayprog,weekincome,monthrank,weekrank,weekbestplayer,histoscore,footer) 
             return body
 """
-db = MySQLdb.connect(host=C_HOST, user=C_USER, passwd=C_PWD, db=C_DBNAME)
+db = pymysql.connect(host=C_HOST, user=C_USER, passwd=C_PWD, db=C_DBNAME)
 
 statsengine=Stats_Daily(db)
-print statsengine.createstatsforuser(1991)
+print(statsengine.createstatsforuser(1991))
 
 """
 

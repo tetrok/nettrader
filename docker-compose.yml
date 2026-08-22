@@ -25,6 +25,40 @@ services:
       - db
       - mailpit
     restart: unless-stopped
+    
+  python-fetcher:
+    build: ./pythonfetch
+    command: python3 pynt2markdown.py
+    environment:
+      DB_HOST: db
+      DB_NAME: nettrader
+      DB_USER: nettrader_user
+      DB_PASSWORD: nettrader_password
+      CAPDEB: "10000"
+      URLINDEX: "http://app/"
+    depends_on:
+      - db
+      - app
+    restart: unless-stopped
+    
+  python-mailer:
+    build: ./pythonfetch
+    command: python3 pymailing.py
+    environment:
+      DB_HOST: db
+      DB_NAME: nettrader
+      DB_USER: nettrader_user
+      DB_PASSWORD: nettrader_password
+      CAPDEB: "10000"
+      URLINDEX: "http://app/"
+      MAIL_HOST: mailpit
+      MAIL_PORT: "1025"
+      SENDMAIL_FOR_REAL: "1"
+    depends_on:
+      - db
+      - mailpit
+    restart: unless-stopped
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     ports:
@@ -36,6 +70,7 @@ services:
     depends_on:
       - db
     restart: unless-stopped
+    
   mailpit:
     image: axllent/mailpit:latest
     container_name: mailpit
