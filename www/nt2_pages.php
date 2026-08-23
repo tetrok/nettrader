@@ -1,4 +1,103 @@
 <?php
+
+/**
+ * Fichier: nt2_pages.php
+ * Ce fichier contient les fonctions suivantes :
+ * - inclskr
+ * - achatvente
+ * - formlistaction
+ * - dovente
+ * - inscrjeu
+ * - jscript_av
+ * - SetValeur
+ * - ChgQuant
+ * - sela_click1
+ * - sela_click2
+ * - selv_click1
+ * - selv_click2
+ * - doachat
+ * - get_nextrefresh
+ * - execute_ordre
+ * - tab_mess_ordre
+ * - form_list_ordre
+ * - list_ordre_sens
+ * - form_list_ordrefe
+ * - htm_iconhelp
+ * - htm_iconinfo
+ * - profilaction
+ * - txt_help
+ * - txt_faq
+ * - supprtoutordre
+ * - supprordre
+ * - jscript_ordre
+ * - confirmLink
+ * - jscript_inscr
+ * - test
+ * - verif_email
+ * - jscript_groupe
+ * - test
+ * - back_link
+ * - chgmdp
+ * - editprofil
+ * - jscript_profil
+ * - test
+ * - jscript_profil2
+ * - test
+ * - classementequipes
+ * - formclasse
+ * - sous_formclasse
+ * - formhisto
+ * - form_messagerie
+ * - form_nouvmessage
+ * - sendmessage
+ * - txt_accueil
+ * - txt_regl
+ * - forminscription
+ * - formprofil
+ * - connectstat
+ * - formcontact
+ * - formachat
+ * - formvente
+ * - form_news
+ * - pgaccueil
+ * - newpart
+ * - menu
+ * - txtfuncjour
+ * - imgdot
+ * - formrecuppass
+ * - formsendpass
+ * - dosendpass
+ * - frmrazjoueur
+ * - doraz
+ * - lstAction
+ * - frminvitejoueur
+ * - frmgroupeaction
+ * - frmexclurejoueur
+ * - frmmodifajgroupe
+ * - frmquittegroupe
+ * - doquittegroupe
+ * - doexcluregroupe
+ * - tabgroupeprofil
+ * - lstforums
+ * - lstsujets
+ * - lstposts
+ * - javaforum
+ * - helpline
+ * - getarraysize
+ * - arraypush
+ * - arraypop
+ * - checkForm
+ * - emoticon
+ * - bbfontstyle
+ * - bbstyle
+ * - storeCaret
+ * - forum_postmessage
+ * - formchgmdp
+ * - disabledaily
+ * - disableweekly
+ * - junkoldsicav
+ */
+
 /**
 * NetTrader 2
 *
@@ -19,6 +118,11 @@ function inclskr()
     return "";
 }
 
+/**
+ * Fonction achatvente
+ * @param mixed $sicavselecta
+ * @param mixed $sicavselectv
+ */
 function achatvente($sicavselecta,$sicavselectv)
 {
     global $internaute;
@@ -41,6 +145,10 @@ function achatvente($sicavselecta,$sicavselectv)
     return $return;
 }
 
+/**
+ * Fonction formlistaction
+ * @param mixed $liste
+ */
 function formlistaction($liste)
 {
     global $internaute,$skinrep;
@@ -159,6 +267,13 @@ function formlistaction($liste)
     return $echo;
 }
 
+/**
+ * Fonction dovente
+ * @param mixed $idcompte
+ * @param mixed $sicav
+ * @param mixed $nombre
+ * @param mixed $dernvaleur
+ */
 function dovente($idcompte,$sicav,$nombre,$dernvaleur)
 {
     $sicav = sec($sicav);
@@ -222,6 +337,21 @@ function dovente($idcompte,$sicav,$nombre,$dernvaleur)
     return "OK";
 }
 
+/**
+ * Fonction inscrjeu
+ * @param mixed $pseudo
+ * @param mixed $nom
+ * @param mixed $prenom
+ * @param mixed $adresse
+ * @param mixed $cp
+ * @param mixed $ville
+ * @param mixed $tel
+ * @param mixed $mail
+ * @param mixed $etab
+ * @param mixed $niveau
+ * @param mixed $mailsemaine
+ * @param mixed $mailjour
+ */
 function inscrjeu($pseudo, $nom, $prenom, $adresse, $cp, $ville, $tel, $mail, $etab, $niveau, $mailsemaine, $mailjour)
 {
     if (defined('FINCONC') && date("U") >= FINCONC) {
@@ -315,9 +445,17 @@ L'auteur, FORTIN Nicolas
     return "<br><br>Vous êtes inscrit ! Votre mot de passe temporaire généré est : <b>$passe</b> (un récapitulatif a été envoyé par email).";
 }
 
+/**
+ * Fonction jscript_av
+ * @param mixed $nombre
+ */
 function jscript_av($nombre)
 {
     return "<script language=\"Javascript\">
+          /**
+           * Fonction SetValeur
+           * @param mixed pourcent
+           */
           function SetValeur(pourcent) {
           var nbr;
               if(pourcent>0 && pourcent<=100)
@@ -328,25 +466,40 @@ function jscript_av($nombre)
           document.form.select[1].checked=true;
               }
           }
+          /**
+           * Fonction ChgQuant
+           */
           function ChgQuant()
           {
             document.form.select[0].checked=true;
           }
+          /**
+           * Fonction sela_click1
+           */
           function sela_click1()
           {
             document.form.valmax.style.visibility=\"hidden\";
             document.form.valmin.style.visibility=\"hidden\";
           }
+          /**
+           * Fonction sela_click2
+           */
           function sela_click2()
           {  
             document.form.valmax.style.visibility=\"visible\";
             document.form.valmin.style.visibility=\"visible\";
           }
+          /**
+           * Fonction selv_click1
+           */
           function selv_click1()
           {
             document.form.valmin.style.visibility=\"hidden\";
             document.form.valmax.style.visibility=\"hidden\";
           }
+          /**
+           * Fonction selv_click2
+           */
           function selv_click2()
           {  
             document.form.valmin.style.visibility=\"visible\";
@@ -355,6 +508,13 @@ function jscript_av($nombre)
 </script>";
 }
 
+/**
+ * Fonction doachat
+ * @param mixed $idcompte
+ * @param mixed $sicav
+ * @param mixed $nombre
+ * @param mixed $dernvaleur
+ */
 function doachat($idcompte,$sicav,$nombre,$dernvaleur)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -414,6 +574,9 @@ function doachat($idcompte,$sicav,$nombre,$dernvaleur)
     return "OK";
 }
 
+/**
+ * Fonction get_nextrefresh
+ */
 function get_nextrefresh() 
 {
     $maintenant = date("U");
@@ -449,6 +612,9 @@ function get_nextrefresh()
     return $retour;
 }
 
+/**
+ * Fonction execute_ordre
+ */
 function execute_ordre()
 {
     $liste = get_ordre();
@@ -516,6 +682,18 @@ function execute_ordre()
     return "";
 }
 
+/**
+ * Fonction tab_mess_ordre
+ * @param mixed $datecreation
+ * @param mixed $tempslim
+ * @param mixed $nom
+ * @param mixed $sens
+ * @param mixed $nombre
+ * @param mixed $valmin
+ * @param mixed $valeur
+ * @param mixed $valmax
+ * @param mixed $pourc
+ */
 function tab_mess_ordre($datecreation,$tempslim,$nom,$sens,$nombre,$valmin,$valeur,$valmax,$pourc)
 {
     if($nombre == 0) { $nombre = (round($pourc*100,2))." %"; }
@@ -533,11 +711,18 @@ function tab_mess_ordre($datecreation,$tempslim,$nom,$sens,$nombre,$valmin,$vale
     return $html;
 }
 
+/**
+ * Fonction form_list_ordre
+ */
 function form_list_ordre()
 {
     return list_ordre_sens("achat")."<br>".list_ordre_sens("vente");
 }
 
+/**
+ * Fonction list_ordre_sens
+ * @param mixed $sens
+ */
 function list_ordre_sens($sens)
 {
     $retour = "";
@@ -582,6 +767,12 @@ function list_ordre_sens($sens)
     return $retour;
 }
 
+/**
+ * Fonction form_list_ordrefe
+ * @param mixed $liste
+ * @param mixed $titre
+ * @param mixed $indiDecalage
+ */
 function form_list_ordrefe($liste,$titre,$indiDecalage=0)
 {
     global $skinrep;
@@ -614,18 +805,31 @@ function form_list_ordrefe($liste,$titre,$indiDecalage=0)
     return $retour;
 }
 
+/**
+ * Fonction htm_iconhelp
+ * @param mixed $form
+ */
 function htm_iconhelp($form)
 {
     global $skinrep;
     return "<a href=\"index.php?do=formhelp#$form\"><img align=\"right\" border=\"0\" src=\"$skinrep/interr.gif\"></a>";
 }
 
+/**
+ * Fonction htm_iconinfo
+ * @param mixed $siconame
+ * @param mixed $nom
+ */
 function htm_iconinfo($siconame,$nom)
 {
     global $skinrep;
     return "<a href=\"index.php?do=profilaction&yn=$siconame\"><img title=\"".lang(134).$nom."\" src=\"$skinrep/info.gif\" border=\"0\"></a>";
 }
 
+/**
+ * Fonction profilaction
+ * @param mixed $yahooname
+ */
 function profilaction($yahooname)
 {
     $limit = date("U") - 24*3600*9;
@@ -695,6 +899,10 @@ function profilaction($yahooname)
     return msgtab($corps,$laction->nom." - ".$laction->libellesecteur);
 }
 
+/**
+ * Fonction txt_help
+ * @param mixed $idhelpshowcomment
+ */
 function txt_help($idhelpshowcomment=0)
 {
     global $internaute;
@@ -741,6 +949,10 @@ function txt_help($idhelpshowcomment=0)
     return openfont("titre1").lang(160).closefont()."<br><br>".$html;
 }
 
+/**
+ * Fonction txt_faq
+ * @param mixed $idhelpshowcomment
+ */
 function txt_faq($idhelpshowcomment=0)
 {
     global $internaute;
@@ -781,6 +993,9 @@ function txt_faq($idhelpshowcomment=0)
     return openfont("titre1").lang(166).closefont()."<br><br>".$html;
 }
 
+/**
+ * Fonction supprtoutordre
+ */
 function supprtoutordre()
 {
     if(tempsjeu())
@@ -793,6 +1008,10 @@ function supprtoutordre()
     return $message;
 }
 
+/**
+ * Fonction supprordre
+ * @param mixed $dateordre
+ */
 function supprordre($dateordre)
 {
     if(tempsjeu())
@@ -813,9 +1032,17 @@ function supprordre($dateordre)
     return $message;
 }
 
+/**
+ * Fonction jscript_ordre
+ */
 function jscript_ordre()
 {
     return "\n<script language=\"Javascript\">
+/**
+ * Fonction confirmLink
+ * @param mixed theLink
+ * @param mixed theSqlQuery
+ */
 function confirmLink(theLink, theSqlQuery)
 {
     var is_confirmed = confirm('Voulez-vous supprimer l\'ordre du : ' + theSqlQuery);
@@ -827,10 +1054,16 @@ function confirmLink(theLink, theSqlQuery)
 </script>";
 }
 
+/**
+ * Fonction jscript_inscr
+ */
 function jscript_inscr()
 {
     $inconc_check = (defined('INCONC') && INCONC) ? " || document.forminscr.nom.value == \"\" || document.forminscr.prenom.value == \"\" || document.forminscr.adresse.value == \"\" || document.forminscr.cp.value == \"\" || document.forminscr.ville.value == \"\" || document.forminscr.tel.value == \"\" || document.forminscr.etab.value == \"\"" : "";
     return "<script language=\"Javascript\">
+/**
+ * Fonction test
+ */
 function test() 
 {
     if (document.forminscr.pseudo.value == \"\" || document.forminscr.mail.value == \"\" $inconc_check )
@@ -846,6 +1079,10 @@ function test()
     document.forminscr.Submit.disabled=true;
     return true;
 }
+/**
+ * Fonction verif_email
+ * @param mixed varp
+ */
 function verif_email(varp)
 {
 if (varp.indexOf(\"@\")==-1)
@@ -874,9 +1111,15 @@ return true;
 </script>";
 }
 
+/**
+ * Fonction jscript_groupe
+ */
 function jscript_groupe()
 {
     return "<script language=\"Javascript\">
+/**
+ * Fonction test
+ */
 function test()
 {
     if (document.frmajmodifgroupe.titreeq.value == \"\" || document.frmajmodifgroupe.titreeqcourt.value == \"\" )
@@ -888,6 +1131,9 @@ function test()
 </script>";
 }
 
+/**
+ * Fonction back_link
+ */
 function back_link()
 {
     global $internaute;
@@ -906,6 +1152,11 @@ function back_link()
     return $echo;
 }
 
+/**
+ * Fonction chgmdp
+ * @param mixed $nouvpass
+ * @param mixed $nouvpassconfirm
+ */
 function chgmdp($nouvpass,$nouvpassconfirm)
 {
     global $internaute;
@@ -933,6 +1184,17 @@ function chgmdp($nouvpass,$nouvpassconfirm)
     return lang(87);
 }
 
+/**
+ * Fonction editprofil
+ * @param mixed $mail
+ * @param mixed $niveau
+ * @param mixed $nbhisto
+ * @param mixed $nbmsg
+ * @param mixed $nbclasse
+ * @param mixed $idskin
+ * @param mixed $mailjour
+ * @param mixed $mailsemaine
+ */
 function editprofil($mail,$niveau,$nbhisto,$nbmsg,$nbclasse,$idskin,$mailjour,$mailsemaine)
 {
     global $internaute;
@@ -969,9 +1231,15 @@ function editprofil($mail,$niveau,$nbhisto,$nbmsg,$nbclasse,$idskin,$mailjour,$m
     return lang(87);
 }
 
+/**
+ * Fonction jscript_profil
+ */
 function jscript_profil()
 {
     return "<script language=\"Javascript\">
+/**
+ * Fonction test
+ */
 function test() 
 {
     if (document.forminscr.mail.value == \"\" || document.forminscr.lvl.value == \"\" )
@@ -985,9 +1253,15 @@ function test()
 </script>";
 }
 
+/**
+ * Fonction jscript_profil2
+ */
 function jscript_profil2()
 {
     return "<script language=\"Javascript\">
+/**
+ * Fonction test
+ */
 function test()
 {
     if (document.forminscr.nmdp.value != document.forminscr.cnmdp.value )
@@ -1001,6 +1275,12 @@ function test()
 </script>";
 }
 
+/**
+ * Fonction classementequipes
+ * @param mixed $ligncour
+ * @param mixed $moisan
+ * @param mixed $cherche
+ */
 function classementequipes($ligncour,$moisan,$cherche="")
 {
     global $internaute,$skinrep;
@@ -1071,6 +1351,12 @@ function classementequipes($ligncour,$moisan,$cherche="")
     return $form.$retour;
 }
 
+/**
+ * Fonction formclasse
+ * @param mixed $ligncour
+ * @param mixed $moisan
+ * @param mixed $cherche
+ */
 function formclasse($ligncour,$moisan,$cherche="")
 {
     global $internaute;
@@ -1157,6 +1443,14 @@ function formclasse($ligncour,$moisan,$cherche="")
     return $retour;
 }
 
+/**
+ * Fonction sous_formclasse
+ * @param mixed $ligncour
+ * @param mixed $pos
+ * @param mixed $theliste
+ * @param mixed $cherche
+ * @param mixed $nomsgroupes
+ */
 function sous_formclasse($ligncour,$pos,$theliste,$cherche,$nomsgroupes)
 {
     if(empty($theliste) || !is_array($theliste)) { return ""; }
@@ -1193,6 +1487,10 @@ function sous_formclasse($ligncour,$pos,$theliste,$cherche,$nomsgroupes)
     return $retour;
 }
 
+/**
+ * Fonction formhisto
+ * @param mixed $ligncour
+ */
 function formhisto($ligncour)
 {
     global $internaute;
@@ -1230,6 +1528,11 @@ function formhisto($ligncour)
     return $retour;
 }
 
+/**
+ * Fonction form_messagerie
+ * @param mixed $ligncour
+ * @param mixed $ouvre
+ */
 function form_messagerie($ligncour,$ouvre=0)
 {
     global $internaute;
@@ -1280,6 +1583,12 @@ function form_messagerie($ligncour,$ouvre=0)
     return $html;
 }
 
+/**
+ * Fonction form_nouvmessage
+ * @param mixed $idjoueur
+ * @param mixed $sujet
+ * @param mixed $corps
+ */
 function form_nouvmessage($idjoueur,$sujet,$corps)
 {
     global $internaute;
@@ -1306,6 +1615,12 @@ function form_nouvmessage($idjoueur,$sujet,$corps)
     return msgtab($form,$titre);
 }
 
+/**
+ * Fonction sendmessage
+ * @param mixed $destinataire
+ * @param mixed $titre
+ * @param mixed $corps
+ */
 function sendmessage($destinataire,$titre,$corps)
 {
     global $internaute;
@@ -1324,6 +1639,9 @@ function sendmessage($destinataire,$titre,$corps)
     return msgtab(lang(173),lang(86));
 }
 
+/**
+ * Fonction txt_accueil
+ */
 function txt_accueil()
 {
     if(!defined('INCONC') || !INCONC)
@@ -1352,12 +1670,18 @@ function txt_accueil()
     return $html;
 }
 
+/**
+ * Fonction txt_regl
+ */
 function txt_regl()
 {
     $html = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Les cours ne doivent être utilisé que pour le jeu virtuel.NetTrader 2 n'est pas un logiciel de gestion de portfeuille, tout est fictif et il n'y a rien à gagner.<br><br>Les comptes où les joueurs n'ont pas eu d'activité pendant deux mois ou plus seront supprimés afin de garder un classement propre, les détenteurs du compte ne recevrons jamais de mail pour les informer de la suppression de leur compte.";
     return msgtab($html,"REGLEMENT :");
 }
 
+/**
+ * Fonction forminscription
+ */
 function forminscription()
 {
     if(defined('FINCONC') && date("U") >= FINCONC)
@@ -1443,6 +1767,9 @@ function forminscription()
     return $echo;
 }
 
+/**
+ * Fonction formprofil
+ */
 function formprofil()
 {
     global $internaute;
@@ -1503,6 +1830,9 @@ function formprofil()
     return $echo;
 }
 
+/**
+ * Fonction connectstat
+ */
 function connectstat()
 {
     $listeplayer = get_playerconnected();
@@ -1527,11 +1857,18 @@ function connectstat()
     return $echo;
 }
 
+/**
+ * Fonction formcontact
+ */
 function formcontact()
 {
     return "Contacter l'auteur: contact_2012(chez)nettrader(point)fr\n";
 }
 
+/**
+ * Fonction formachat
+ * @param mixed $sicavselect
+ */
 function formachat($sicavselect)
 {
     global $do,$internaute,$skinrep;
@@ -1655,6 +1992,11 @@ function formachat($sicavselect)
     return $echo;
 }
 
+/**
+ * Fonction formvente
+ * @param mixed $sicavselect
+ * @param mixed $liste
+ */
 function formvente($sicavselect,$liste=0)
 {
     global $do,$internaute,$skinrep;
@@ -1796,6 +2138,10 @@ function formvente($sicavselect,$liste=0)
     return $echo;
 }
 
+/**
+ * Fonction form_news
+ * @param mixed $ligncour
+ */
 function form_news($ligncour)
 {
     $numligne = listmessagescount(0);
@@ -1823,6 +2169,10 @@ function form_news($ligncour)
     return $html;
 }
 
+/**
+ * Fonction pgaccueil
+ * @param mixed $numligne
+ */
 function pgaccueil($numligne)
 {
     global $internaute;
@@ -1836,6 +2186,18 @@ function pgaccueil($numligne)
     return menu($corps);
 }
 
+/**
+ * Fonction newpart
+ * @param mixed $titre
+ * @param mixed $contenu1
+ * @param mixed $contenu2
+ * @param mixed $contenu3
+ * @param mixed $contenu4
+ * @param mixed $contenu5
+ * @param mixed $contenu6
+ * @param mixed $contenu7
+ * @param mixed $contenu8
+ */
 function newpart($titre,$contenu1="",$contenu2="",$contenu3="",$contenu4="",$contenu5="",$contenu6="",$contenu7="",$contenu8="")
 {
     $html = openligne("","titre").opencol();
@@ -1856,6 +2218,10 @@ function newpart($titre,$contenu1="",$contenu2="",$contenu3="",$contenu4="",$con
         return "";
 }
 
+/**
+ * Fonction menu
+ * @param mixed $corps
+ */
 function menu($corps)
 {
     global $internaute;
@@ -1904,6 +2270,9 @@ function menu($corps)
     return $html;
 }
 
+/**
+ * Fonction txtfuncjour
+ */
 function txtfuncjour()
 {
     $html = "";
@@ -1917,16 +2286,26 @@ function txtfuncjour()
     return $html;
 }
 
+/**
+ * Fonction imgdot
+ */
 function imgdot()
 {
     return "<br><img src=\"skin/dot.gif\" width=\"1\" height=\"12\"><br>";
 }
 
+/**
+ * Fonction formrecuppass
+ */
 function formrecuppass()
 {
     return lang(103)."<br><br><center>".openform("dosendpass").lang(102)."&nbsp;&nbsp;&nbsp;".Html_texte("pseudo","",30,60)."<br><br>".Html_bouton("valide","Valider")."</form></center>";
 }
 
+/**
+ * Fonction formsendpass
+ * @param mixed $pseudo
+ */
 function formsendpass($pseudo)
 {
     if(strlen((string)strchr((string)$pseudo,"@")) == 0)
@@ -1948,6 +2327,11 @@ function formsendpass($pseudo)
     }
 }
 
+/**
+ * Fonction dosendpass
+ * @param mixed $pseudo
+ * @param mixed $md5mdp
+ */
 function dosendpass($pseudo,$md5mdp)
 {
     $player = getinternauteinfo($pseudo);
@@ -1964,6 +2348,9 @@ function dosendpass($pseudo,$md5mdp)
     }
 }
 
+/**
+ * Fonction frmrazjoueur
+ */
 function frmrazjoueur()
 {
     return msgtab(sec(lang(116))."<br>".lang(117)."<br><br><form METHOD=\"POST\" ACTION=\"index.php?do=doraz\">".lang(118)." :
@@ -1974,6 +2361,12 @@ Html_radio("optiondel","0",lang(111),"CHECKED")
 ."</form> ",lang(119));
 }
 
+/**
+ * Fonction doraz
+ * @param mixed $mdp
+ * @param mixed $vok
+ * @param mixed $optdel
+ */
 function doraz($mdp,$vok,$optdel)
 {
     global $internaute;
@@ -1995,6 +2388,10 @@ function doraz($mdp,$vok,$optdel)
     }
 }
 
+/**
+ * Fonction lstAction
+ * @param mixed $typeAffiche
+ */
 function lstAction($typeAffiche="")
 {
     global $internaute;
@@ -2059,6 +2456,10 @@ function lstAction($typeAffiche="")
     return $html;
 }
 
+/**
+ * Fonction frminvitejoueur
+ * @param mixed $idgroupe
+ */
 function frminvitejoueur($idgroupe)
 {
     $form = "<br>".opentab("align=\"center\"").openligne("","titre").opencol("colspan=\"2\"").lang(213).closecol().closeligne();
@@ -2078,6 +2479,10 @@ function frminvitejoueur($idgroupe)
     return $form;
 }
 
+/**
+ * Fonction frmgroupeaction
+ * @param mixed $idgroupe
+ */
 function frmgroupeaction($idgroupe)
 {
     $form = "<br>".opentab("align=\"center\"").openligne("","titre").opencol("colspan=\"2\"").lang(225).closecol().closeligne();
@@ -2086,6 +2491,10 @@ function frmgroupeaction($idgroupe)
     return $form;
 }
 
+/**
+ * Fonction frmexclurejoueur
+ * @param mixed $idgroupe
+ */
 function frmexclurejoueur($idgroupe)
 {
     $form = "<br>".opentab("align=\"center\"").openligne("","titre").opencol("colspan=\"2\"").lang(202).closecol().closeligne();
@@ -2104,6 +2513,10 @@ function frmexclurejoueur($idgroupe)
     return $form;
 }
 
+/**
+ * Fonction frmmodifajgroupe
+ * @param mixed $idgroupe
+ */
 function frmmodifajgroupe($idgroupe=0)
 {
     global $internaute;
@@ -2167,6 +2580,9 @@ function frmmodifajgroupe($idgroupe=0)
     return $form;
 }
 
+/**
+ * Fonction frmquittegroupe
+ */
 function frmquittegroupe()
 {
     $fin_jour = defined('EQUIPE_FINJOURVIRER') ? EQUIPE_FINJOURVIRER : 31;
@@ -2177,6 +2593,10 @@ function frmquittegroupe()
         "&nbsp;&nbsp;&nbsp;".Html_bouton("valide",lang(202))."<br>"."</form> ",lang(202));
 }
 
+/**
+ * Fonction doquittegroupe
+ * @param mixed $vok
+ */
 function doquittegroupe($vok)
 {
     global $internaute;
@@ -2193,6 +2613,10 @@ function doquittegroupe($vok)
     }
 }
 
+/**
+ * Fonction doexcluregroupe
+ * @param mixed $idcompteexclu
+ */
 function doexcluregroupe($idcompteexclu)
 {
     global $internaute;
@@ -2213,6 +2637,10 @@ function doexcluregroupe($idcompteexclu)
     return "";
 }
 
+/**
+ * Fonction tabgroupeprofil
+ * @param mixed $idgroupe
+ */
 function tabgroupeprofil($idgroupe)
 {
     global $internaute;
@@ -2243,6 +2671,9 @@ function tabgroupeprofil($idgroupe)
     return $form;
 }
 
+/**
+ * Fonction lstforums
+ */
 function lstforums()
 {
     global $skinrep,$internaute;
@@ -2275,6 +2706,11 @@ function lstforums()
     return $html;
 }
 
+/**
+ * Fonction lstsujets
+ * @param mixed $idforum
+ * @param mixed $numligne
+ */
 function lstsujets($idforum,$numligne)
 {
     global $skinrep,$internaute;
@@ -2318,6 +2754,12 @@ function lstsujets($idforum,$numligne)
     return $html;
 }
 
+/**
+ * Fonction lstposts
+ * @param mixed $idsujet
+ * @param mixed $numligne
+ * @param mixed $seelast
+ */
 function lstposts($idsujet,$numligne,$seelast=false)
 {
     global $skinrep,$internaute;
@@ -2359,6 +2801,9 @@ function lstposts($idsujet,$numligne,$seelast=false)
     return $html;
 }
 
+/**
+ * Fonction javaforum
+ */
 function javaforum()
 {
     return "<script language=\"JavaScript\" type=\"text/javascript\">
@@ -2385,10 +2830,18 @@ f_help = \"Taille du texte: [size=x-small]texte en petit[/size]\";
 bbcode = new Array();
 bbtags = new Array('[b]','[/b]','[i]','[/i]','[u]','[/u]','[quote]','[/quote]','[code]','[/code]','[list]','[/list]','[list=]','[/list]','[img]','[/img]','[url=\"','\"]Texte du lien[/url]');
 
+/**
+ * Fonction helpline
+ * @param mixed help
+ */
 function helpline(help) {
     document.post.helpbox.value = eval(help + \"_help\");
 }
 
+/**
+ * Fonction getarraysize
+ * @param mixed thearray
+ */
 function getarraysize(thearray) {
     for (i = 0; i < thearray.length; i++) {
         if ((thearray[i] == \"undefined\") || (thearray[i] == \"\") || (thearray[i] == null))
@@ -2397,10 +2850,19 @@ function getarraysize(thearray) {
     return thearray.length;
 }
 
+/**
+ * Fonction arraypush
+ * @param mixed thearray
+ * @param mixed value
+ */
 function arraypush(thearray,value) {
     thearray[ getarraysize(thearray) ] = value;
 }
 
+/**
+ * Fonction arraypop
+ * @param mixed thearray
+ */
 function arraypop(thearray) {
     thearraysize = getarraysize(thearray);
     retval = thearray[thearraysize - 1];
@@ -2408,6 +2870,9 @@ function arraypop(thearray) {
     return retval;
 }
 
+/**
+ * Fonction checkForm
+ */
 function checkForm() {
     if (document.post.message.value.length < 2) {
         alert(\"Vous devez entrer un message avant de poster.\");
@@ -2418,6 +2883,10 @@ function checkForm() {
     }
 }
 
+/**
+ * Fonction emoticon
+ * @param mixed text
+ */
 function emoticon(text) {
     var txtarea = document.post.message;
     text = ' ' + text + ' ';
@@ -2425,12 +2894,21 @@ function emoticon(text) {
     txtarea.focus();
 }
 
+/**
+ * Fonction bbfontstyle
+ * @param mixed bbopen
+ * @param mixed bbclose
+ */
 function bbfontstyle(bbopen, bbclose) {
     var txtarea = document.post.message;
     txtarea.value += bbopen + bbclose;
     txtarea.focus();
 }
 
+/**
+ * Fonction bbstyle
+ * @param mixed bbnumber
+ */
 function bbstyle(bbnumber) {
     var txtarea = document.post.message;
     txtarea.focus();
@@ -2446,12 +2924,24 @@ function bbstyle(bbnumber) {
     arraypush(bbcode,bbnumber+1);
 }
 
+/**
+ * Fonction storeCaret
+ * @param mixed textEl
+ */
 function storeCaret(textEl) {
     if (textEl.createTextRange) textEl.caretPos = document.selection.createRange().duplicate();
 }
 </script>";
 }
 
+/**
+ * Fonction forum_postmessage
+ * @param mixed $idforum
+ * @param mixed $idsujet
+ * @param mixed $idmessage
+ * @param mixed $corps
+ * @param mixed $edit
+ */
 function forum_postmessage($idforum=0,$idsujet=0,$idmessage=0,$corps="",$edit=0)
 {
     global $skinrep;
@@ -2561,6 +3051,9 @@ function forum_postmessage($idforum=0,$idsujet=0,$idmessage=0,$corps="",$edit=0)
     return $form;
 }
 
+/**
+ * Fonction formchgmdp
+ */
 function formchgmdp()
 {
     return jscript_profil2()."<br><br><br>
@@ -2581,6 +3074,11 @@ function formchgmdp()
           </center></form>";
 }
 
+/**
+ * Fonction disabledaily
+ * @param mixed $idcompte
+ * @param mixed $chainemd5
+ */
 function disabledaily($idcompte,$chainemd5)
 {
     $lejoueur = getinfojoueur($idcompte);
@@ -2593,6 +3091,11 @@ function disabledaily($idcompte,$chainemd5)
     }
 }
 
+/**
+ * Fonction disableweekly
+ * @param mixed $idcompte
+ * @param mixed $chainemd5
+ */
 function disableweekly($idcompte,$chainemd5)
 {
     $lejoueur = getinfojoueur($idcompte);
@@ -2605,6 +3108,12 @@ function disableweekly($idcompte,$chainemd5)
     }
 }
 
+/**
+ * Fonction junkoldsicav
+ * @param mixed $idcompte
+ * @param mixed $chainemd5
+ * @param mixed $codesico
+ */
 function junkoldsicav($idcompte, $chainemd5, $codesico)
 {
     $lejoueur = getinfojoueur($idcompte);

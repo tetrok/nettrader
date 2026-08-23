@@ -1,4 +1,11 @@
 <?
+
+/**
+ * Fichier: redir.php
+ * Ce fichier contient les fonctions suivantes :
+ * - get_ip
+ */
+
 //profil d'un groupe( classement integr�)
 /**
 * NetTrader 2
@@ -15,6 +22,9 @@ include_once ("constbdd.php");
 include_once ("db_connect.php");
 
 $url=sec(($_GET['url'] ?? ""));
+/**
+ * Fonction get_ip
+ */
 function get_ip(){
 if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])){
 $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];}

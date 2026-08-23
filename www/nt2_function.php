@@ -1,4 +1,65 @@
 <?php
+
+/**
+ * Fichier: nt2_function.php
+ * Ce fichier contient les fonctions suivantes :
+ * - tabvaleurouzero
+ * - affichpseudo
+ * - affichgroupe
+ * - msgtab
+ * - compareclass
+ * - sign
+ * - getvaleur
+ * - traiteeuronextcsv
+ * - traiteyahoocsv
+ * - traitehtmlsicav
+ * - ansgetvaleur
+ * - leading_zero
+ * - updateplayersicav
+ * - echotabadmin
+ * - sorttableau
+ * - barrepage
+ * - tempsjeu
+ * - updaterecompensegroupes
+ * - checkscore
+ * - updatenomsicav
+ * - getnbactionmax
+ * - gettaxe
+ * - getmontantvadpossible
+ * - get_refresh
+ * - updatelistsicav
+ * - cmd_to_update_liste
+ * - cmd_downhisto
+ * - cmd_euronextdownvaleur
+ * - cmd_downvaleur
+ * - cmd_nodownvaleur
+ * - cmd_setvaleur
+ * - tomoisfr
+ * - numlimit
+ * - finjour
+ * - openform
+ * - classtohtmlcolor
+ * - couleurfonctionclasse
+ * - htmlourien
+ * - lnkachat
+ * - lnkvente
+ * - html_lien
+ * - getnewurl
+ * - getsigne
+ * - tabordre
+ * - lienordre
+ * - bbtohtml
+ * - estadmingroupe
+ * - estmembregroupe
+ * - getidgroupe
+ * - envoimail
+ * - retiftrue
+ * - majstats
+ * - print_reward
+ * - forum_peut_editer
+ * - geturlaide
+ */
+
 /**
 * NetTrader 2
 *
@@ -15,21 +76,41 @@ function tabvaleurouzero($tableau,$valeur)
         return 0;
 }
 
+/**
+ * Fonction affichpseudo
+ * @param mixed $idcompte
+ * @param mixed $pseudo
+ */
 function affichpseudo($idcompte,$pseudo)
 {
     return $pseudo;
 }
 
+/**
+ * Fonction affichgroupe
+ * @param mixed $idgroupe
+ * @param mixed $nomgroupe
+ */
 function affichgroupe($idgroupe,$nomgroupe)
 {
     return $nomgroupe;
 }
 
+/**
+ * Fonction msgtab
+ * @param mixed $message
+ * @param mixed $titre
+ */
 function msgtab($message,$titre)
 {
     return "<br>".opentab("align=\"center\" width=\"90%\"").openligne("","titre").opencol().$titre.closecol().closeligne().openligne().opencol().$message.closecol().closeligne().closetab()."<br>";
 }
 
+/**
+ * Fonction compareclass
+ * @param mixed $nom1
+ * @param mixed $nom2
+ */
 function compareclass($nom1,$nom2)
 {
     if(strtoupper($nom1) == strtoupper($nom2))
@@ -38,12 +119,21 @@ function compareclass($nom1,$nom2)
         return false;
 }
 
+/**
+ * Fonction sign
+ * @param mixed $val
+ */
 function sign($val)
 {
     if($val != 0) return ($val / abs($val));
     else return 0;
 }
 
+/**
+ * Fonction getvaleur
+ * @param mixed $sico
+ * @param mixed $nouv
+ */
 function getvaleur($sico,$nouv=0)
 {   
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -60,6 +150,10 @@ function getvaleur($sico,$nouv=0)
     return $lastval;
 }
 
+/**
+ * Fonction traiteeuronextcsv
+ * @param mixed $lines
+ */
 function traiteeuronextcsv($lines)
 {
     if(!tempsjeu() || !is_array($lines))
@@ -131,6 +225,10 @@ function traiteeuronextcsv($lines)
     return (is_array($lines) ? count($lines) : 0)." téléchargés, $update mis à jour et $insert ajoutées";
 }
 
+/**
+ * Fonction traiteyahoocsv
+ * @param mixed $lines
+ */
 function traiteyahoocsv($lines)
 {
     if(!tempsjeu() || !is_array($lines))
@@ -201,6 +299,11 @@ function traiteyahoocsv($lines)
     return (is_array($lines) ? count($lines) : 0)." téléchargés, $update mis à jour et $insert ajoutées";
 }
 
+/**
+ * Fonction traitehtmlsicav
+ * @param mixed $lines
+ * @param mixed $sico
+ */
 function traitehtmlsicav($lines,$sico = 0)
 {
     if(!tempsjeu() || !is_array($lines))
@@ -292,6 +395,11 @@ function traitehtmlsicav($lines,$sico = 0)
     return $valsicav;
 }
 
+/**
+ * Fonction ansgetvaleur
+ * @param mixed $sico
+ * @param mixed $nouv
+ */
 function ansgetvaleur($sico,$nouv=0)
 {   
     echoadmin("/($sico)");
@@ -374,6 +482,14 @@ function ansgetvaleur($sico,$nouv=0)
     return $valsicav;
 }
 
+/**
+ * Fonction leading_zero
+ * @param mixed $aNumber
+ * @param mixed $intPart
+ * @param mixed $floatPart
+ * @param mixed $dec_point
+ * @param mixed $thousands_sep
+ */
 function leading_zero($aNumber, $intPart, $floatPart=NULL, $dec_point=NULL, $thousands_sep=NULL) 
 {
     $formattedNumber = $aNumber;
@@ -387,6 +503,9 @@ function leading_zero($aNumber, $intPart, $floatPart=NULL, $dec_point=NULL, $tho
     return $formattedNumber;
 }
 
+/**
+ * Fonction updateplayersicav
+ */
 function updateplayersicav()
 {
     global $tempsdebexec,$do,$internaute,$notupdated;
@@ -413,6 +532,10 @@ function updateplayersicav()
     return 1;
 }
 
+/**
+ * Fonction echotabadmin
+ * @param mixed $tab
+ */
 function echotabadmin($tab)
 {
     global $internaute;
@@ -425,6 +548,12 @@ function echotabadmin($tab)
     return 1;
 }
 
+/**
+ * Fonction sorttableau
+ * @param mixed $resultat
+ * @param mixed $titre
+ * @param mixed $largeur
+ */
 function sorttableau($resultat,$titre,$largeur="90")
 {
     $html = "";
@@ -457,6 +586,13 @@ function sorttableau($resultat,$titre,$largeur="90")
     return $html;
 }
 
+/**
+ * Fonction barrepage
+ * @param mixed $nblignes
+ * @param mixed $ligneparpage
+ * @param mixed $lignecourante
+ * @param mixed $add
+ */
 function barrepage($nblignes,$ligneparpage,$lignecourante,$add="")
 {
     global $do;
@@ -492,6 +628,9 @@ function barrepage($nblignes,$ligneparpage,$lignecourante,$add="")
     return $html;
 }
 
+/**
+ * Fonction tempsjeu
+ */
 function tempsjeu()
 {
     global $internaute;
@@ -507,6 +646,9 @@ function tempsjeu()
     }
 }
 
+/**
+ * Fonction updaterecompensegroupes
+ */
 function updaterecompensegroupes()
 {
     $res = getperfgroupes();
@@ -533,6 +675,9 @@ function updaterecompensegroupes()
     }
 }
 
+/**
+ * Fonction checkscore
+ */
 function checkscore()
 {
     if(!(scoreestactuel()))
@@ -549,6 +694,9 @@ function checkscore()
     return 1;
 }
 
+/**
+ * Fonction updatenomsicav
+ */
 function updatenomsicav()
 {
     global $tempsdebexec,$do;
@@ -568,6 +716,11 @@ function updatenomsicav()
     return 1;
 }
 
+/**
+ * Fonction getnbactionmax
+ * @param mixed $cashback
+ * @param mixed $valeursicav
+ */
 function getnbactionmax($cashback,$valeursicav)
 {
     if($valeursicav == 0)
@@ -580,6 +733,11 @@ function getnbactionmax($cashback,$valeursicav)
     return $NbActionMax;
 }
 
+/**
+ * Fonction gettaxe
+ * @param mixed $valeursicav
+ * @param mixed $nombre
+ */
 function gettaxe($valeursicav,$nombre)
 {
     $taxe = Round(($nombre * $valeursicav) * 0.0030 * (1 + 0.196), 2);
@@ -590,6 +748,10 @@ function gettaxe($valeursicav,$nombre)
     return $taxe;
 }
 
+/**
+ * Fonction getmontantvadpossible
+ * @param mixed $idcompte
+ */
 function getmontantvadpossible($idcompte)
 {
     $capitalhorsvad = getplayercapitalhorsvad($idcompte);
@@ -605,6 +767,9 @@ function getmontantvadpossible($idcompte)
     return $limitevadpossible;
 }
 
+/**
+ * Fonction get_refresh
+ */
 function get_refresh()
 {
     $maintenant = date("U");
@@ -661,6 +826,10 @@ function get_refresh()
     return $retour;
 }
 
+/**
+ * Fonction updatelistsicav
+ * @param mixed $liste
+ */
 function updatelistsicav($liste)
 {
     if(!empty($liste))
@@ -670,6 +839,9 @@ function updatelistsicav($liste)
     return 1;
 }
 
+/**
+ * Fonction cmd_to_update_liste
+ */
 function cmd_to_update_liste()
 {
     $liste = joueur_liste_sicav("", 1*60);
@@ -690,6 +862,9 @@ function cmd_to_update_liste()
     return "OK||".get_nextrefresh()."|".ADDRDEB."|".ADDRFIN;
 }
 
+/**
+ * Fonction cmd_downhisto
+ */
 function cmd_downhisto()
 {
     $lstvaleurtodown = get_sicavdown();
@@ -712,6 +887,9 @@ function cmd_downhisto()
     return "";
 }
 
+/**
+ * Fonction cmd_euronextdownvaleur
+ */
 function cmd_euronextdownvaleur()
 {
     $fd = @fopen(ADDREURONEXT, "r");
@@ -727,6 +905,9 @@ function cmd_euronextdownvaleur()
     return traiteeuronextcsv($lines);
 }
 
+/**
+ * Fonction cmd_downvaleur
+ */
 function cmd_downvaleur()
 {
     $lstvaleurtodown = get_sicavdown();
@@ -760,6 +941,10 @@ function cmd_downvaleur()
     return " ".traiteyahoocsv($lines);
 }
 
+/**
+ * Fonction cmd_nodownvaleur
+ * @param mixed $donnes
+ */
 function cmd_nodownvaleur($donnes)
 {
     sauveipadress($_SERVER['REMOTE_ADDR']);
@@ -777,6 +962,13 @@ function cmd_nodownvaleur($donnes)
     return "";
 }
 
+/**
+ * Fonction cmd_setvaleur
+ * @param mixed $codesico
+ * @param mixed $valeur
+ * @param mixed $ladate
+ * @param mixed $lheure
+ */
 function cmd_setvaleur($codesico,$valeur,$ladate,$lheure)
 {
     $sico_list = ($codesico !== null) ? explode('|', (string)$codesico) : array();
@@ -825,6 +1017,10 @@ function cmd_setvaleur($codesico,$valeur,$ladate,$lheure)
     return "OK|".get_nextrefresh();  
 }
 
+/**
+ * Fonction tomoisfr
+ * @param mixed $mois
+ */
 function tomoisfr($mois)
 {
     $mois_fr = [
@@ -836,6 +1032,12 @@ function tomoisfr($mois)
     return isset($mois_fr[$mois]) ? $mois_fr[$mois] : $mois;
 }
 
+/**
+ * Fonction numlimit
+ * @param mixed $courant
+ * @param mixed $max
+ * @param mixed $diff
+ */
 function numlimit($courant,$max,$diff)
 {
     if($courant + $diff > $max)
@@ -852,6 +1054,9 @@ function numlimit($courant,$max,$diff)
     return $retour;
 }
 
+/**
+ * Fonction finjour
+ */
 function finjour()
 {
     list($hour, $min, $sec, $day, $mon, $yr) = explode(" ",date("H i s d m y"));
@@ -872,11 +1077,21 @@ function finjour()
     return date("d/m/Y H:i", $date1);
 }
 
+/**
+ * Fonction openform
+ * @param mixed $do
+ * @param mixed $othervar
+ */
 function openform($do,$othervar="")
 {
     return "<form method=\"post\" action=\"index.php?do=$do $othervar\">";
 }
 
+/**
+ * Fonction classtohtmlcolor
+ * @param mixed $classement
+ * @param mixed $tot
+ */
 function classtohtmlcolor($classement,$tot)
 {
     if($tot)
@@ -886,6 +1101,10 @@ function classtohtmlcolor($classement,$tot)
     return "#".str_repeat($base, 3);
 }
 
+/**
+ * Fonction couleurfonctionclasse
+ * @param mixed $tab
+ */
 function couleurfonctionclasse($tab)
 {
     $tabs = [];
@@ -900,6 +1119,10 @@ function couleurfonctionclasse($tab)
     return $tabs;
 }
 
+/**
+ * Fonction htmlourien
+ * @param mixed $htmlcolor
+ */
 function htmlourien($htmlcolor)
 {
     if(!$htmlcolor)
@@ -908,12 +1131,22 @@ function htmlourien($htmlcolor)
         return $htmlcolor;
 }
 
+/**
+ * Fonction lnkachat
+ * @param mixed $codesico
+ */
 function lnkachat($codesico)
 {
     $ads_kw = defined('ADSENSEKEYWORD') ? ADSENSEKEYWORD : '';
     return "index.php?do=formachatvente&info=$ads_kw&sicavselachat=$codesico";
 }
 
+/**
+ * Fonction lnkvente
+ * @param mixed $codesico
+ * @param mixed $val
+ * @param mixed $texte
+ */
 function lnkvente($codesico,$val=1,$texte="")
 {
     $ads_kw = defined('ADSENSEKEYWORD') ? ADSENSEKEYWORD : '';
@@ -923,11 +1156,22 @@ function lnkvente($codesico,$val=1,$texte="")
         return "$texte";
 }
 
+/**
+ * Fonction html_lien
+ * @param mixed $texte
+ * @param mixed $donnees
+ */
 function html_lien($texte,$donnees)
 {
     return "<a href=\"index.php?$donnees\">$texte</a>";
 }
 
+/**
+ * Fonction getnewurl
+ * @param mixed $find
+ * @param mixed $value
+ * @param mixed $ansurl
+ */
 function getnewurl($find,$value,$ansurl="")
 {
     if($ansurl == "")
@@ -954,6 +1198,10 @@ function getnewurl($find,$value,$ansurl="")
     return $res;
 }
 
+/**
+ * Fonction getsigne
+ * @param mixed $valeur
+ */
 function getsigne($valeur)
 {
     if($valeur >= 0)
@@ -964,6 +1212,10 @@ function getsigne($valeur)
     }
 }
 
+/**
+ * Fonction tabordre
+ * @param mixed $table
+ */
 function tabordre($table)
 {
     $champ = "";
@@ -1051,6 +1303,11 @@ function tabordre($table)
     return $champordre;
 }
 
+/**
+ * Fonction lienordre
+ * @param mixed $champ
+ * @param mixed $titre
+ */
 function lienordre($champ,$titre)
 {
     $champans = "";
@@ -1075,6 +1332,10 @@ function lienordre($champ,$titre)
     return "<a href=\"index.php?$url\">$titre</a>";
 }
 
+/**
+ * Fonction bbtohtml
+ * @param mixed $text
+ */
 function bbtohtml($text)
 {
     global $skinrep;
@@ -1131,6 +1392,11 @@ function bbtohtml($text)
     return nl2br($newtext);
 }
 
+/**
+ * Fonction estadmingroupe
+ * @param mixed $idcompte
+ * @param mixed $idgroupe
+ */
 function estadmingroupe($idcompte,$idgroupe=0)
 {
     $ligne = getgroupbyadmin($idcompte);
@@ -1142,18 +1408,32 @@ function estadmingroupe($idcompte,$idgroupe=0)
     }
 }
 
+/**
+ * Fonction estmembregroupe
+ * @param mixed $idcompte
+ */
 function estmembregroupe($idcompte)
 {
     $ligne = getgroupbymembre($idcompte);
     return is_object($ligne) ? 1 : 0;
 }
 
+/**
+ * Fonction getidgroupe
+ * @param mixed $idcompte
+ */
 function getidgroupe($idcompte)
 {
     $ligne = getgroupbyadmin($idcompte);
     return is_object($ligne) ? $ligne->idgroupe : -1;
 }
 
+/**
+ * Fonction envoimail
+ * @param mixed $email
+ * @param mixed $titre
+ * @param mixed $corps
+ */
 function envoimail($email,$titre,$corps)
 {
     $from_email  = defined('EMAILADMIN') ? EMAILADMIN : 'admin@localhost';
@@ -1169,6 +1449,12 @@ function envoimail($email,$titre,$corps)
     return 0;
 }
 
+/**
+ * Fonction retiftrue
+ * @param mixed $data
+ * @param mixed $condition
+ * @param mixed $else
+ */
 function retiftrue($data,$condition,$else="")
 {
     if($condition)
@@ -1177,6 +1463,9 @@ function retiftrue($data,$condition,$else="")
         return $else;
 }
 
+/**
+ * Fonction majstats
+ */
 function majstats()
 {
     $nbstats = getnbstats();
@@ -1187,6 +1476,12 @@ function majstats()
     }
 }
 
+/**
+ * Fonction print_reward
+ * @param mixed $medor
+ * @param mixed $medargent
+ * @param mixed $medbronze
+ */
 function print_reward($medor,$medargent,$medbronze)
 {
     global $skinrep;
@@ -1195,6 +1490,11 @@ function print_reward($medor,$medargent,$medbronze)
            str_repeat("<IMG SRC=\"$skinrep/tres.png\" border=0>", intval($medbronze));
 }
 
+/**
+ * Fonction forum_peut_editer
+ * @param mixed $lignemessage
+ * @param mixed $infoforum
+ */
 function forum_peut_editer($lignemessage,$infoforum)
 {
     global $internaute;
@@ -1204,6 +1504,10 @@ function forum_peut_editer($lignemessage,$infoforum)
     return ($lignemessage->idcompte == $id_compte || $auth_level > 1);
 }
 
+/**
+ * Fonction geturlaide
+ * @param mixed $yahooname
+ */
 function geturlaide($yahooname)
 {
     return "http://fr.finance.yahoo.com/echarts?s=$yahooname#symbol=$yahooname;range=1m";

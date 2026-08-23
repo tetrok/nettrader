@@ -1,4 +1,136 @@
 <?php
+
+/**
+ * Fichier: db_reqfunction.php
+ * Ce fichier contient les fonctions suivantes :
+ * - updatecptpost
+ * - getcptpost
+ * - portefeuille_joueur
+ * - joueur_liste_sicav
+ * - joueur_possede
+ * - GetCashBack
+ * - ModifLiquide
+ * - AddHistorique
+ * - ModifAction
+ * - ChercheSkin
+ * - get_FromFormatedTime
+ * - creer_ordre
+ * - listvaleur
+ * - dansliste
+ * - AjoutPort
+ * - delete_sicav
+ * - listmenu
+ * - listhisto
+ * - listclassementequipe
+ * - gettabjoueursenequipes
+ * - listclassement
+ * - listclassementcount
+ * - getclassementsicavlist
+ * - cmd_update_sicav
+ * - get_dernier_timestamp
+ * - addordre
+ * - niv_joueur
+ * - get_ordre
+ * - add_msg
+ * - upd_msgetat
+ * - dodelmessage
+ * - efface_ordre
+ * - get_ordrelist
+ * - get_idmenu
+ * - del_ordre
+ * - get_info_ordre
+ * - donnaction
+ * - donnactionyn
+ * - stataction
+ * - ordreactionachat
+ * - ordreactionvente
+ * - exeadminreq
+ * - listadminreq
+ * - listhistocount
+ * - getplayercapital
+ * - getplayercapitalhorsvad
+ * - getplayercapitalvad
+ * - listmessagescount
+ * - get_tempsbourse
+ * - listskin
+ * - skin_existe
+ * - scoreestactuel
+ * - teamscoreestactuel
+ * - insertscore
+ * - getperfgroupes
+ * - insertgroupescore
+ * - listmoisclass
+ * - listmoisclassequipe
+ * - getyahooname
+ * - get_yahoosicavliste
+ * - getinternauteinfo
+ * - setmdp
+ * - increcompensegroupe
+ * - getheritier
+ * - fctgetoffteammaster
+ * - fctgetoffteam
+ * - fctdoraz
+ * - getCodesSicoSecteurPortef
+ * - getCodesSicoPortef
+ * - getCodesSicoCote
+ * - ajoutcommentaire
+ * - effacvieuxordres
+ * - effacordresinactifs
+ * - delcommentaire
+ * - ajoutcommentairefaq
+ * - delcommentairefaq
+ * - modifetatactions
+ * - delactions
+ * - factoriseactions
+ * - getnvmessages
+ * - getnvmessagesenvoye
+ * - getgroupbyadmin
+ * - getgroupbymembre
+ * - membreestinvite
+ * - getmembrebygroup
+ * - getjoueursnotingroupe
+ * - doinvitejoueur
+ * - delinvitejoueur
+ * - doajgroupe
+ * - dojoingroupe
+ * - domodifgroupe
+ * - getverifgroupe
+ * - sauveipadress
+ * - getiphome
+ * - dogroupeaccepterefuse
+ * - effacvieuxscores
+ * - getscorejoueur
+ * - get_sicavdown
+ * - doundoallinvitegroupe
+ * - getinfogroupe
+ * - getcompositionequipe
+ * - checkoutdated
+ * - majclassement
+ * - majlistmoisclass
+ * - istableexist
+ * - forumsyncquantity
+ * - forumsyncidlastmessage
+ * - getinfojoueur
+ * - getinfosicav
+ * - forum_getidmessagesujet
+ * - forum_getlastmessagesujet
+ * - forum_peutposter
+ * - forum_peutlire
+ * - setsujetlu
+ * - forum_inc_nblectures
+ * - forum_inc_joueur_nbposts
+ * - forum_set_joueur_toutlu
+ * - forum_majtoutvuforum
+ * - forum_ajoutforum
+ * - forum_newgroupeforum
+ * - setsujetpaslu
+ * - doforum_postmessage
+ * - forum_giveforumtogroups
+ * - incarnerjoueur
+ * - deactivateweekstats
+ * - deactivatedaystats
+ */
+
 /**
 * NetTrader 2
 *
@@ -16,6 +148,9 @@ function updatecptpost()
     $run_query = ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction getcptpost
+ */
 function getcptpost()
 {
     //retourne le compteur de postage afin d'eviter les doublons d'envoie de formulaire
@@ -28,6 +163,9 @@ function getcptpost()
     return is_object($ligne) ? $ligne->lastpostaction : 0;
 }
 
+/**
+ * Fonction portefeuille_joueur
+ */
 function portefeuille_joueur()
 {  
     global $internaute;
@@ -48,6 +186,11 @@ function portefeuille_joueur()
     return $return;
 }
 
+/**
+ * Fonction joueur_liste_sicav
+ * @param mixed $idcompte
+ * @param mixed $timemodif
+ */
 function joueur_liste_sicav($idcompte="",$timemodif=0)
 {  
     $condition="";
@@ -75,6 +218,11 @@ function joueur_liste_sicav($idcompte="",$timemodif=0)
     return $return;
 }
 
+/**
+ * Fonction joueur_possede
+ * @param mixed $sico
+ * @param mixed $idcompte
+ */
 function joueur_possede($sico,$idcompte)
 {  
     $sico=sec($sico);
@@ -87,6 +235,10 @@ function joueur_possede($sico,$idcompte)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction GetCashBack
+ * @param mixed $idjoueur
+ */
 function GetCashBack($idjoueur)
 {
     $idjoueur=sec($idjoueur);
@@ -99,6 +251,11 @@ function GetCashBack($idjoueur)
     return is_array($objet) ? $objet[0] : 0;
 }
 
+/**
+ * Fonction ModifLiquide
+ * @param mixed $idcompte
+ * @param mixed $somme
+ */
 function ModifLiquide($idcompte,$somme)
 {
     global $internaute;
@@ -113,6 +270,16 @@ function ModifLiquide($idcompte,$somme)
     return 0;
 }
 
+/**
+ * Fonction AddHistorique
+ * @param mixed $idcompte
+ * @param mixed $operation
+ * @param mixed $sicav
+ * @param mixed $nombre
+ * @param mixed $valunique
+ * @param mixed $taxe
+ * @param mixed $profit
+ */
 function AddHistorique($idcompte,$operation,$sicav,$nombre,$valunique, $taxe, $profit)
 {
     $maintenant=date("U");
@@ -122,6 +289,13 @@ function AddHistorique($idcompte,$operation,$sicav,$nombre,$valunique, $taxe, $p
     return 0;
 }
 
+/**
+ * Fonction ModifAction
+ * @param mixed $idcompte
+ * @param mixed $sicav
+ * @param mixed $quant
+ * @param mixed $valeur
+ */
 function ModifAction($idcompte,$sicav,$quant,$valeur)
 {
     $possede=joueur_possede($sicav,$idcompte);
@@ -144,6 +318,10 @@ function ModifAction($idcompte,$sicav,$quant,$valeur)
     return 0;
 }
 
+/**
+ * Fonction ChercheSkin
+ * @param mixed $idskin
+ */
 function ChercheSkin($idskin)
 {
     $query = "SELECT * FROM skin WHERE idskin='$idskin'";
@@ -152,6 +330,10 @@ function ChercheSkin($idskin)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction get_FromFormatedTime
+ * @param mixed $ladate
+ */
 function get_FromFormatedTime($ladate)
 {
     if (preg_match("/([0-9]{1,2})\/([0-9]{1,2})\/([0-9]{2}) ([0-9]{1,2}):([0-9]{1,2}):([0-9]{1,2})/", $ladate, $regs))
@@ -168,6 +350,19 @@ function get_FromFormatedTime($ladate)
     }
 }
 
+/**
+ * Fonction creer_ordre
+ * @param mixed $sens
+ * @param mixed $sicav
+ * @param mixed $nombre
+ * @param mixed $valmin
+ * @param mixed $valmax
+ * @param mixed $timemin
+ * @param mixed $select
+ * @param mixed $ansvaleur
+ * @param mixed $seuil
+ * @param mixed $ppourc
+ */
 function creer_ordre($sens,$sicav,$nombre,$valmin,$valmax,$timemin,$select,$ansvaleur,$seuil,$ppourc)
 {
     global $internaute;
@@ -262,6 +457,9 @@ function creer_ordre($sens,$sicav,$nombre,$valmin,$valmax,$timemin,$select,$ansv
     return $echo;
 }
 
+/**
+ * Fonction listvaleur
+ */
 function listvaleur()
 {  
     global $internaute;
@@ -277,6 +475,10 @@ function listvaleur()
     return $return;
 }
 
+/**
+ * Fonction dansliste
+ * @param mixed $sico
+ */
 function dansliste($sico)
 {  
     $sico=addslashes($sico);
@@ -288,6 +490,13 @@ function dansliste($sico)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction AjoutPort
+ * @param mixed $idcompte
+ * @param mixed $sicav
+ * @param mixed $quant
+ * @param mixed $valeur
+ */
 function AjoutPort($idcompte,$sicav,$quant,$valeur)
 {
     $possede=joueur_possede($sicav,$idcompte);
@@ -300,6 +509,10 @@ function AjoutPort($idcompte,$sicav,$quant,$valeur)
     return 0;
 }
 
+/**
+ * Fonction delete_sicav
+ * @param mixed $sicav
+ */
 function delete_sicav($sicav)
 {
     $query = "DELETE FROM `cacval` WHERE codesico=$sicav";
@@ -307,6 +520,10 @@ function delete_sicav($sicav)
     $run_query = ExecRequete ($query, $connexion);    
 }
 
+/**
+ * Fonction listmenu
+ * @param mixed $type
+ */
 function listmenu($type="menu")
 {  
     global $internaute;
@@ -332,6 +549,12 @@ function listmenu($type="menu")
     return $return;
 }
 
+/**
+ * Fonction listhisto
+ * @param mixed $deblign
+ * @param mixed $nblign
+ * @param mixed $depuis
+ */
 function listhisto($deblign,$nblign,$depuis=0)
 {  
     global $internaute;
@@ -352,6 +575,13 @@ function listhisto($deblign,$nblign,$depuis=0)
     return $return;
 }
 
+/**
+ * Fonction listclassementequipe
+ * @param mixed $mois
+ * @param mixed $ligncour
+ * @param mixed $maxligne
+ * @param mixed $cherche
+ */
 function listclassementequipe($mois,$ligncour,$maxligne,$cherche="")
 {
     global $internaute;
@@ -445,6 +675,9 @@ function listclassementequipe($mois,$ligncour,$maxligne,$cherche="")
     return $retourne;
 }
 
+/**
+ * Fonction gettabjoueursenequipes
+ */
 function gettabjoueursenequipes()
 {
     $query = "SELECT membregroupe.idcompte as idcompte, initialgroupe , groupe.idgroupe as idgroupe
@@ -460,6 +693,13 @@ function gettabjoueursenequipes()
     return $return;
 }
 
+/**
+ * Fonction listclassement
+ * @param mixed $mois
+ * @param mixed $ligncour
+ * @param mixed $maxligne
+ * @param mixed $cherche
+ */
 function listclassement($mois,$ligncour,$maxligne,$cherche="")
 {
     global $internaute;
@@ -575,6 +815,10 @@ function listclassement($mois,$ligncour,$maxligne,$cherche="")
     return $retourne;
 }
 
+/**
+ * Fonction listclassementcount
+ * @param mixed $moisstamp
+ */
 function listclassementcount($moisstamp)
 {
     $query = "SELECT COUNT(*) as nbrplayer FROM compte WHERE authlevel='1' and dateinscr<'$moisstamp'"; 
@@ -584,6 +828,9 @@ function listclassementcount($moisstamp)
     return is_object($lignresult) ? $lignresult->nbrplayer : 0;
 }
 
+/**
+ * Fonction getclassementsicavlist
+ */
 function getclassementsicavlist()
 {  
     $letimestamp=get_refresh();
@@ -604,6 +851,13 @@ function getclassementsicavlist()
     return $return;
 }
 
+/**
+ * Fonction cmd_update_sicav
+ * @param mixed $codesico
+ * @param mixed $valeur
+ * @param mixed $lasttime
+ * @param mixed $lasttimedown
+ */
 function cmd_update_sicav($codesico,$valeur,$lasttime,$lasttimedown )
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -612,6 +866,9 @@ function cmd_update_sicav($codesico,$valeur,$lasttime,$lasttimedown )
     return 0;
 }
 
+/**
+ * Fonction get_dernier_timestamp
+ */
 function get_dernier_timestamp()
 {
     $query = "SELECT min(lasttime) AS laststamp,min(lasttimedown) AS lastdownstamp FROM cacval";
@@ -626,6 +883,18 @@ function get_dernier_timestamp()
     return $timestamp;
 }
 
+/**
+ * Fonction addordre
+ * @param mixed $codesico
+ * @param mixed $idcompte
+ * @param mixed $datecreation
+ * @param mixed $sens
+ * @param mixed $nbr
+ * @param mixed $pourc
+ * @param mixed $tempslim
+ * @param mixed $coursmin
+ * @param mixed $coursmax
+ */
 function addordre($codesico,$idcompte,$datecreation,$sens,$nbr,$pourc,$tempslim,$coursmin,$coursmax)
 {
     if(intval($pourc)==0)
@@ -638,6 +907,10 @@ function addordre($codesico,$idcompte,$datecreation,$sens,$nbr,$pourc,$tempslim,
     return 0;
 }
 
+/**
+ * Fonction niv_joueur
+ * @param mixed $idcompte
+ */
 function niv_joueur($idcompte)
 {  
     $query = "SELECT niveau.* 
@@ -648,6 +921,9 @@ function niv_joueur($idcompte)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction get_ordre
+ */
 function get_ordre()
 {
     if(defined('SECURE') && SECURE)
@@ -677,6 +953,13 @@ function get_ordre()
     return $return;
 }
 
+/**
+ * Fonction add_msg
+ * @param mixed $idfrom
+ * @param mixed $idrecept
+ * @param mixed $title
+ * @param mixed $corps
+ */
 function add_msg($idfrom,$idrecept,$title,$corps)
 {
     $etat="non lu";
@@ -688,6 +971,10 @@ function add_msg($idfrom,$idrecept,$title,$corps)
     return "";
 }
 
+/**
+ * Fonction upd_msgetat
+ * @param mixed $idmessage
+ */
 function upd_msgetat($idmessage)
 {
     global $internaute;
@@ -698,6 +985,10 @@ function upd_msgetat($idmessage)
     return "";
 }
 
+/**
+ * Fonction dodelmessage
+ * @param mixed $idmessage
+ */
 function dodelmessage($idmessage)
 {
     global $internaute;
@@ -708,6 +999,12 @@ function dodelmessage($idmessage)
     return msgtab(lang(177),lang(86));
 }
 
+/**
+ * Fonction efface_ordre
+ * @param mixed $codesico
+ * @param mixed $idcompte
+ * @param mixed $datecreation
+ */
 function efface_ordre($codesico,$idcompte,$datecreation)
 {
     $query = "UPDATE `ordre` SET etat='0' WHERE `codesico` = '$codesico' AND `idcompte` = '$idcompte' AND CONCAT(`datecreation`) = '$datecreation' LIMIT 1";
@@ -716,6 +1013,10 @@ function efface_ordre($codesico,$idcompte,$datecreation)
     return ($GLOBALS['last_pdo_stmt'] ? $GLOBALS['last_pdo_stmt']->rowCount() : 0);
 }
 
+/**
+ * Fonction get_ordrelist
+ * @param mixed $condition
+ */
 function get_ordrelist($condition="")
 {
     global $internaute;
@@ -733,6 +1034,9 @@ function get_ordrelist($condition="")
     return $return;
 }
 
+/**
+ * Fonction get_idmenu
+ */
 function get_idmenu()
 {
     global $do;
@@ -746,6 +1050,10 @@ function get_idmenu()
     return is_object($temp) ? $temp->text_id : "";
 }
 
+/**
+ * Fonction del_ordre
+ * @param mixed $datecreation
+ */
 function del_ordre($datecreation)
 {
     global $internaute;
@@ -756,6 +1064,10 @@ function del_ordre($datecreation)
     return "";
 }
 
+/**
+ * Fonction get_info_ordre
+ * @param mixed $datecreation
+ */
 function get_info_ordre($datecreation)
 {
     global $internaute;
@@ -766,6 +1078,10 @@ function get_info_ordre($datecreation)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction donnaction
+ * @param mixed $codesico
+ */
 function donnaction($codesico)
 {  
     $query = "SELECT * 
@@ -776,6 +1092,10 @@ function donnaction($codesico)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction donnactionyn
+ * @param mixed $yn
+ */
 function donnactionyn($yn)
 {
     $query = "SELECT *
@@ -786,6 +1106,11 @@ function donnactionyn($yn)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction stataction
+ * @param mixed $codesico
+ * @param mixed $limit
+ */
 function stataction($codesico,$limit)
 {
     $query = "SELECT FROM_UNIXTIME( temps, '%d/%m/%Y' ) AS jour, sens,AVG(valeurunique) as valeurechang,SUM( nbr ) as nb , SUM(IF(profit>0,profit,0)) as profit,ABS(SUM(IF(profit<0,profit,0))) as perte
@@ -797,6 +1122,12 @@ function stataction($codesico,$limit)
     return $run_query;
 }
 
+/**
+ * Fonction ordreactionachat
+ * @param mixed $codesico
+ * @param mixed $tmps
+ * @param mixed $valaction
+ */
 function ordreactionachat($codesico,$tmps,$valaction)
 {
     $secure_cond = (defined('SECURE') && !SECURE) ? " or 1" : "";
@@ -809,6 +1140,12 @@ function ordreactionachat($codesico,$tmps,$valaction)
     return $run_query;
 }
 
+/**
+ * Fonction ordreactionvente
+ * @param mixed $codesico
+ * @param mixed $tmps
+ * @param mixed $valaction
+ */
 function ordreactionvente($codesico,$tmps,$valaction)
 {
     $secure_cond = (defined('SECURE') && !SECURE) ? " or 1" : "";
@@ -821,6 +1158,10 @@ function ordreactionvente($codesico,$tmps,$valaction)
     return $run_query;
 }
 
+/**
+ * Fonction exeadminreq
+ * @param mixed $idreq
+ */
 function exeadminreq($idreq)
 {
     $idreq=sec($idreq);
@@ -848,6 +1189,9 @@ function exeadminreq($idreq)
     return "Erreur dans l'id (contacter nicolas)";
 }
 
+/**
+ * Fonction listadminreq
+ */
 function listadminreq()
 {
     $query = "SELECT CONCAT(\"<a href='index.php?do=exeadmin&idreq=\",idreq,\"'>\",libelreq,\"</a>\") AS 'Afficher :', nbutil AS 'Nombre d\'affichage'
@@ -857,6 +1201,10 @@ function listadminreq()
     return $run_query;
 }
 
+/**
+ * Fonction listhistocount
+ * @param mixed $idcompte
+ */
 function listhistocount($idcompte)
 {  
     $query = "SELECT COUNT(*) as nbrhisto
@@ -868,6 +1216,10 @@ function listhistocount($idcompte)
     return is_object($ligne) ? $ligne->nbrhisto : 0;
 }
 
+/**
+ * Fonction getplayercapital
+ * @param mixed $idcompte
+ */
 function getplayercapital($idcompte)
 {
     $query = "SELECT pseudonyme, round( COALESCE( SUM( cacval.valeur * portef.quant ) , 0  )  + cashback, 2  )  AS capital
@@ -885,6 +1237,10 @@ function getplayercapital($idcompte)
     return is_object($resultat) ? $resultat->capital : 0;
 }
 
+/**
+ * Fonction getplayercapitalhorsvad
+ * @param mixed $idcompte
+ */
 function getplayercapitalhorsvad($idcompte)
 {
     $query = "SELECT round( COALESCE( SUM( cacval.valeur * portef.quant ) , 0  ), 2  )  AS capital
@@ -900,6 +1256,10 @@ function getplayercapitalhorsvad($idcompte)
     return is_object($resultat) ? doubleval($resultat->capital) : 0.0;
 }
 
+/**
+ * Fonction getplayercapitalvad
+ * @param mixed $idcompte
+ */
 function getplayercapitalvad($idcompte)
 {
     $query = "SELECT round( COALESCE( SUM( cacval.valeur * portef.quant ) , 0  ), 2  )  AS capital
@@ -915,6 +1275,10 @@ function getplayercapitalvad($idcompte)
     return is_object($resultat) ? -doubleval($resultat->capital) : 0.0;
 }
 
+/**
+ * Fonction listmessagescount
+ * @param mixed $idcompte
+ */
 function listmessagescount($idcompte)
 {  
     $query = "SELECT COUNT(*) as nbrmsg
@@ -926,6 +1290,9 @@ function listmessagescount($idcompte)
     return is_object($ligne) ? $ligne->nbrmsg : 0;
 }
 
+/**
+ * Fonction get_tempsbourse
+ */
 function get_tempsbourse()
 {
     $query = "SELECT max(lasttime) AS laststamp FROM cacval";
@@ -939,6 +1306,9 @@ function get_tempsbourse()
     return $timestamp;
 }
 
+/**
+ * Fonction listskin
+ */
 function listskin()
 {  
     $query = "SELECT * FROM skin ORDER BY nomskin ASC";
@@ -952,6 +1322,10 @@ function listskin()
     return $return;
 }
 
+/**
+ * Fonction skin_existe
+ * @param mixed $idskin
+ */
 function skin_existe($idskin)
 {
     $query = "SELECT * FROM skin where idskin='$idskin'";
@@ -960,6 +1334,9 @@ function skin_existe($idskin)
     return ($run_query && $run_query->rowCount() > 0) ? 1 : 0;
 }
 
+/**
+ * Fonction scoreestactuel
+ */
 function scoreestactuel()
 {
     list($hour, $min, $sec, $day, $mon, $yr) = explode(" ",date("H i s d m y"));
@@ -972,6 +1349,9 @@ function scoreestactuel()
     return (is_object($nombre) && $nombre->dernier==$ladate) ? 1 : 0;
 }
 
+/**
+ * Fonction teamscoreestactuel
+ */
 function teamscoreestactuel()
 {
     list($hour, $min, $sec, $day, $mon, $yr) = explode(" ",date("H i s d m y"));
@@ -984,6 +1364,9 @@ function teamscoreestactuel()
     return (is_object($nombre) && $nombre->dernier==$ladate) ? 1 : 0;
 }
 
+/**
+ * Fonction insertscore
+ */
 function insertscore()
 {
     list($hour, $min, $sec, $day, $mon, $yr) = explode(" ",date("H i s d m y"));
@@ -1000,6 +1383,9 @@ function insertscore()
     return 1;
 }
 
+/**
+ * Fonction getperfgroupes
+ */
 function getperfgroupes()
 {
     list($hour, $min, $sec, $day, $mon, $yr) = explode(" ",date("H i s d m y"));
@@ -1014,6 +1400,9 @@ function getperfgroupes()
     return $run_query;
 }
 
+/**
+ * Fonction insertgroupescore
+ */
 function insertgroupescore()
 {
     list($hour, $min, $sec, $day, $mon, $yr) = explode(" ",date("H i s d m y"));
@@ -1040,6 +1429,9 @@ function insertgroupescore()
     return 1;
 }
 
+/**
+ * Fonction listmoisclass
+ */
 function listmoisclass()
 {
     $query = "SELECT * FROM listmoisclass";
@@ -1065,6 +1457,9 @@ function listmoisclass()
     return $listmois;
 }
 
+/**
+ * Fonction listmoisclassequipe
+ */
 function listmoisclassequipe()
 {
     $query = "SELECT datescore
@@ -1094,6 +1489,10 @@ function listmoisclassequipe()
     return $listmois;
 }
 
+/**
+ * Fonction getyahooname
+ * @param mixed $sico
+ */
 function getyahooname($sico)
 {
     $query = "SELECT yahooname FROM cacval WHERE codesico='$sico'";
@@ -1103,6 +1502,9 @@ function getyahooname($sico)
     return is_object($obj) ? $obj->yahooname : "";
 }
 
+/**
+ * Fonction get_yahoosicavliste
+ */
 function get_yahoosicavliste()
 {
     $query = "SELECT yahooname FROM cacval WHERE down='1' ORDER BY codesico";
@@ -1122,6 +1524,10 @@ function get_yahoosicavliste()
     return defined('NOUVADDR') ? NOUVADDR.$return.NOUVADDRFIN : $return;
 }
 
+/**
+ * Fonction getinternauteinfo
+ * @param mixed $pseudo
+ */
 function getinternauteinfo($pseudo)
 {
     $query = "SELECT * FROM `compte` where pseudonyme='$pseudo'";
@@ -1130,6 +1536,11 @@ function getinternauteinfo($pseudo)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction setmdp
+ * @param mixed $idcompte
+ * @param mixed $mdp
+ */
 function setmdp($idcompte,$mdp)
 {
     $passe=md5($mdp);
@@ -1139,6 +1550,13 @@ function setmdp($idcompte,$mdp)
     return 1;
 }
 
+/**
+ * Fonction increcompensegroupe
+ * @param mixed $idgroupe
+ * @param mixed $or
+ * @param mixed $argent
+ * @param mixed $bronze
+ */
 function increcompensegroupe($idgroupe,$or,$argent,$bronze)
 {
     $query = "UPDATE `groupe` SET `medor`=`medor`+$or,`medargent`=`medargent`+$argent,`medbronze`=`medbronze`+$bronze WHERE idgroupe='$idgroupe'";
@@ -1147,6 +1565,11 @@ function increcompensegroupe($idgroupe,$or,$argent,$bronze)
     return 1;
 }
 
+/**
+ * Fonction getheritier
+ * @param mixed $idgroupe
+ * @param mixed $idcomptedead
+ */
 function getheritier($idgroupe,$idcomptedead)
 {
     $query = "SELECT * FROM `membregroupe` where idgroupe='$idgroupe' and idcompte!='$idcomptedead' ORDER BY datejoint ASC LIMIT 1";
@@ -1156,6 +1579,10 @@ function getheritier($idgroupe,$idcomptedead)
     return is_object($resultat) ? $resultat->idcompte : 0;
 }
 
+/**
+ * Fonction fctgetoffteammaster
+ * @param mixed $idcompte
+ */
 function fctgetoffteammaster($idcompte)
 {
     $groupe=getgroupbyadmin($idcompte);
@@ -1183,6 +1610,10 @@ function fctgetoffteammaster($idcompte)
     }
 }
 
+/**
+ * Fonction fctgetoffteam
+ * @param mixed $idcompte
+ */
 function fctgetoffteam($idcompte)
 {
     $groupe=getgroupbymembre($idcompte);
@@ -1194,6 +1625,11 @@ function fctgetoffteam($idcompte)
     }
 }
 
+/**
+ * Fonction fctdoraz
+ * @param mixed $liste
+ * @param mixed $optdel
+ */
 function fctdoraz($liste,$optdel=0)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1232,6 +1668,10 @@ function fctdoraz($liste,$optdel=0)
     return 0;
 }
 
+/**
+ * Fonction getCodesSicoSecteurPortef
+ * @param mixed $idjoueur
+ */
 function getCodesSicoSecteurPortef($idjoueur)
 {
     $query = "SELECT cacvalfinish.codesico
@@ -1247,6 +1687,10 @@ function getCodesSicoSecteurPortef($idjoueur)
     return $lst;
 }
 
+/**
+ * Fonction getCodesSicoPortef
+ * @param mixed $idjoueur
+ */
 function getCodesSicoPortef($idjoueur)
 {
     $query = "SELECT portef.codesico FROM portef WHERE portef.idcompte='$idjoueur'";
@@ -1261,6 +1705,10 @@ function getCodesSicoPortef($idjoueur)
     return $lst;
 }
 
+/**
+ * Fonction getCodesSicoCote
+ * @param mixed $idjoueur
+ */
 function getCodesSicoCote($idjoueur)
 {
     $query = "SELECT cacval.codesico,ROUND(SUM(nbr*valeurunique),2) as Valeur FROM cacval,historique WHERE cacval.codesico = historique.codesico AND temps>UNIX_TIMESTAMP()-(3600*24*7) AND historique.nbr>0 GROUP BY cacval.nom ORDER BY Valeur DESC LIMIT 5";
@@ -1275,6 +1723,11 @@ function getCodesSicoCote($idjoueur)
     return $lst;
 }
 
+/**
+ * Fonction ajoutcommentaire
+ * @param mixed $message
+ * @param mixed $idaide
+ */
 function ajoutcommentaire($message,$idaide)
 {
     global $internaute;
@@ -1288,6 +1741,9 @@ function ajoutcommentaire($message,$idaide)
     return "";
 }
 
+/**
+ * Fonction effacvieuxordres
+ */
 function effacvieuxordres()
 {
     global $internaute;
@@ -1302,6 +1758,9 @@ function effacvieuxordres()
     return $query;
 }
 
+/**
+ * Fonction effacordresinactifs
+ */
 function effacordresinactifs()
 {
     global $internaute;
@@ -1316,6 +1775,10 @@ function effacordresinactifs()
     return $query;
 }
 
+/**
+ * Fonction delcommentaire
+ * @param mixed $idcomment
+ */
 function delcommentaire($idcomment)
 {
     global $internaute;
@@ -1332,6 +1795,11 @@ function delcommentaire($idcomment)
     return "";
 }
 
+/**
+ * Fonction ajoutcommentairefaq
+ * @param mixed $message
+ * @param mixed $idaide
+ */
 function ajoutcommentairefaq($message,$idaide)
 {
     global $internaute;
@@ -1345,6 +1813,10 @@ function ajoutcommentairefaq($message,$idaide)
     return "";
 }
 
+/**
+ * Fonction delcommentairefaq
+ * @param mixed $idcomment
+ */
 function delcommentairefaq($idcomment)
 {
     global $internaute;
@@ -1361,6 +1833,11 @@ function delcommentairefaq($idcomment)
     return "";
 }
 
+/**
+ * Fonction modifetatactions
+ * @param mixed $lst
+ * @param mixed $nouvetat
+ */
 function modifetatactions($lst,$nouvetat)
 {
     $query = "UPDATE cacval SET authachat='$nouvetat',down='$nouvetat' WHERE codesico IN ($lst)";
@@ -1369,6 +1846,10 @@ function modifetatactions($lst,$nouvetat)
     return "";
 }
 
+/**
+ * Fonction delactions
+ * @param mixed $lst
+ */
 function delactions($lst)
 {
     $query = "INSERT INTO ordre ( `codesico` , `idcompte` , `datecreation` , `sens` , `nbr` , `pourc` , `tempslim` , `coursmin` , `coursmax` , `etat` )
@@ -1389,6 +1870,14 @@ function delactions($lst)
     return "";
 }
 
+/**
+ * Fonction factoriseactions
+ * @param mixed $lst
+ * @param mixed $type
+ * @param mixed $fac
+ * @param mixed $datedeb
+ * @param mixed $datefin
+ */
 function factoriseactions($lst,$type,$fac,$datedeb,$datefin)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1403,6 +1892,10 @@ function factoriseactions($lst,$type,$fac,$datedeb,$datefin)
     return "";
 }
 
+/**
+ * Fonction getnvmessages
+ * @param mixed $idcompte
+ */
 function getnvmessages($idcompte=0)
 {  
     global $internaute;
@@ -1417,6 +1910,10 @@ function getnvmessages($idcompte=0)
     return is_object($ligne) ? $ligne->nbrmsg : 0;
 }
 
+/**
+ * Fonction getnvmessagesenvoye
+ * @param mixed $idcompte
+ */
 function getnvmessagesenvoye($idcompte=0)
 {  
     global $internaute;
@@ -1431,6 +1928,10 @@ function getnvmessagesenvoye($idcompte=0)
     return is_object($ligne) ? $ligne->nbrmsg : 0;
 }
 
+/**
+ * Fonction getgroupbyadmin
+ * @param mixed $idcompte
+ */
 function getgroupbyadmin($idcompte)
 {  
     $query = "SELECT * FROM groupe WHERE idcompte='$idcompte'";
@@ -1439,6 +1940,10 @@ function getgroupbyadmin($idcompte)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction getgroupbymembre
+ * @param mixed $idcompte
+ */
 function getgroupbymembre($idcompte)
 {
     $query = "SELECT * FROM groupe,membregroupe WHERE groupe.idgroupe=membregroupe.idgroupe and membregroupe.idcompte='$idcompte'";
@@ -1447,6 +1952,11 @@ function getgroupbymembre($idcompte)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction membreestinvite
+ * @param mixed $idcompte
+ * @param mixed $idgroupe
+ */
 function membreestinvite($idcompte,$idgroupe)
 {
     $query = "SELECT COUNT(*) AS nb FROM invitegroupe WHERE idgroupe='$idgroupe' and idcompte='$idcompte'";
@@ -1456,6 +1966,10 @@ function membreestinvite($idcompte,$idgroupe)
     return is_object($ligne) ? $ligne->nb : 0;
 }
 
+/**
+ * Fonction getmembrebygroup
+ * @param mixed $idgroupe
+ */
 function getmembrebygroup($idgroupe)
 {
     $query = "SELECT * FROM compte,membregroupe WHERE compte.idcompte=membregroupe.idcompte and membregroupe.idgroupe='$idgroupe' order by compte.pseudonyme";
@@ -1464,6 +1978,9 @@ function getmembrebygroup($idgroupe)
     return $run_query;
 }
 
+/**
+ * Fonction getjoueursnotingroupe
+ */
 function getjoueursnotingroupe()
 {
     $query = "SELECT idcompte,pseudonyme FROM compte WHERE idcompte NOT IN (SELECT idcompte FROM membregroupe) order by pseudonyme ASC";
@@ -1472,6 +1989,10 @@ function getjoueursnotingroupe()
     return $run_query;
 }
 
+/**
+ * Fonction doinvitejoueur
+ * @param mixed $idjoueur
+ */
 function doinvitejoueur($idjoueur)
 {
     global $internaute;
@@ -1488,6 +2009,10 @@ function doinvitejoueur($idjoueur)
     }
 }
 
+/**
+ * Fonction delinvitejoueur
+ * @param mixed $idjoueur
+ */
 function delinvitejoueur($idjoueur)
 {
     $query = "DELETE FROM `invitegroupe` WHERE `idcompte`='$idjoueur'";
@@ -1495,6 +2020,14 @@ function delinvitejoueur($idjoueur)
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction doajgroupe
+ * @param mixed $idcompte
+ * @param mixed $titregroupe
+ * @param mixed $diminutif
+ * @param mixed $url
+ * @param mixed $description
+ */
 function doajgroupe($idcompte,$titregroupe,$diminutif,$url,$description)
 {
     if( !estadmingroupe($idcompte) and !estmembregroupe($idcompte))
@@ -1516,6 +2049,10 @@ function doajgroupe($idcompte,$titregroupe,$diminutif,$url,$description)
     }
 }
 
+/**
+ * Fonction dojoingroupe
+ * @param mixed $idgroupe
+ */
 function dojoingroupe($idgroupe)
 {
     global $internaute;
@@ -1534,6 +2071,15 @@ function dojoingroupe($idgroupe)
     }
 }
 
+/**
+ * Fonction domodifgroupe
+ * @param mixed $idgroupe
+ * @param mixed $idcompte
+ * @param mixed $titregroupe
+ * @param mixed $diminutif
+ * @param mixed $url
+ * @param mixed $description
+ */
 function domodifgroupe($idgroupe,$idcompte,$titregroupe,$diminutif,$url,$description)
 {
     $ligne=getverifgroupe($idgroupe);
@@ -1554,6 +2100,11 @@ function domodifgroupe($idgroupe,$idcompte,$titregroupe,$diminutif,$url,$descrip
     return lang(194);
 }
 
+/**
+ * Fonction getverifgroupe
+ * @param mixed $idgroupe
+ * @param mixed $idcompte
+ */
 function getverifgroupe($idgroupe=0,$idcompte=0)
 {
     $where="";
@@ -1568,6 +2119,10 @@ function getverifgroupe($idgroupe=0,$idcompte=0)
     return $run_query;
 }
 
+/**
+ * Fonction sauveipadress
+ * @param mixed $ip
+ */
 function sauveipadress($ip)
 {
     $query = "UPDATE conf set valeur='$ip' WHERE libel='envoyeurip'";
@@ -1575,6 +2130,9 @@ function sauveipadress($ip)
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction getiphome
+ */
 function getiphome()
 {
     $query = "SELECT * FROM conf WHERE libel='envoyeurip'";
@@ -1584,6 +2142,12 @@ function getiphome()
     return is_object($ligne) ? "<iphome>$ligne->valeur</iphome>" : "";
 }
 
+/**
+ * Fonction dogroupeaccepterefuse
+ * @param mixed $idverif
+ * @param mixed $choixadmin
+ * @param mixed $commentaireadmin
+ */
 function dogroupeaccepterefuse($idverif,$choixadmin,$commentaireadmin)
 {
     $query = "SELECT * FROM `verifgroupe` WHERE idverifgroupe='$idverif'";
@@ -1639,6 +2203,9 @@ function dogroupeaccepterefuse($idverif,$choixadmin,$commentaireadmin)
     return msgtab("Groupe a été ".$doing.".","Administration des groupes");
 }
 
+/**
+ * Fonction effacvieuxscores
+ */
 function effacvieuxscores()
 {
     $query = "DELETE FROM `scores`  WHERE DAY( `datescore` )<>1 and `datescore` < DATE_SUB(CURDATE() , INTERVAL  ".NB_JOUR_GARDER_STAT_JOUEUR." DAY)";
@@ -1647,6 +2214,10 @@ function effacvieuxscores()
     return 0;
 }
 
+/**
+ * Fonction getscorejoueur
+ * @param mixed $idcompte
+ */
 function getscorejoueur($idcompte)
 {
     $query="
@@ -1663,6 +2234,9 @@ function getscorejoueur($idcompte)
     return is_object($ligne) ? $ligne->capital : 0;
 }
 
+/**
+ * Fonction get_sicavdown
+ */
 function get_sicavdown()
 {
     $query = "SELECT yahooname FROM cacval WHERE down='1' ORDER BY codesico";
@@ -1676,6 +2250,9 @@ function get_sicavdown()
     return $return;
 }
 
+/**
+ * Fonction doundoallinvitegroupe
+ */
 function doundoallinvitegroupe()
 {
     global $internaute;
@@ -1690,6 +2267,10 @@ function doundoallinvitegroupe()
     return msgtab(lang(227),"Administration des groupes");
 }
 
+/**
+ * Fonction getinfogroupe
+ * @param mixed $idgroupe
+ */
 function getinfogroupe($idgroupe)
 {
     $query = "SELECT * FROM `groupe`,`compte` WHERE groupe.idgroupe='$idgroupe' and groupe.idcompte=compte.idcompte";
@@ -1698,6 +2279,10 @@ function getinfogroupe($idgroupe)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction getcompositionequipe
+ * @param mixed $idgroupe
+ */
 function getcompositionequipe($idgroupe)
 {
     list($hour, $min, $sec, $day, $mon, $yr) = explode(" ",date("H i s d m y"));
@@ -1721,6 +2306,9 @@ function getcompositionequipe($idgroupe)
     return $run_query;
 }
 
+/**
+ * Fonction checkoutdated
+ */
 function checkoutdated()
 {
     $query="TRUNCATE TABLE warn_old_sicav";
@@ -1732,6 +2320,9 @@ function checkoutdated()
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction majclassement
+ */
 function majclassement()
 {
     $mois=date("Y-m-d");
@@ -1758,6 +2349,9 @@ function majclassement()
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction majlistmoisclass
+ */
 function majlistmoisclass()
 {
     $query = "TRUNCATE TABLE `listmoisclass`";
@@ -1771,6 +2365,10 @@ function majlistmoisclass()
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction istableexist
+ * @param mixed $nomtable
+ */
 function istableexist($nomtable)
 {
     $query = "SHOW TABLES LIKE '$nomtable'";
@@ -1779,6 +2377,10 @@ function istableexist($nomtable)
     return ($run_query && $run_query->rowCount()==1);
 }
 
+/**
+ * Fonction forumsyncquantity
+ * @param mixed $idforum
+ */
 function forumsyncquantity($idforum)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1790,6 +2392,10 @@ function forumsyncquantity($idforum)
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction forumsyncidlastmessage
+ * @param mixed $idforum
+ */
 function forumsyncidlastmessage($idforum)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1801,6 +2407,10 @@ function forumsyncidlastmessage($idforum)
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction getinfojoueur
+ * @param mixed $idjoueur
+ */
 function getinfojoueur($idjoueur)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1809,6 +2419,10 @@ function getinfojoueur($idjoueur)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction getinfosicav
+ * @param mixed $idsicav
+ */
 function getinfosicav($idsicav)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1817,6 +2431,10 @@ function getinfosicav($idsicav)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction forum_getidmessagesujet
+ * @param mixed $idsujet
+ */
 function forum_getidmessagesujet($idsujet)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1826,6 +2444,10 @@ function forum_getidmessagesujet($idsujet)
     return is_object($ligne) ? $ligne->idmessage : 0;
 }
 
+/**
+ * Fonction forum_getlastmessagesujet
+ * @param mixed $idsujet
+ */
 function forum_getlastmessagesujet($idsujet)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1834,6 +2456,11 @@ function forum_getlastmessagesujet($idsujet)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction forum_peutposter
+ * @param mixed $idcompte
+ * @param mixed $idforum
+ */
 function forum_peutposter($idcompte,$idforum)
 {
     $infoforum=get_infoforum($idforum);
@@ -1854,6 +2481,11 @@ function forum_peutposter($idcompte,$idforum)
     }
 }
 
+/**
+ * Fonction forum_peutlire
+ * @param mixed $idcompte
+ * @param mixed $idforum
+ */
 function forum_peutlire($idcompte,$idforum)
 {
     $infoforum=get_infoforum($idforum);
@@ -1872,6 +2504,10 @@ function forum_peutlire($idcompte,$idforum)
     }
 }
 
+/**
+ * Fonction setsujetlu
+ * @param mixed $idsujet
+ */
 function setsujetlu($idsujet)
 {
     global $internaute;
@@ -1886,6 +2522,10 @@ function setsujetlu($idsujet)
     }
 }
 
+/**
+ * Fonction forum_inc_nblectures
+ * @param mixed $idsujet
+ */
 function forum_inc_nblectures($idsujet)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1893,6 +2533,10 @@ function forum_inc_nblectures($idsujet)
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction forum_inc_joueur_nbposts
+ * @param mixed $idjoueur
+ */
 function forum_inc_joueur_nbposts($idjoueur)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1900,6 +2544,11 @@ function forum_inc_joueur_nbposts($idjoueur)
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction forum_set_joueur_toutlu
+ * @param mixed $idjoueur
+ * @param mixed $date
+ */
 function forum_set_joueur_toutlu($idjoueur,$date)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1907,6 +2556,10 @@ function forum_set_joueur_toutlu($idjoueur,$date)
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction forum_majtoutvuforum
+ * @param mixed $idjoueur
+ */
 function forum_majtoutvuforum($idjoueur)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1921,6 +2574,14 @@ function forum_majtoutvuforum($idjoueur)
     }
 }
 
+/**
+ * Fonction forum_ajoutforum
+ * @param mixed $idsection
+ * @param mixed $nomforum
+ * @param mixed $descriptionforum
+ * @param mixed $authread
+ * @param mixed $authwrite
+ */
 function forum_ajoutforum($idsection , $nomforum , $descriptionforum , $authread , $authwrite)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1930,11 +2591,19 @@ function forum_ajoutforum($idsection , $nomforum , $descriptionforum , $authread
     return $connexion->lastInsertId();
 }
 
+/**
+ * Fonction forum_newgroupeforum
+ * @param mixed $nomggroupe
+ */
 function forum_newgroupeforum($nomggroupe)
 {
     return forum_ajoutforum(0 , "Forum $nomggroupe" , "Forum du groupe $nomggroupe" , 'groupe' , 'groupe');
 }
 
+/**
+ * Fonction setsujetpaslu
+ * @param mixed $idsujet
+ */
 function setsujetpaslu($idsujet)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -1947,6 +2616,15 @@ function setsujetpaslu($idsujet)
     }
 }
 
+/**
+ * Fonction doforum_postmessage
+ * @param mixed $sujet
+ * @param mixed $corps
+ * @param mixed $idforum
+ * @param mixed $idsujet
+ * @param mixed $edit
+ * @param mixed $idmessage
+ */
 function doforum_postmessage($sujet,$corps,$idforum,$idsujet=0,$edit=0,$idmessage=0)
 {
     global $internaute;
@@ -2013,6 +2691,9 @@ function doforum_postmessage($sujet,$corps,$idforum,$idsujet=0,$edit=0,$idmessag
     return msgtab($corptab,lang(171));
 }
 
+/**
+ * Fonction forum_giveforumtogroups
+ */
 function forum_giveforumtogroups()
 {
     $query = "SELECT * FROM groupe WHERE idforum='0'";
@@ -2026,6 +2707,10 @@ function forum_giveforumtogroups()
     }
 }
 
+/**
+ * Fonction incarnerjoueur
+ * @param mixed $idcomptejoueur
+ */
 function incarnerjoueur($idcomptejoueur)
 {
     global $internaute;
@@ -2035,6 +2720,10 @@ function incarnerjoueur($idcomptejoueur)
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction deactivateweekstats
+ * @param mixed $idjoueur
+ */
 function deactivateweekstats($idjoueur)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
@@ -2042,6 +2731,10 @@ function deactivateweekstats($idjoueur)
     ExecRequete ($query, $connexion);
 }
 
+/**
+ * Fonction deactivatedaystats
+ * @param mixed $idjoueur
+ */
 function deactivatedaystats($idjoueur)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);

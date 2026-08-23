@@ -1,4 +1,31 @@
 <?php
+
+/**
+ * Fichier: include_interface.php
+ * Ce fichier contient les fonctions suivantes :
+ * - Html_radio
+ * - getgooglePub
+ * - Html_texte
+ * - Html_textezone
+ * - Html_pass
+ * - Html_bouton
+ * - Html_head_liste
+ * - Html_liste
+ * - opentab
+ * - closetab
+ * - openligne
+ * - closeligne
+ * - opencol
+ * - closecol
+ * - openfont
+ * - closefont
+ * - html_header
+ * - html_footer
+ * - html_login
+ * - return_link_menu
+ * - html_menu
+ */
+
 /**
 * NetTrader 2
 *
@@ -12,6 +39,9 @@ function Html_radio($nom,$valeur,$texte,$checked,$add="")
     return $source;
 }
 
+/**
+ * Fonction getgooglePub
+ */
 function getgooglePub()
 {
     return "<script type=\"text/javascript\">
@@ -22,35 +52,77 @@ document.write('<scr'+'ipt language=\"javascript\" src=\"'+bseuri+'\"></scr'+'ip
 </script>";
 }
 
+/**
+ * Fonction Html_texte
+ * @param mixed $nom
+ * @param mixed $valeur
+ * @param mixed $taille
+ * @param mixed $longueurmax
+ * @param mixed $add
+ */
 function Html_texte($nom,$valeur,$taille,$longueurmax,$add="")
 {
     $source="<input name=\"$nom\" type=\"text\" value=\"$valeur\" size=\"$taille\" maxlength=\"$longueurmax\" $add class=\"post\">";
     return $source;
 }
 
+/**
+ * Fonction Html_textezone
+ * @param mixed $nom
+ * @param mixed $lignes
+ * @param mixed $colonnes
+ * @param mixed $valeur
+ * @param mixed $add
+ */
 function Html_textezone($nom,$lignes,$colonnes,$valeur,$add="")
 {
     $source="<textarea name=\"$nom\" rows=\"$lignes\" $add cols=\"$colonnes\" wrap=\"virtual\" class=\"post\" >$valeur</textarea>";
     return $source;
 }
 
+/**
+ * Fonction Html_pass
+ * @param mixed $nom
+ * @param mixed $valeur
+ * @param mixed $taille
+ * @param mixed $longueurmax
+ * @param mixed $add
+ */
 function Html_pass($nom,$valeur,$taille,$longueurmax,$add="")
 {
     $source="<input name=\"$nom\" type=\"password\" class=\"post\" value=\"$valeur\" size=\"$taille\" maxlength=\"$longueurmax\" $add>";
     return $source;
 }
 
+/**
+ * Fonction Html_bouton
+ * @param mixed $nom
+ * @param mixed $valeur
+ * @param mixed $add
+ */
 function Html_bouton($nom,$valeur,$add="")
 {
     $source=" <input type=\"submit\" name=\"$nom\" class=\"mainoption\" value=\"$valeur\" $add>";
     return $source;
 }
 
+/**
+ * Fonction Html_head_liste
+ * @param mixed $nom
+ * @param mixed $add
+ */
 function Html_head_liste($nom,$add="")
 {
     return "<select name=\"$nom\" class=\"post\" $add>";
 }
 
+/**
+ * Fonction Html_liste
+ * @param mixed $nom
+ * @param mixed $liste
+ * @param mixed $add
+ * @param mixed $defaut
+ */
 function Html_liste($nom,$liste,$add="",$defaut="")
 {
     $source=Html_head_liste($nom,$add);
@@ -65,6 +137,11 @@ function Html_liste($nom,$liste,$add="",$defaut="")
     return $source;
 }
 
+/**
+ * Fonction opentab
+ * @param mixed $attrib
+ * @param mixed $type
+ */
 function opentab($attrib="",$type="")
 {
     $add=$attrib;
@@ -78,11 +155,19 @@ function opentab($attrib="",$type="")
     return $return;
 }
 
+/**
+ * Fonction closetab
+ */
 function closetab()
 {
     return "</table>";
 }
 
+/**
+ * Fonction openligne
+ * @param mixed $type
+ * @param mixed $cat
+ */
 function openligne($type="",$cat="")
 {
     $add=$type;
@@ -106,11 +191,20 @@ function openligne($type="",$cat="")
     return "<tr $add>";
 }
 
+/**
+ * Fonction closeligne
+ * @param mixed $type
+ */
 function closeligne($type="")
 {
     return "</tr>";
 }
 
+/**
+ * Fonction opencol
+ * @param mixed $type
+ * @param mixed $cat
+ */
 function opencol($type="",$cat="")
 {
     switch($type)
@@ -131,11 +225,19 @@ function opencol($type="",$cat="")
     return "<td $add>";
 }
 
+/**
+ * Fonction closecol
+ * @param mixed $type
+ */
 function closecol($type="")
 {
     return "</td>";
 }
 
+/**
+ * Fonction openfont
+ * @param mixed $fonttype
+ */
 function openfont($fonttype="")
 {
     $echo ="<font";
@@ -151,11 +253,18 @@ function openfont($fonttype="")
     return $echo;
 }
 
+/**
+ * Fonction closefont
+ * @param mixed $fonttype
+ */
 function closefont($fonttype="")
 {
     return "</font>";
 }
 
+/**
+ * Fonction html_header
+ */
 function html_header()
 {
     global $tempsdebexec,$skinrep;
@@ -190,6 +299,9 @@ function html_header()
     return $echo;
 }
 
+/**
+ * Fonction html_footer
+ */
 function html_footer()
 {
     global $nbreqexecuted,$tempsdebexec,$internaute,$skinrep,$tempssql;
@@ -244,6 +356,10 @@ function html_footer()
     return $echo;
 }
 
+/**
+ * Fonction html_login
+ * @param mixed $frommenu
+ */
 function html_login($frommenu=0)
 {   
     global $internaute,$do,$skinrep;
@@ -260,6 +376,12 @@ function html_login($frommenu=0)
     return $echo;
 }
 
+/**
+ * Fonction return_link_menu
+ * @param mixed $head
+ * @param mixed $footer
+ * @param mixed $before
+ */
 function return_link_menu($head,$footer,$before)
 {
     global $do,$skinrep,$internaute;
@@ -280,6 +402,9 @@ function return_link_menu($head,$footer,$before)
     return $retour;
 }
 
+/**
+ * Fonction html_menu
+ */
 function html_menu()
 {   
     return return_link_menu("", "&nbsp;&nbsp;&nbsp;", 1);
