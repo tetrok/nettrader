@@ -15,7 +15,6 @@ import yfinance as yf
 import pandas as pd
 import contextlib
 import io
-
 import traceback
 from pyconst import *
 
@@ -73,7 +72,7 @@ def DownloadParisMarkedData(db):
     for action in dictdown:
         action_list.append(action["yahooname"])
         action_dict[action["yahooname"]]=action
-        
+
     if not action_list:
         return
         
@@ -82,27 +81,40 @@ def DownloadParisMarkedData(db):
         tickers = " ".join(batch)
         
         try:
-            # Download using yfinance while suppressing its stdout and stderr
             f = io.StringIO()
             with contextlib.redirect_stdout(f), contextlib.redirect_stderr(f):
-                data = yf.download(tickers, group_by="ticker", period="1d", threads=False, progress=False)
+                data = yf.download(tickers, group_by="column", period="1d", threads=False, progress=False)
 
             success_count = 0
             error_count = 0
             
             for yname in batch:
                 try:
-                    if len(batch) == 1:
-                        ticker_data = data
-                    else:
-                        ticker_data = data[yname] if yname in data else None
-                        
-                    if ticker_data is None or ticker_data.empty or 'Close' not in ticker_data or pd.isna(ticker_data['Close'].iloc[-1]):
-                        print("[ERREUR] %s: Aucune donnée trouvée ou action potentiellement délistée." % yname)
+                    if data is None or data.empty:
+                        print("[ERREUR] %s: Aucune donnée trouvée (DataFrame vide)." % yname)
                         error_count += 1
                         continue
                         
-                    cours = ticker_data['Close'].iloc[-1]
+                    if 'Close' not in data:
+                        print("[ERREUR] %s: Colonne 'Close' manquante dans les données." % yname)
+                        error_count += 1
+                        continue
+                        
+                    close_data = data['Close']
+                    
+                    if isinstance(close_data, pd.DataFrame):
+                        if yname not in close_data.columns:
+                            print("[ERREUR] %s: Aucune donnée trouvée ou action potentiellement délistée." % yname)
+                            error_count += 1
+                            continue
+                        if pd.isna(close_data[yname].iloc[-1]):
+                            raise ValueError("Valeur Close est NaN")
+                        cours = close_data[yname].iloc[-1]
+                    else:
+                        if pd.isna(close_data.iloc[-1]):
+                            raise ValueError("Valeur Close est NaN")
+                        cours = close_data.iloc[-1]
+
                     fval = float(cours)
 
                     print("[SUCCÈS] %s: Données récupérées (valeur = %.4f)" % (yname, fval))
@@ -112,15 +124,13 @@ def DownloadParisMarkedData(db):
                     
                     if yname in action_dict:
                         ansval = float(action_dict[yname]["valeur"])
-                        # Get the current datetime as last update time
                         act_date = time.time()
                         
                         req = "UPDATE cacval SET valeur='%s', lasttime='%i', lasttimedown='%i' WHERE yahooname='%s'" % (fval, act_date, aujourdhui, yname)
                         ExecSql(db, req)
                         
-                        if fval == 0 or abs(ansval - fval) / (fval) >= 0.49:
-                            DisableAction(db, yname)
-                            mail_error_text += "L'action %s a change de 25%% entre deux maj. Elle a ete desactivee.\n" % (yname)
+                        if fval == 0 or (ansval != 0 and abs(ansval - fval) / (ansval) >= 0.25):
+                            mail_error_text += "ATTENTION: L'action %s a une valeur de 0 ou a changé de plus de 25%% entre deux maj. Ancienne valeur: %.4f, Nouvelle: %.4f.\n" % (yname, ansval, fval)
                 except Exception as e:
                     error_count += 1
                     mail_error_text += "Erreur de traitement pour %s: %s\n" % (yname, str(e))
@@ -134,7 +144,7 @@ def DownloadParisMarkedData(db):
         VALUES (
         NULL , UNIX_TIMESTAMP( ) , 'nettrader2009@nettrader.fr', 'Admin', 'nettrader2009@nettrader.fr', 'Admin', 'Rapport de telechargement', '%s', 'attente'
         );
-        """ % (mail_error_text.replace("'","\\'")))
+        """% (mail_error_text.replace("'","\\'")))
 
 firstloop=True
 while 1:
@@ -144,7 +154,7 @@ while 1:
         db = pymysql.connect(host=C_HOST, user=C_USER, passwd=C_PWD, db=C_DBNAME)
         begindown=time.time()
         try:
-            urllib.urlopen("http://app/cmd.php?do=checkscore")
+            urllib.urlopen("http://localhost/~fnicolas/cmd.php?do=checkscore")
         except:
             print("Erreur appel de page php")
             print(sys.exc_info())
@@ -155,7 +165,7 @@ while 1:
             exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
             traceback.print_exception(exceptionType, exceptionValue, exceptionTraceback, limit=20, file=sys.stdout)
         try:
-            urllib.urlopen("http://app/cmd.php?do=executeorder")
+            urllib.urlopen("http://localhost/~fnicolas/cmd.php?do=executeorder")
         except:
             print("Erreur appel de page php")
             print(sys.exc_info())
