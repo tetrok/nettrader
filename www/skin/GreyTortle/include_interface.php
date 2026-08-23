@@ -1,4 +1,4 @@
-<?
+<?php
 /**
 * NetTrader 2
 *

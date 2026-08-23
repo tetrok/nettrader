@@ -1,4 +1,4 @@
-<?
+<?php
 //profil d'un groupe( classement integr�)
 /**
 * NetTrader 2
