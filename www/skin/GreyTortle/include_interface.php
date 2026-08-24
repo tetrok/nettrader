@@ -152,8 +152,7 @@ return "<select name=\"$nom\" class=\"select\" $add>";
 function Html_liste($nom,$liste,$add="",$defaut="") // $liste = array('25' => '25 %', '50' => '50 %', '75' => '75%')
 {
 $source=Html_head_liste($nom,$add);
-reset($liste);
-while (list($key, $val) = each($liste)) {
+foreach ($liste as $key => $val) {
    $def="";
    if($key==$defaut)
    {

@@ -58,7 +58,7 @@ $echo="";
 		 	$echo.=";";
 		 	}
 			 $i++;
-			 $echo.=ereg_replace(chr(13), "",ereg_replace(chr(10), "",stripslashes($elem)));
+			 $echo.=str_replace([chr(13), chr(10)], "", stripslashes($elem));
 		}
 		
 	}
