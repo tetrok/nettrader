@@ -1,4 +1,11 @@
 <?
+
+/**
+ * Fichier: lang_fr.php
+ * Ce fichier contient les fonctions suivantes :
+ * - lang
+ */
+
 /**
 * NetTrader 2
 *

@@ -1,4 +1,10 @@
 <?php
+
+/**
+ * Fichier: constbdd.php
+ * Aucune fonction portée par ce fichier.
+ */
+
 /**
 * NetTrader 2
 *
