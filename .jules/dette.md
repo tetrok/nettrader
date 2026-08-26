@@ -13,7 +13,7 @@ L'analyse de l'application met en évidence la présence de dettes techniques et
 
 ## Code Legacy
 - **Fichiers de Skins :** L'interface repose sur des fichiers comme `www/skin/GreyTortle/include_interface.php` qui construisent le HTML de façon archaïque (balises obsolètes comme `<font>`, `bgcolor`, `<center>`).
-- **Short Open Tags :** Bien que corrigé dans certains PRs, il faut s'assurer qu'aucun fichier ne contient encore la balise d'ouverture `<?` qui est désactivée par défaut sur les environnements modernes.
+- **Short Open Tags :** Corrigé, plus aucun fichier ne contient la balise d'ouverture `<?` qui est désactivée par défaut sur les environnements modernes.
 
 ## API et Fonctionnalités
 - **Flux Boursiers Externes :** Le projet se base sur d'anciens flux CSV obsolètes (Yahoo Finance, Euronext) qui n'existent plus. Les fonctions comme `traiteeuronextcsv` et `traiteyahoocsv` sont cassées.

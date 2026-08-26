@@ -20,8 +20,8 @@ def add_file_comment(filepath):
             file_comment += f" * - {func}\n"
         file_comment += " */\n"
 
-    # Insert comment after <?php or <?
-    match = re.search(r'<\?php|<\?', content, re.IGNORECASE)
+    # Insert comment after <?php
+    match = re.search(r'<\?php', content, re.IGNORECASE)
     if match:
         end_pos = match.end()
         new_content = content[:end_pos] + "\n\n" + file_comment + content[end_pos:]
