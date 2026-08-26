@@ -3,6 +3,7 @@
 /**
  * Fichier: nt2_function.php
  * Ce fichier contient les fonctions suivantes :
+ * - e
  * - tabvaleurouzero
  * - affichpseudo
  * - affichgroupe
@@ -67,6 +68,19 @@
 * @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
 * @author Nicolas Fortin <nfortin@nettrader.fr>
 */
+
+/**
+ * Sécurise une chaîne de caractères pour l'affichage HTML
+ * @param mixed $string
+ * @return string
+ */
+function e($string)
+{
+    if ($string === null) {
+        return '';
+    }
+    return htmlspecialchars((string) $string, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
 
 function tabvaleurouzero($tableau,$valeur)
 {
@@ -1338,6 +1352,9 @@ function lienordre($champ,$titre)
  */
 function bbtohtml($text)
 {
+    // 1. Échapper tout le HTML natif
+    $text = e($text);
+
     global $skinrep;
     $bbcode = [
         "[list]", "[*]", "[/list]",
