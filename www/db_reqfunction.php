@@ -422,7 +422,7 @@ function creer_ordre($sens,$sicav,$nombre,$valmin,$valmax,$timemin,$select,$ansv
         }
         if((!(SECURE)||(is_object($bddaction) && $bddaction->lasttime>date("U")-SECURETIMEDELAY)) && ($dernvaleur>$valmin && ($dernvaleur<=$valmax || $valmax==-1) && date("U")<=$timemin))
         {
-            if( $dernvaleur <> $ansvaleur AND $ansvaleur<>"" )
+            if( $ansvaleur<>"" AND abs((float)$dernvaleur - (float)$ansvaleur) > 0.0001 )
             {
                 $echo = lang(4)."($dernvaleur <> $ansvaleur)";
             } else {
