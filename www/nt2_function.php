@@ -68,6 +68,18 @@
 * @author Nicolas Fortin <nfortin@nettrader.fr>
 */
 
+/**
+ * Sécurise une chaîne de caractères pour l'affichage HTML
+ */
+function e($string) {
+    if ($string === null) {
+        return '';
+    }
+    // ENT_QUOTES : convertit les guillemets doubles et simples.
+    // ENT_SUBSTITUTE : remplace les caractères invalides par un caractère de remplacement (évite les erreurs).
+    return htmlspecialchars((string) $string, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
 function tabvaleurouzero($tableau,$valeur)
 {
     if(is_array($tableau) && array_key_exists($valeur,$tableau))
