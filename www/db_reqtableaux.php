@@ -1,4 +1,31 @@
 <?php
+
+/**
+ * Fichier: db_reqtableaux.php
+ * Ce fichier contient les fonctions suivantes :
+ * - get_messagelist
+ * - get_messagelistenvoye
+ * - get_playerconnected
+ * - get_oldplayer
+ * - get_players
+ * - get_sicavcat
+ * - get_acttotpossede
+ * - getnbstats
+ * - exepublicreq
+ * - exeanspublicreq
+ * - get_listeaide
+ * - get_listecomment
+ * - get_listefaq
+ * - get_listecommentfaq
+ * - get_lstactions
+ * - get_listeforums
+ * - get_listesujets
+ * - get_infoforum
+ * - get_listemessages
+ * - get_infosujet
+ * - get_infomessage
+ */
+
 /**
 * NetTrader 2
 *
@@ -26,6 +53,10 @@ ORDER BY messages.idcompte,datemess DESC LIMIT $debligne,$nbligne";
     return $return;
 }
 
+/**
+ * Fonction get_messagelistenvoye
+ * @param mixed $idcompte
+ */
 function get_messagelistenvoye($idcompte)
 {
     global $internaute;
@@ -46,6 +77,9 @@ ORDER BY messages.idcompte,datemess DESC";
     return $return;
 }
 
+/**
+ * Fonction get_playerconnected
+ */
 function get_playerconnected()
 {
     $query = "SELECT compte.pseudonyme AS Pseudo
@@ -66,6 +100,9 @@ ORDER BY tempsconnect DESC";
     return $return;
 }
 
+/**
+ * Fonction get_oldplayer
+ */
 function get_oldplayer()
 {
     $query = "SELECT compte.idcompte as id,compte.pseudonyme AS pseudo,dateactivite as seclast,IF(dateactivite>0,FROM_UNIXTIME(dateactivite),'') as lastconnect,FROM_UNIXTIME(dateinscr) as 'dateinscrfrm'
@@ -77,6 +114,9 @@ ORDER BY dateactivite ASC";
     return $run_query;
 }
 
+/**
+ * Fonction get_players
+ */
 function get_players()
 {
     $query = "SELECT *
@@ -88,6 +128,10 @@ ORDER BY authlevel DESC,pseudonyme ASC";
     return $run_query;
 }
 
+/**
+ * Fonction get_sicavcat
+ * @param mixed $lstactions
+ */
 function get_sicavcat($lstactions)
 {
     global $internaute;
@@ -122,6 +166,10 @@ function get_sicavcat($lstactions)
     return $run_query;
 }
 
+/**
+ * Fonction get_acttotpossede
+ * @param mixed $lstactions
+ */
 function get_acttotpossede($lstactions="")
 {
     $aj = "";
@@ -152,6 +200,9 @@ function get_acttotpossede($lstactions="")
     return $tab;
 }
 
+/**
+ * Fonction getnbstats
+ */
 function getnbstats()
 {
     $query = "SELECT COUNT(*) AS nb
@@ -163,6 +214,10 @@ WHERE 1";
     return is_object($lst) ? $lst->nb : 0;
 }
 
+/**
+ * Fonction exepublicreq
+ * @param mixed $idreq
+ */
 function exepublicreq($idreq)
 {
     $idreq = sec($idreq);
@@ -195,6 +250,9 @@ WHERE idreq='$idreq'";
     return $retour;
 }
 
+/**
+ * Fonction exeanspublicreq
+ */
 function exeanspublicreq()
 {
     $query = "SELECT `valeur`
@@ -221,6 +279,9 @@ WHERE `libel` = 'lastmajstattitle'";
     return $retour;
 }
 
+/**
+ * Fonction get_listeaide
+ */
 function get_listeaide()
 {
     $query = "SELECT *,COUNT(idcomment) as nbcomment,tabaide.idaide as idligne
@@ -234,6 +295,10 @@ ORDER BY chapaide.idchapaide ASC,tabaide.idaide ASC
     return $run_query;
 }
 
+/**
+ * Fonction get_listecomment
+ * @param mixed $idaide
+ */
 function get_listecomment($idaide)
 {
     $query = "SELECT *,compte.idcompte as auteurid
@@ -246,6 +311,9 @@ ORDER BY datecomment DESC
     return $run_query;
 }
 
+/**
+ * Fonction get_listefaq
+ */
 function get_listefaq()
 {
     $query = "SELECT *,COUNT(idcomment) as nbcomment,tabfaq.idaide as idligne,tabfaq.idaide as lnkaide
@@ -258,6 +326,10 @@ ORDER BY tabfaq.idaide ASC
     return $run_query;
 }
 
+/**
+ * Fonction get_listecommentfaq
+ * @param mixed $idaide
+ */
 function get_listecommentfaq($idaide)
 {
     $query = "SELECT *,compte.idcompte as auteurid
@@ -270,6 +342,9 @@ ORDER BY datecomment DESC
     return $run_query;
 }
 
+/**
+ * Fonction get_lstactions
+ */
 function get_lstactions()
 {
     $query = "SELECT *
@@ -281,6 +356,9 @@ ORDER BY nom ASC
     return $run_query;
 }
 
+/**
+ * Fonction get_listeforums
+ */
 function get_listeforums()
 {
     global $internaute;
@@ -315,6 +393,12 @@ LEFT JOIN `f_readforum` rf ON (rf.idcompte='$id_compte' and rf.idforum=forum.idf
     return $run_query;
 }
 
+/**
+ * Fonction get_listesujets
+ * @param mixed $idforum
+ * @param mixed $de
+ * @param mixed $juska
+ */
 function get_listesujets($idforum,$de,$juska)
 {
     global $internaute;
@@ -330,6 +414,10 @@ ORDER BY fs.idlastmessage DESC LIMIT $de,$juska
     return $run_query;
 }
 
+/**
+ * Fonction get_infoforum
+ * @param mixed $idforum
+ */
 function get_infoforum($idforum)
 {
     $query = "SELECT * FROM `f_forum` WHERE idforum='$idforum'";
@@ -338,6 +426,12 @@ function get_infoforum($idforum)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction get_listemessages
+ * @param mixed $idsujet
+ * @param mixed $de
+ * @param mixed $juska
+ */
 function get_listemessages($idsujet,$de,$juska)
 {
     $query = "SELECT *,cpt.pseudonyme as auteur
@@ -355,6 +449,10 @@ LIMIT $de,$juska
     return $run_query;
 }
 
+/**
+ * Fonction get_infosujet
+ * @param mixed $idsujet
+ */
 function get_infosujet($idsujet)
 {
     $query = "SELECT * FROM `f_forum` ff,`f_sujet` fs WHERE ff.idforum=fs.idforum and fs.idsujet='$idsujet'";
@@ -363,6 +461,10 @@ function get_infosujet($idsujet)
     return LigneSuivante($run_query);
 }
 
+/**
+ * Fonction get_infomessage
+ * @param mixed $idmessage
+ */
 function get_infomessage($idmessage)
 {
     $query = "SELECT * FROM `f_message` fm,`f_corps` fc WHERE fm.idmessage=fc.idmessage and fm.idmessage='$idmessage'";

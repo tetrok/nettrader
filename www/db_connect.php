@@ -1,4 +1,25 @@
 <?php
+
+/**
+ * Fichier: db_connect.php
+ * Ce fichier contient les fonctions suivantes :
+ * - sec
+ * - echoadmin
+ * - getmicrotime
+ * - cookievalide
+ * - Connexion
+ * - ExecRequete
+ * - LigneSuivante
+ * - ChercheInternaute
+ * - nbessai
+ * - ChercheSession
+ * - SessionValide
+ * - CreerSession
+ * - ControleAcces
+ * - deconnection
+ * - ChercheComptePseudo
+ */
+
 /**
 * NetTrader 2
 *
@@ -34,6 +55,10 @@ function sec($input="")
     return $output;
 }
 
+/**
+ * Fonction echoadmin
+ * @param mixed $message
+ */
 function echoadmin($message)
 {
     global $internaute;
@@ -45,12 +70,19 @@ function echoadmin($message)
     return 1;
 }
 
+/**
+ * Fonction getmicrotime
+ */
 function getmicrotime()
 {
     list($usec, $sec) = explode(" ", microtime());
     return ((float)$usec + (float)$sec);
 }
   
+/**
+ * Fonction cookievalide
+ * @param mixed $idSession
+ */
 function cookievalide($idSession)
 {
     if (isset($_COOKIE["nettrader2session"])) {
@@ -89,6 +121,13 @@ function cookievalide($idSession)
 if (!isset($FichierConnexion)) {
     $FichierConnexion = 1;
 
+    /**
+     * Fonction Connexion
+     * @param mixed $pNom
+     * @param mixed $pMotPasse
+     * @param mixed $pBase
+     * @param mixed $pServeur
+     */
     function Connexion($pNom, $pMotPasse, $pBase, $pServeur)
     {
         static $connectbdd;
@@ -116,6 +155,11 @@ if (!isset($FichierConnexion)) {
 if (!isset($FichierExecRequete)) {
     $FichierExecRequete = 1;
 
+    /**
+     * Fonction ExecRequete
+     * @param mixed $requete
+     * @param mixed $connexion
+     */
     function ExecRequete($requete, $connexion)
     {
         global $nbreqexecuted, $tempssql, $last_pdo_stmt;
@@ -146,6 +190,10 @@ if (!isset($FichierExecRequete)) {
         }  
     }
 
+    /**
+     * Fonction LigneSuivante
+     * @param mixed $resultat
+     */
     function LigneSuivante($resultat)
     {
         if ($resultat instanceof PDOStatement) {
@@ -155,6 +203,12 @@ if (!isset($FichierExecRequete)) {
     }
 }
 
+/**
+ * Fonction ChercheInternaute
+ * @param mixed $idcompte
+ * @param mixed $connexion
+ * @param mixed $mail
+ */
 function ChercheInternaute($idcompte = 0, $connexion, $mail = "")
 {
     $mail = sec($mail);
@@ -167,6 +221,10 @@ function ChercheInternaute($idcompte = 0, $connexion, $mail = "")
     return LigneSuivante($resultat);
 }
 
+/**
+ * Fonction nbessai
+ * @param mixed $idcompte
+ */
 function nbessai($idcompte)
 {
     $depuis = date("U") - 5 * 60;
@@ -177,6 +235,11 @@ function nbessai($idcompte)
     return is_object($resultat) ? $resultat->nbessai : 0;
 }
 
+/**
+ * Fonction ChercheSession
+ * @param mixed $idSession
+ * @param mixed $connexion
+ */
 function ChercheSession($idSession, $connexion) 
 {
     $idSession = sec($idSession);    
@@ -185,6 +248,11 @@ function ChercheSession($idSession, $connexion)
     return LigneSuivante($resultat);
 }
 
+/**
+ * Fonction SessionValide
+ * @param mixed $connexion
+ * @param mixed $session
+ */
 function SessionValide($connexion, $session)
 {
     $maintenant = date("U");
@@ -211,6 +279,14 @@ function SessionValide($connexion, $session)
     }
 }
 
+/**
+ * Fonction CreerSession
+ * @param mixed $connexion
+ * @param mixed $email
+ * @param mixed $motDePasse
+ * @param mixed $idSession
+ * @param mixed $souvenir
+ */
 function CreerSession($connexion, $email, $motDePasse, $idSession, $souvenir)
 {
     global $internaute;
@@ -254,6 +330,14 @@ function CreerSession($connexion, $email, $motDePasse, $idSession, $souvenir)
     }
 }
 
+/**
+ * Fonction ControleAcces
+ * @param mixed &$email
+ * @param mixed &$motDePasse
+ * @param mixed &$emailInternaute
+ * @param mixed $idSession
+ * @param mixed $souvenir
+ */
 function ControleAcces(&$email, &$motDePasse, &$emailInternaute, $idSession, $souvenir)
 {
     global $internaute;
@@ -287,6 +371,9 @@ function ControleAcces(&$email, &$motDePasse, &$emailInternaute, $idSession, $so
     }
 }
 
+/**
+ * Fonction deconnection
+ */
 function deconnection()
 {
     global $internaute;
@@ -306,6 +393,11 @@ function deconnection()
     return lang(37);
 }
 
+/**
+ * Fonction ChercheComptePseudo
+ * @param mixed $pseudo
+ * @param mixed $connexion
+ */
 function ChercheComptePseudo($pseudo, $connexion)
 {
     $requete = "SELECT * FROM compte WHERE pseudonyme = '$pseudo'";

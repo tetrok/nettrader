@@ -1,4 +1,13 @@
 <?php
+
+
+/**
+ * Fichier: progreq.php
+ * Ce fichier contient les fonctions suivantes :
+ * - progreqportef
+ * - progreqinfomess
+ */
+
 /**
 * NetTrader 2
 *
@@ -20,6 +29,9 @@ $idcompte=$internaute->idcompte;
    return $run_query;
 }
 
+/**
+ * Fonction progreqinfomess
+ */
 function progreqinfomess()
 {
 	$query = "SELECT *

@@ -1,4 +1,26 @@
 <?php
+
+/**
+ * Fichier: progfunc.php
+ * Ce fichier contient les fonctions suivantes :
+ * - xmess
+ * - expl
+ * - bal
+ * - generTab
+ * - errorxmlmessage
+ * - ControleProgAcces
+ * - proglogin
+ * - progdeco
+ * - progportef
+ * - proginfomess
+ * - progordre
+ * - progactionslist
+ * - progachatmax
+ * - progventemax
+ * - proglsthisto
+ * - progallinfo
+ */
+
 /**
 * NetTrader 2
 *
@@ -11,6 +33,10 @@ function xmess($mess)
 	return("<message>".$mess."</message>");
 }
 
+/**
+ * Fonction expl
+ * @param mixed $xml
+ */
 function expl($xml)
 {
 global $explorer;
@@ -20,11 +46,23 @@ else
 	return $xml;
 }
 
+/**
+ * Fonction bal
+ * @param mixed $balise
+ * @param mixed $valeur
+ */
 function bal($balise,$valeur)
 {
 	return "<$balise>$valeur</$balise>";
 }
 
+/**
+ * Fonction generTab
+ * @param mixed $tabVal
+ * @param mixed $tabchamps
+ * @param mixed $nomtab
+ * @param mixed $nomligne
+ */
 function generTab($tabVal,$tabchamps,$nomtab,$nomligne)
 {
 global $explorer;
@@ -61,6 +99,10 @@ return expl($xml);
 }
 
 
+/**
+ * Fonction errorxmlmessage
+ * @param mixed $erreurcode
+ */
 function errorxmlmessage($erreurcode)
 {
 $message="";
@@ -93,6 +135,10 @@ return "<erreur>vrai</erreur><codeerreur>$erreurcode</codeerreur><message>$messa
 
 
 
+/**
+ * Fonction ControleProgAcces
+ * @param mixed $session
+ */
 function ControleProgAcces($session)
 {
 	global $internaute;
@@ -113,6 +159,11 @@ function ControleProgAcces($session)
 	}
 }
 
+/**
+ * Fonction proglogin
+ * @param mixed $pseudo
+ * @param mixed $pass
+ */
 function proglogin($pseudo,$pass)
 {
   // on test le login et mot de passe, si c'est bon on cr�� la session
@@ -155,6 +206,9 @@ function proglogin($pseudo,$pass)
   }
 }
 
+/**
+ * Fonction progdeco
+ */
 function progdeco()
 {
 	global $internaute;
@@ -168,6 +222,9 @@ function progdeco()
     return "deconnect�";
 }
 
+/**
+ * Fonction progportef
+ */
 function progportef()
 {
 global $internaute;
@@ -189,6 +246,11 @@ $portef.="<cashbackInitial>".CAPDEB."</cashbackInitial>";
 return $portef;
 }
 
+/**
+ * Fonction proginfomess
+ * @param mixed $ver
+ * @param mixed $log
+ */
 function proginfomess($ver,$log)
 {
 $data=progreqinfomess();
@@ -197,6 +259,9 @@ $html="<message>$data->progmess</message><clique>$data->addrclic</clique><ouvert
 return $html;
 }
 
+/**
+ * Fonction progordre
+ */
 function progordre()
 { //codesico idcompte datecreation sens nbr pourc tempslim coursmin coursmax etat
 $tabval=get_ordrelist();
@@ -208,6 +273,9 @@ $portef=generTab($tabval,$tabchamps,$nomtab,$nomligne);
 return $portef;
 }
 
+/**
+ * Fonction progactionslist
+ */
 function progactionslist()
 { //liste des actions que le joueur peut acheter
 $tabval=listvaleur();
@@ -219,6 +287,10 @@ $lstactions=generTab($tabval,$tabchamps,$nomtab,$nomligne);
 return $lstactions."<finjour>".finjour()."</finjour>";
 }
 
+/**
+ * Fonction progachatmax
+ * @param mixed $codesico
+ */
 function progachatmax($codesico)
 {
 global $internaute;
@@ -227,6 +299,10 @@ $xml="<nbactionmax>".getnbactionmax($internaute->cashback,$valeuraction)."</nbac
 return $xml;
 }
 
+/**
+ * Fonction progventemax
+ * @param mixed $codesico
+ */
 function progventemax($codesico)
 {
 global $internaute;
@@ -243,6 +319,10 @@ if($internaute->vad)
 return "<nbactionmax>$nbactions</nbactionmax><valeur>$valeuraction</valeur>";
 }
 
+/**
+ * Fonction proglsthisto
+ * @param mixed $depuis
+ */
 function proglsthisto($depuis)
 { //codesico idcompte datecreation sens nbr pourc tempslim coursmin coursmax etat
 $tabval=listhisto(0,999,$depuis);
@@ -256,6 +336,10 @@ return $histo;
 
 
 
+/**
+ * Fonction progallinfo
+ * @param mixed $codesico
+ */
 function progallinfo($codesico)
 {
 global $internaute;

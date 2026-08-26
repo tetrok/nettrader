@@ -1,4 +1,14 @@
 <?php
+
+/**
+ * Fichier: nt2_progfunction.php
+ * Ce fichier contient les fonctions suivantes :
+ * - get_ordrelistprog
+ * - sorttableauprog
+ * - form_list_ordreprog
+ */
+
+
 /**
 * NetTrader 2
 *
@@ -22,6 +32,10 @@ WHERE idcompte=$internaute->idcompte ORDER BY datecreation DESC";
  return $run_query;
 }
 
+/**
+ * Fonction sorttableauprog
+ * @param mixed $resultat
+ */
 function sorttableauprog($resultat)
 {
 $qte=$resultat->columnCount();/*nombre de champs s�lectionn�s*/
@@ -45,7 +59,7 @@ $echo="";
 		 	$echo.=";";
 		 	}
 			 $i++;
-			 $echo.=ereg_replace(chr(13), "",ereg_replace(chr(10), "",stripslashes($elem)));
+			 $echo.=str_replace([chr(13), chr(10)], "", stripslashes($elem));
 		}
 		
 	}
@@ -53,6 +67,9 @@ return $echo;
 }
 
 
+/**
+ * Fonction form_list_ordreprog
+ */
 function form_list_ordreprog()
 {
 global $skinrep;

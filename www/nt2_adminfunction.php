@@ -1,4 +1,22 @@
+
 <?php
+
+/**
+ * Fichier: nt2_adminfunction.php
+ * Ce fichier contient les fonctions suivantes :
+ * - formadmin
+ * - frmadmincacval
+ * - setCheckboxesRange
+ * - adminfuncliste
+ * - afficheadminres
+ * - lstplayeradmin
+ * - setCheckboxesRange
+ * - dodelplayers
+ * - modiflstactions
+ * - tabgroupe
+ * - admingroupes
+ */
+
 /**
 * NetTrader 2
 *
@@ -16,6 +34,9 @@ return $retour;
 }
 
 
+/**
+ * Fonction frmadmincacval
+ */
 function frmadmincacval()
 {
 //On est face a une liste de valeurs que l'on peut s�l�ctionner
@@ -57,6 +78,11 @@ Par <input name=\"facteur\" value=\"0\" size=\"22\" maxlength=\"16\" class=\"pos
 
 $code="
 <script language=\"JavaScript\">
+/**
+ * Fonction setCheckboxesRange
+ * @param mixed the_form
+ * @param mixed do_check
+ */
 function setCheckboxesRange(the_form, do_check)
 {
     for (var i = 1; i <= $num; i++) {
@@ -74,6 +100,9 @@ function setCheckboxesRange(the_form, do_check)
 return $code;
 }
 
+/**
+ * Fonction adminfuncliste
+ */
 function adminfuncliste()
 {
 
@@ -86,6 +115,10 @@ return $retour;
 }
 
 
+/**
+ * Fonction afficheadminres
+ * @param mixed $idreq
+ */
 function afficheadminres($idreq)
 {
 $tab = exeadminreq($idreq);
@@ -93,6 +126,9 @@ $retour = sorttableau($tab->req,$tab->titre);
 return $retour;
 }
 
+/**
+ * Fonction lstplayeradmin
+ */
 function lstplayeradmin()
 {
 $lst=get_oldplayer();
@@ -115,6 +151,11 @@ $tab.=closetab()."<br><center><a href=\"\" onclick=\"setCheckboxesRange('listpla
 
 $code="
 <script language=\"JavaScript\">
+/**
+ * Fonction setCheckboxesRange
+ * @param mixed the_form
+ * @param mixed do_check
+ */
 function setCheckboxesRange(the_form, do_check)
 {
     for (var i = 1; i <= $num; i++) {
@@ -131,6 +172,10 @@ return $code;
 }
 
 
+/**
+ * Fonction dodelplayers
+ * @param mixed $lst
+ */
 function dodelplayers($lst)
 {
 if(is_array($lst) && count($lst)>0)
@@ -154,6 +199,14 @@ $mess=msgtab($liste." supprim�s.","Supression de joueurs");
 return $mess;
 }
 
+/**
+ * Fonction modiflstactions
+ * @param mixed $lst
+ * @param mixed $optmodif
+ * @param mixed $facteur
+ * @param mixed $debmodif
+ * @param mixed $finmodif
+ */
 function modiflstactions($lst,$optmodif,$facteur,$debmodif,$finmodif)
 {
 
@@ -192,6 +245,16 @@ $mess=msgtab("c bon","Modifications actions");
 return $mess;
 }
 
+/**
+ * Fonction tabgroupe
+ * @param mixed $idverif
+ * @param mixed $idgroupe
+ * @param mixed $idcompte
+ * @param mixed $titre
+ * @param mixed $titrecourt
+ * @param mixed $urlsite
+ * @param mixed $presentation
+ */
 function tabgroupe($idverif,$idgroupe,$idcompte,$titre,$titrecourt,$urlsite,$presentation)
 {
 if($idgroupe==0)
@@ -225,6 +288,9 @@ return $form;
 
 
 
+/**
+ * Fonction admingroupes
+ */
 function admingroupes()
 {
 //on va chercher la liste des groupes
