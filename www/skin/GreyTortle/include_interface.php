@@ -1,4 +1,4 @@
-<?
+<?php
 
 /**
  * Fichier: include_interface.php

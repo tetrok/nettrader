@@ -1,4 +1,4 @@
-<?
+<?php
 
 /**
  * Fichier: progfunc.php

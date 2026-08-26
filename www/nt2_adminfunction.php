@@ -1,4 +1,5 @@
-<?
+
+<?php
 
 /**
  * Fichier: nt2_adminfunction.php

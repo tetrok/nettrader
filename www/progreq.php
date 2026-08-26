@@ -1,4 +1,5 @@
-<?
+<?php
+
 
 /**
  * Fichier: progreq.php

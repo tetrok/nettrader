@@ -1,4 +1,4 @@
-<?
+<?php
 
 /**
  * Fichier: lang_fr.php

@@ -1,11 +1,11 @@
-<?
+
+<?php
 
 /**
  * Fichier: lang_pgsm.php
  * Ce fichier contient les fonctions suivantes :
  * - lang
  */
-
 /**
 * NetTrader 2
 *

@@ -1,4 +1,4 @@
-<?
+<?php
 
 /**
  * Fichier: nt2_progfunction.php
@@ -7,6 +7,7 @@
  * - sorttableauprog
  * - form_list_ordreprog
  */
+
 
 /**
 * NetTrader 2

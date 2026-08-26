@@ -1,4 +1,4 @@
-<?
+<?php
 
 /**
  * Fichier: prog.php
@@ -24,7 +24,7 @@ include_once ("nt2_pages.php");
 
 global $internaute,$explorer;
 $explorer=0;
-$explorer=&intval($_GET['explorer']);
+$explorer=intval($_GET['explorer']);
 $internaute="";
 $do="";
 $do=($_GET['do'] ?? "");
