@@ -28,7 +28,7 @@ Le code n'utilise pas Composer ni de librairies tierces modernes. Il s'appuie su
 
 ## Dépendances et Prérequis
 
-*   **PHP** : Le code a été écrit pour PHP 4/5. Il utilise la très vieille extension `mysql_` (qui a été retirée dans PHP 7.0) et les *short open tags* (`<?`). Actuellement, la machine cible est sous PHP 8.3.6. **Le code ne fonctionnera pas sur cette version de PHP sans réécriture majeure.**
+*   **PHP** : Le code a été écrit pour PHP 4/5. Il utilise la très vieille extension `mysql_` (qui a été retirée dans PHP 7.0) et utilisait les *short open tags* (`<?`) désormais corrigés. Actuellement, la machine cible est sous PHP 8.3.6. **Le code ne fonctionnera pas sur cette version de PHP sans réécriture majeure.**
 *   **Base de données** : Un serveur MySQL 5.x. Les tables doivent être créées (le schéma SQL n'est pas fourni dans le répertoire `www/`). Les constantes de connexion doivent être définies dans `constbdd.php`.
 *   **Réseau/APIs externes** : L'application dépendait de flux CSV pour les cours de la bourse via d'anciennes adresses :
     *   `http://fr.old.finance.yahoo.com/d/quotes.csv`
@@ -47,9 +47,8 @@ Le code est dans un état de forte dette technique et présente de graves faille
     *   La fonction de sécurisation `sec()` dans `db_connect.php` repose sur `get_magic_quotes_gpc()` (fonction dépréciée et retirée de PHP) et `addslashes()`. Ce n'est pas suffisant pour protéger contre les injections SQL, en particulier avec certains encodages (comme GBK) et cela ne protège pas les requêtes non entourées de quotes.
     *   **Action urgente :** Utiliser des requêtes préparées avec PDO ou MySQLi pour toutes les interactions avec la base de données.
 
-3.  **Mauvaise Pratique : Short Open Tags (`<?`)**
-    *   Les fichiers PHP commencent par `<?` au lieu de `<?php`. Cela nécessite l'activation de `short_open_tag` dans `php.ini`, ce qui est désactivé par défaut.
-    *   **Action urgente :** Remplacer tous les `<?` par `<?php`.
+3.  **Mauvaise Pratique corrigée : Short Open Tags (`<?`)**
+    *   Les fichiers PHP commençaient par `<?` au lieu de `<?php`. Cette mauvaise pratique a été corrigée et il n'y a plus de short open tags.
 
 4.  **Mauvaise Pratique de Programmation : Variables superglobales globales**
     *   `index.php` et d'autres fichiers manipulent les superglobales avec le mot-clé `global` (ex: `global $do; $do=&$_GET['do'];`). C'est dangereux, source de bugs difficiles à tracer et va à l'encontre des bonnes pratiques d'encapsulation. L'utilisation du passage par référence `&` sur ces variables est également inutile et obsolète.
