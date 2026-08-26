@@ -159,8 +159,9 @@ if (!isset($FichierExecRequete)) {
      * Fonction ExecRequete
      * @param mixed $requete
      * @param mixed $connexion
+     * @param array $params
      */
-    function ExecRequete($requete, $connexion)
+    function ExecRequete($requete, $connexion = null, $params = [])
     {
         global $nbreqexecuted, $tempssql, $last_pdo_stmt;
         $nbreqexecuted++;
@@ -170,7 +171,19 @@ if (!isset($FichierExecRequete)) {
             $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
         }
 
-        $resultat = $connexion->query($requete);
+        try {
+            if (!empty($params)) {
+                $resultat = $connexion->prepare($requete);
+                if ($resultat !== false) {
+                    $resultat->execute($params);
+                }
+            } else {
+                $resultat = $connexion->query($requete);
+            }
+        } catch (\PDOException $e) {
+            $resultat = false;
+        }
+
         $tempssql = $tempssql + round((getmicrotime() - $tempdeb), 2);
 
         if ($resultat !== false) {
