@@ -196,8 +196,8 @@ if (!isset($FichierExecRequete)) {
 
             // Affichage direct pour déboguer le problème en local
             echo "<div style='background:#fff; color:#b00; padding:15px; border:2px solid #b00; font-family:monospace;'>";
-            echo "<b>Erreur dans l'exécution de la requête :</b><br><code>" . htmlspecialchars($requete) . "</code><br><br>";
-            echo "<b>Message de MySQL :</b> " . htmlspecialchars($errorMsg) . "<br>";
+            echo "<b>Erreur dans l'exécution de la requête :</b><br><code>" . e($requete) . "</code><br><br>";
+            echo "<b>Message de MySQL :</b> " . e($errorMsg) . "<br>";
             echo "</div>";
             die();
         }  
