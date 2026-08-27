@@ -1368,4 +1368,13 @@ function geturlaide($yahooname)
 {
     return "http://fr.finance.yahoo.com/echarts?s=$yahooname#symbol=$yahooname;range=1m";
 }
+
+/**
+ * Fonction d'échappement HTML pour sécuriser les attributs et valeurs
+ * @param mixed $chaine
+ */
+function e($chaine)
+{
+    return htmlspecialchars((string)$chaine, ENT_QUOTES, 'ISO-8859-1');
+}
 ?>
