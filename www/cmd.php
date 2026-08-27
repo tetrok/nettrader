@@ -58,7 +58,7 @@ elseif(($_GET['do'] ?? "")=="webupdate" && date("U")<FINCONC)
 	if(tempsjeu())
 		checkscore();
 	//echo cmd_downvaleur(); //refresh des valeurs de tous les joueurs
-	echo cmd_downvaleur();
+	// echo cmd_downvaleur();
 	if(tempsjeu())
 		execute_ordre(); //on execute les ordres en attente si elles sont executables
         majstats();
@@ -67,7 +67,7 @@ elseif(($_GET['do'] ?? "")=="webupdate" && date("U")<FINCONC)
 }
 elseif(($_GET['do'] ?? "")=="localwebupdate" )
 {
-		echo cmd_downvaleur(); //refresh des valeurs de tous les joueurs
+		// echo cmd_downvaleur(); //refresh des valeurs de tous les joueurs
 }
 
 ?>

@@ -168,73 +168,8 @@ function getvaleur($sico,$nouv=0)
  */
 function traiteeuronextcsv($lines)
 {
-    if(!tempsjeu() || !is_array($lines))
-    {
-        return "";
-    }
-
-    $maintenant = date("U");
-    $patterns = ["/'/", '/"/', '/\\\"/'];
-    $replacements = ["\'", '', ''];
-    $update = 0;
-    $insert = 0;
-
-    $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
-    $resultat = ExecRequete("SELECT * FROM cacval WHERE down='1' ORDER BY codesico ASC",$connexion);
-    $destination = [];
-    $stat = [];
-    if($resultat)
-    {
-        while($r = $resultat->fetch(PDO::FETCH_BOTH))
-        {
-            $destination[$r["yahooname"]] = ["valeur" => $r["valeur"], "unixtime" => $r["lasttime"]];
-            $stat[$r["yahooname"]] = ["codesico" => $r["codesico"], "lasttime" => $r["lasttime"], "lasttimedown" => $r["lasttimedown"]];
-        }
-    }
-
-    $cnt = is_array($lines) ? count($lines) : 0;
-    for ($i = 0; $i < $cnt; $i++)
-    {
-        $line_clean = preg_replace($patterns, $replacements, $lines[$i]);
-        if (preg_match("#([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([^;]*);([0-9]{2})/([0-9]{2})/([0-9]{2}) ([0-9]{1,2}):([0-9]{1,2});([^;]*);([^;]*);([*]*)#", $line_clean, $regs))
-        {
-            $heure = $regs[14];
-            $minute = $regs[15];
-            $annee = "20".$regs[13];
-            $mois = $regs[12];
-            $jour = $regs[11];
-            $valeur = $regs[8];
-            $code = $regs[2];
-            $volume = $regs[9];
-            $progressionjour = $regs[10];
-            $nom = $regs[1];
-            $unixtime = mktime($heure, $minute, 0, $mois, $jour, $annee);
-            $valaction = floatval($valeur);
-            if(array_key_exists($code, $destination) && $valaction >= 2.00)
-            {
-                if($destination[$code]["unixtime"] != $unixtime)
-                {
-                    if(floatval($destination[$code]["valeur"]) > 0 && $valaction > 0 && abs($valaction - floatval($destination[$code]["valeur"])) / floatval($destination[$code]["valeur"]) >= .75)
-                    {
-                        $corps = "L'action $nom (".$stat[$code]["codesico"]." a changé de + de 75% (de ".strval($destination[$code]["valeur"])." à ".strval($valaction)." ), aller sur la page d'admin pour réactiver si il n'y a pas de multiplication ou division d'action.";
-                        envoimail(EMAILADMIN,"NetTrader, valeur se modifie de 75% !",$corps);
-                        ExecRequete("UPDATE cacval SET down='0' WHERE yahooname='$code'",$connexion);
-                    }
-                    ExecRequete("UPDATE cacval SET valeur='$valeur', lasttime='$unixtime', lasttimedown='$maintenant' WHERE yahooname='$code'",$connexion);
-                    $update++;
-                }
-            } else {
-                if($valaction >= 2.00)
-                {
-                    $corps = "L'action $nom a été ajoutée\n Valeur:$valeur";
-                    envoimail(EMAILADMIN,"Nouvelle action disponible !",$corps);
-                    ExecRequete("INSERT INTO `cacval` ( `codesico` , `yahooname` , `nom` , `valeur` , `lasttime` , `lasttimedown` , `authachat` , `down` , `idsecteur` ) VALUES ( '', '$code', '$nom', '$valeur', '$unixtime', '0', '1', '1', '22')",$connexion);
-                    $insert++;
-                }
-            }
-        }
-    }
-    return (is_array($lines) ? count($lines) : 0)." téléchargés, $update mis à jour et $insert ajoutées";
+    // Obsolète: géré par pythonfetch/pynt2markdown.py avec yfinance
+    return "";
 }
 
 /**
@@ -243,72 +178,8 @@ function traiteeuronextcsv($lines)
  */
 function traiteyahoocsv($lines)
 {
-    if(!tempsjeu() || !is_array($lines))
-    {
-        return "";
-    }
-
-    $maintenant = date("U");
-    $patterns = ["/'/", '/"/', '/\\\"/'];
-    $replacements = ["\'", '', ''];
-    $update = 0;
-    $insert = 0;
-
-    $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
-    $resultat = ExecRequete("SELECT * FROM cacval WHERE down='1' ORDER BY codesico ASC",$connexion);
-    $destination = [];
-    $stat = [];
-    if($resultat)
-    {
-        while($r = $resultat->fetch(PDO::FETCH_BOTH))
-        {
-            $destination[$r["yahooname"]] = ["valeur" => $r["valeur"], "unixtime" => $r["lasttime"]];
-            $stat[$r["yahooname"]] = ["codesico" => $r["codesico"], "lasttime" => $r["lasttime"], "lasttimedown" => $r["lasttimedown"]];
-        }
-    }
-
-    $cnt = is_array($lines) ? count($lines) : 0;
-    for ($i = 0; $i < $cnt; $i++)
-    {
-        $line_clean = preg_replace($patterns, $replacements, $lines[$i]);
-        if (preg_match("#([^.]*)\.([A-Z]{2});([^;]*);([^;]*);([0-9]{1,2})h([0-9]{1,2});([0-9]{1,2})/([0-9]{1,2})/([0-9]{4});([^;]*);([^;]*);([^;]*);([^;]*);([0-9]*)#", $line_clean, $regs))
-        {
-            $code = $regs[1].".".$regs[2];
-            $nom = $regs[3];
-            $valeur = str_replace(",", ".", $regs[4] ?? '');
-            $heure = $regs[5];
-            $minute = $regs[6];
-            $jour = $regs[7];
-            $mois = $regs[8];
-            $annee = $regs[9];
-            $unixtime = mktime($heure, $minute, 0, $mois, $jour, $annee);
-            $valaction = floatval($valeur);
-            if(array_key_exists($code, $destination) && $valaction >= 2.00)
-            {
-                if($destination[$code]["unixtime"] != $unixtime)
-                {
-                    if(floatval($destination[$code]["valeur"]) > 0 && $valaction > 0 && abs($valaction - floatval($destination[$code]["valeur"])) / floatval($destination[$code]["valeur"]) >= .25)
-                    {
-                        $corps = "L'action $nom (".$stat[$code]["codesico"]." a changé de + de 25% (de ".strval($destination[$code]["valeur"])." à ".strval($valaction)." ), aller sur la page d'admin pour réactiver si il n'y a pas de multiplication ou division d'action.";
-                        envoimail(EMAILADMIN,"NetTrader, valeur se modifie de 25% !",$corps);
-                        ExecRequete("UPDATE cacval SET down='0' WHERE yahooname='$code'",$connexion);
-                    }
-                    ExecRequete("UPDATE cacval SET valeur='$valeur', lasttime='$unixtime', lasttimedown='$maintenant' WHERE yahooname='$code'",$connexion);
-                    $update++;
-                }
-            } else {
-                if($valaction >= 2.00)
-                {
-                    $corps = "L'action $nom a été ajoutée\n Valeur:$valeur";
-                    envoimail(EMAILADMIN,"Nouvelle action disponible !",$corps);
-                    $index = rand(1,32768);
-                    ExecRequete("INSERT INTO `cacval` ( `codesico` , `yahooname` , `nom` , `valeur` , `lasttime` , `lasttimedown` , `authachat` , `down` , `idsecteur` ) VALUES ( '$index', '$code', '$nom', '$valeur', '$unixtime', '0', '1', '1', '22')",$connexion);
-                    $insert++;
-                }
-            }
-        }
-    }
-    return (is_array($lines) ? count($lines) : 0)." téléchargés, $update mis à jour et $insert ajoutées";
+    // Obsolète: géré par pythonfetch/pynt2markdown.py avec yfinance
+    return "";
 }
 
 /**
@@ -922,35 +793,8 @@ function cmd_euronextdownvaleur()
  */
 function cmd_downvaleur()
 {
-    $lstvaleurtodown = get_sicavdown();
-    $chaineurl = "";
-    $compteur = 0;
-    $lines = [];
-    $cnt = is_array($lstvaleurtodown) ? count($lstvaleurtodown) : 0;
-    $max_down = defined('MAXDOWN') ? MAXDOWN : 50;
-    for($i = 0; $i <= $cnt-1; $i++)
-    {
-        $compteur++;
-        if($chaineurl != "")
-            $chaineurl .= "+";
-        $chaineurl .= $lstvaleurtodown[$i]["yahooname"];
-        if($compteur == $max_down || $i == $cnt-1)
-        {
-            $fd = @fopen(NOUVADDR.$chaineurl.NOUVADDRFIN, "r");
-            if($fd)
-            {
-                while (!feof($fd))
-                {
-                    $buffer = fgets($fd, 4096);
-                    $lines[] = $buffer;
-                }
-                fclose($fd);
-            }
-            $chaineurl = "";
-            $compteur = 0;
-        }
-    }
-    return " ".traiteyahoocsv($lines);
+    // Obsolète: géré par pythonfetch/pynt2markdown.py avec yfinance
+    return "";
 }
 
 /**
