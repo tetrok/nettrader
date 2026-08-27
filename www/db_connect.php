@@ -159,8 +159,9 @@ if (!isset($FichierExecRequete)) {
      * Fonction ExecRequete
      * @param mixed $requete
      * @param mixed $connexion
+     * @param array $params
      */
-    function ExecRequete($requete, $connexion)
+    function ExecRequete($requete, $connexion = null, $params = [])
     {
         global $nbreqexecuted, $tempssql, $last_pdo_stmt;
         $nbreqexecuted++;
@@ -170,7 +171,19 @@ if (!isset($FichierExecRequete)) {
             $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
         }
 
-        $resultat = $connexion->query($requete);
+        try {
+            if (!empty($params)) {
+                $resultat = $connexion->prepare($requete);
+                if ($resultat !== false) {
+                    $resultat->execute($params);
+                }
+            } else {
+                $resultat = $connexion->query($requete);
+            }
+        } catch (\PDOException $e) {
+            $resultat = false;
+        }
+
         $tempssql = $tempssql + round((getmicrotime() - $tempdeb), 2);
 
         if ($resultat !== false) {
@@ -183,8 +196,8 @@ if (!isset($FichierExecRequete)) {
 
             // Affichage direct pour déboguer le problème en local
             echo "<div style='background:#fff; color:#b00; padding:15px; border:2px solid #b00; font-family:monospace;'>";
-            echo "<b>Erreur dans l'exécution de la requête :</b><br><code>" . htmlspecialchars($requete) . "</code><br><br>";
-            echo "<b>Message de MySQL :</b> " . htmlspecialchars($errorMsg) . "<br>";
+            echo "<b>Erreur dans l'exécution de la requête :</b><br><code>" . e($requete) . "</code><br><br>";
+            echo "<b>Message de MySQL :</b> " . e($errorMsg) . "<br>";
             echo "</div>";
             die();
         }  

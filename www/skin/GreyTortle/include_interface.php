@@ -38,7 +38,10 @@
 */
 function Html_radio($nom,$valeur,$texte,$checked,$add="")
 {
-$source="<input type=\"radio\" value=\"$valeur\" $checked name=\"$nom\" $add>$texte";
+    $nom_safe = e($nom);
+    $valeur_safe = e($valeur);
+    $texte_safe = e($texte);
+    $source="<input type=\"radio\" value=\"$valeur_safe\" $checked name=\"$nom_safe\" $add>$texte_safe";
 return $source;
 }
 
@@ -89,7 +92,9 @@ document.write('<scr'+'ipt language=\"javascript\" src=\"'+bseuri+'\"></scr'+'ip
  */
 function Html_textezone($nom,$lignes,$colonnes,$valeur,$add="")
 {
-$source="<textarea name=\"$nom\" rows=\"$lignes\" $add cols=\"$colonnes\" wrap=\"virtual\" class=\"post\" >$valeur</textarea>";
+    $nom_safe = e($nom);
+    $valeur_safe = e($valeur);
+    $source="<textarea name=\"$nom_safe\" rows=\"$lignes\" $add cols=\"$colonnes\" wrap=\"virtual\" class=\"post\" >$valeur_safe</textarea>";
 return $source;
 }
 
@@ -103,7 +108,9 @@ return $source;
  */
 function Html_texte($nom,$valeur,$taille,$longueurmax,$add="")
 {
-$source="<input name=\"$nom\" type=\"text\" class=\"textbox\" value=\"$valeur\" size=\"$taille\" maxlength=\"$longueurmax\" $add>";
+    $nom_safe = e($nom);
+    $valeur_safe = e($valeur);
+    $source="<input name=\"$nom_safe\" type=\"text\" class=\"textbox\" value=\"$valeur_safe\" size=\"$taille\" maxlength=\"$longueurmax\" $add>";
 return $source;
 }
 
@@ -117,7 +124,9 @@ return $source;
  */
 function Html_pass($nom,$valeur,$taille,$longueurmax,$add="")
 {
-$source="<input name=\"$nom\" type=\"password\"  class=\"textbox\" value=\"$valeur\" size=\"$taille\" maxlength=\"$longueurmax\" $add>";
+    $nom_safe = e($nom);
+    $valeur_safe = e($valeur);
+    $source="<input name=\"$nom_safe\" type=\"password\"  class=\"textbox\" value=\"$valeur_safe\" size=\"$taille\" maxlength=\"$longueurmax\" $add>";
 return $source;
 }
 
@@ -129,7 +138,9 @@ return $source;
  */
 function Html_bouton($nom,$valeur,$add="")
 {
-$source=" <input type=\"submit\" name=\"$nom\" class=\"bouton\" value=\"$valeur\" $add>";
+    $nom_safe = e($nom);
+    $valeur_safe = e($valeur);
+    $source=" <input type=\"submit\" name=\"$nom_safe\" class=\"bouton\" value=\"$valeur_safe\" $add>";
 return $source;
 }
 /**
@@ -139,7 +150,8 @@ return $source;
  */
 function Html_head_liste($nom,$add="") // $liste = array('25' => '25 %', '50' => '50 %', '75' => '75%')
 {
-return "<select name=\"$nom\" class=\"select\" $add>";
+    $nom_safe = e($nom);
+    return "<select name=\"$nom_safe\" class=\"select\" $add>";
 }
 
 /**
@@ -151,14 +163,16 @@ return "<select name=\"$nom\" class=\"select\" $add>";
  */
 function Html_liste($nom,$liste,$add="",$defaut="") // $liste = array('25' => '25 %', '50' => '50 %', '75' => '75%')
 {
-$source=Html_head_liste($nom,$add);
-foreach ($liste as $key => $val) {
-   $def="";
-   if($key==$defaut)
-   {
-   		$def="selected";
-   }
-   $source.= "<option $def value=\"$key\">$val</option>";
+    $source=Html_head_liste($nom,$add);
+    foreach ($liste as $key => $val) {
+        $def="";
+        if($key==$defaut)
+        {
+            $def="selected";
+        }
+        $key_safe = e($key);
+        $val_safe = e($val);
+        $source.= "<option $def value=\"$key_safe\">$val_safe</option>";
    
 }
 $source.="</select>";

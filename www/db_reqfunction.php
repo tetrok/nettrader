@@ -422,7 +422,7 @@ function creer_ordre($sens,$sicav,$nombre,$valmin,$valmax,$timemin,$select,$ansv
         }
         if((!(SECURE)||(is_object($bddaction) && $bddaction->lasttime>date("U")-SECURETIMEDELAY)) && ($dernvaleur>$valmin && ($dernvaleur<=$valmax || $valmax==-1) && date("U")<=$timemin))
         {
-            if( $dernvaleur <> $ansvaleur AND $ansvaleur<>"" )
+            if( $ansvaleur<>"" AND abs((float)$dernvaleur - (float)$ansvaleur) > 0.0001 )
             {
                 $echo = lang(4)."($dernvaleur <> $ansvaleur)";
             } else {
@@ -1072,9 +1072,10 @@ function get_info_ordre($datecreation)
 {
     global $internaute;
     if(!is_object($internaute) || !isset($internaute->idcompte)) return false;
-    $query = "SELECT * FROM `ordre` WHERE `idcompte` = '$internaute->idcompte' AND CONCAT(`datecreation`) = '$datecreation' LIMIT 1";
+    $query = "SELECT * FROM `ordre` WHERE `idcompte` = ? AND CONCAT(`datecreation`) = ? LIMIT 1";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $params = [$internaute->idcompte, $datecreation];
+    $run_query = ExecRequete ($query, $connexion, $params);
     return LigneSuivante($run_query);
 }
 
@@ -2414,8 +2415,9 @@ function forumsyncidlastmessage($idforum)
 function getinfojoueur($idjoueur)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $query="SELECT * FROM compte where idcompte='$idjoueur'";
-    $run_query = ExecRequete ($query, $connexion);
+    $query = "SELECT * FROM compte where idcompte = ?";
+    $params = [$idjoueur];
+    $run_query = ExecRequete ($query, $connexion, $params);
     return LigneSuivante($run_query);
 }
 
