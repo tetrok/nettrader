@@ -3,6 +3,7 @@
 /**
  * Fichier: nt2_function.php
  * Ce fichier contient les fonctions suivantes :
+ * - e
  * - tabvaleurouzero
  * - affichpseudo
  * - affichgroupe
@@ -70,8 +71,11 @@
 
 /**
  * Sécurise une chaîne de caractères pour l'affichage HTML
+ * @param mixed $string
+ * @return string
  */
-function e($string) {
+function e($string)
+{
     if ($string === null) {
         return '';
     }
@@ -1194,6 +1198,9 @@ function lienordre($champ,$titre)
  */
 function bbtohtml($text)
 {
+    // 1. Échapper tout le HTML natif
+    $text = e($text);
+
     global $skinrep;
     $bbcode = [
         "[list]", "[*]", "[/list]",
@@ -1367,14 +1374,5 @@ function forum_peut_editer($lignemessage,$infoforum)
 function geturlaide($yahooname)
 {
     return "http://fr.finance.yahoo.com/echarts?s=$yahooname#symbol=$yahooname;range=1m";
-}
-
-/**
- * Fonction d'échappement HTML pour sécuriser les attributs et valeurs
- * @param mixed $chaine
- */
-function e($chaine)
-{
-    return htmlspecialchars((string)$chaine, ENT_QUOTES, 'ISO-8859-1');
 }
 ?>
