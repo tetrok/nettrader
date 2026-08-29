@@ -1,4 +1,11 @@
 {
+    "name": "nettrader/nettrader",
+    "description": "NetTrader 2 simulation boursiere",
+    "autoload": {
+        "psr-4": {
+            "NetTrader\\": "www/src/"
+        }
+    },
     "require-dev": {
         "squizlabs/php_codesniffer": "^3.13",
         "phpcompatibility/php-compatibility": "^9.3"

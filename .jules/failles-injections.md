@@ -1,91 +1,159 @@
-# Proposition de Sécurisation : Failles d'Injection SQL
+# Sécurisation contre les Failles d'Injection SQL
 
-## Problème Actuel
-L'application a été migrée de `mysql_*` à `PDO`/`mysqli_*`, mais la sécurisation des requêtes repose toujours sur une fonction obsolète et peu fiable `sec()` dans `www/db_connect.php`, qui se contente d'échapper les quotes. De nombreuses requêtes SQL utilisent la concaténation de chaînes de caractères, exposant l'application à des attaques par injection SQL.
+Ce document dresse l'état des lieux, documente l'infrastructure technique en place et détaille la feuille de route pour éradiquer les risques d'injection SQL dans **NetTrader 2**.
 
-## Objectif
-Adopter systématiquement les requêtes préparées (Prepared Statements) de PDO, qui constituent le standard actuel pour prévenir les injections SQL, tout en évitant de casser l'existant en respectant la règle de ne pas modifier les signatures de fonction existantes là où ce n'est pas strictement nécessaire.
+---
 
-## Solution Proposée
+## 1. État des Lieux et Avancement Réalisé
 
-### 1. Faire évoluer la fonction `ExecRequete`
-Nous proposons de modifier la signature de la fonction `ExecRequete` en ajoutant un paramètre optionnel `$params` (tableau) à la fin de sa signature. Cela permet de rendre la fonction compatible avec les requêtes préparées tout en gardant une parfaite compatibilité ascendante avec toutes les requêtes non préparées existantes dans le code.
+L'infrastructure de base a déjà été modernisée pour supporter nativement les requêtes préparées PDO sans rompre la rétrocompatibilité du code procédural existant.
 
-```php
-/**
- * Fonction ExecRequete
- * @param string $requete La requête SQL (éventuellement avec des marqueurs ?)
- * @param mixed $connexion La connexion PDO (ou null pour utiliser la connexion globale)
- * @param array $params Les paramètres pour la requête préparée (optionnel)
- */
-function ExecRequete($requete, $connexion = null, $params = [])
-{
-    global $nbreqexecuted, $tempssql, $last_pdo_stmt;
-    $nbreqexecuted++;
-    $tempdeb = getmicrotime();
+### 1.1. Infrastructure PDO (`www/db_connect.php`)
+- **Connexion PDO centralisée :** La fonction `Connexion()` configure le connecteur PDO avec le charset `utf8mb4` et désactive l'émulation des requêtes préparées (`PDO::ATTR_EMULATE_PREPARES => false`) pour s'assurer que les requêtes préparées sont traitées nativement par le moteur MySQL/MariaDB.
+- **Support des paramètres préparés dans `ExecRequete()` :**
+  La fonction centrale d'exécution SQL `ExecRequete` a été enrichie d'un troisième paramètre optionnel `$params = []` :
+  ```php
+  function ExecRequete($requete, $connexion = null, $params = [])
+  {
+      global $nbreqexecuted, $tempssql, $last_pdo_stmt;
+      $nbreqexecuted++;
+      $tempdeb = getmicrotime();
 
-    if (!($connexion instanceof PDO)) {
-        $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
-    }
+      if (!($connexion instanceof PDO)) {
+          $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+      }
 
-    try {
-        if (!empty($params)) {
-            // Utilisation d'une requête préparée
-            $resultat = $connexion->prepare($requete);
-            $resultat->execute($params);
-        } else {
-            // Utilisation classique de query() pour la rétrocompatibilité
-            $resultat = $connexion->query($requete);
-        }
+      try {
+          if (!empty($params)) {
+              $resultat = $connexion->prepare($requete);
+              if ($resultat !== false) {
+                  $resultat->execute($params);
+              }
+          } else {
+              $resultat = $connexion->query($requete);
+          }
+      } catch (\PDOException $e) {
+          $resultat = false;
+      }
+      // ...
+  }
+  ```
 
-        $tempssql = $tempssql + round((getmicrotime() - $tempdeb), 2);
+### 1.2. Évolution de la fonction `sec()`
+- La fonction historique `sec()` (qui reposait sur `addslashes` et `get_magic_quotes_gpc`) a été réécrite pour utiliser `$connexion->quote()` et `htmlentities()`.
+- **Statut :** Bien qu'améliorée, la fonction `sec()` reste un palliatif incomplet et a vocation à être dépréciée puis supprimée au profit exclusif des requêtes préparées.
 
-        if ($resultat !== false) {
-            $last_pdo_stmt = $resultat;
-            return $resultat;
-        } else {
-            // Gestion des erreurs (inchangée)
-            // ... (Code de gestion des erreurs existant)
-        }
-    } catch (\PDOException $e) {
-        // ... (Gestion de l'exception)
-    }
-}
-```
+---
 
-### 2. Migration Progressive des Requêtes
-Avec cette modification, nous pourrons parcourir le code (comme dans `db_reqfunction.php`) et remplacer les requêtes construites par concaténation par des requêtes préparées.
+## 2. Diagnostic & Risques Résiduels
 
-**Avant :**
-```php
-function get_info_ordre($id_ordre) {
-    global $internaute;
-    $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    // Vulnérable si $id_ordre n'est pas correctement sécurisé
-    $query="SELECT * FROM ordres WHERE id_ordre='".sec($id_ordre)."' AND idcompte='$internaute->idcompte'";
-    $run_query = ExecRequete ($query, $connexion);
-    return LigneSuivante($run_query);
-}
-```
+Malgré la disponibilité du paramètre `$params` dans `ExecRequete()`, **l'immense majorité des requêtes applicatives continue d'utiliser la concaténation de chaînes de caractères**.
 
-**Après :**
-```php
-function get_info_ordre($id_ordre) {
-    global $internaute;
-    $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    // Sécurisé par préparation, plus besoin de sec()
-    $query = "SELECT * FROM ordres WHERE id_ordre = ? AND idcompte = ?";
-    $params = [$id_ordre, $internaute->idcompte];
-    $run_query = ExecRequete ($query, $connexion, $params);
-    return LigneSuivante($run_query);
-}
-```
+### Principales vulnérabilités identifiées :
 
-### 3. Obsolescence Progressive de `sec()`
-Une fois que toutes les requêtes auront été migrées vers l'utilisation de requêtes préparées via `ExecRequete(..., ..., $params)`, la fonction `sec()` pourra être officiellement déclarée obsolète et retirée, car le driver PDO se chargera de la sécurisation (échappement et formatage) des paramètres transmis à `execute()`.
+1. **Valeurs numériques injectées sans quotes :**
+   Dans de nombreuses requêtes, des identifiants (`$idcompte`, `$id_ordre`, `$codesico`) sont concaténés sans quotes :
+   ```php
+   // Exemple vulnérable dans db_reqfunction.php
+   $requete = "SELECT * FROM portef WHERE idcompte = $idcompte AND codesico = $codesico";
+   ```
+   Même si `sec()` est appliqué, l'échappement de quotes est inopérant si la variable n'est pas entourée de guillemets dans la clause SQL.
 
-## Conclusion
-Cette approche est progressive et sans risque de régression :
-1. Elle ne casse pas les appels existants à `ExecRequete($query, $connexion)`.
-2. Elle introduit un moyen natif et sûr d'exécuter des requêtes préparées de façon centralisée.
-3. Elle permet de nettoyer le code de manière itérative.
+2. **Mélange de responsabilités (Persistance vs Affichage) :**
+   `sec()` applique `htmlentities()` au moment de la construction de la requête SQL. Cela pollue les données brutes enregistrées en base (ex: caractères accentués, symboles) et ne remplace pas un échappement contextuel en sortie (XSS).
+
+3. **Clauses dynamiques non paramétrables (`ORDER BY`, `ASC/DESC`, `LIMIT`) :**
+   Plusieurs fonctions de pagination ou de tri construisent dynamiquement leurs requêtes sans liste blanche (whitelist) de colonnes autorisées.
+
+---
+
+## 3. Guide Pratique et Règles de Migration
+
+Pour convertir le code procédural vers des requêtes préparées sécurisées, les développeurs doivent appliquer les règles suivantes :
+
+### 3.1. Règle d'or
+> **Ne jamais concaténer de variables dans une chaîne SQL.**
+> Toutes les valeurs dynamiques doivent être transmises sous forme de marqueurs `?` (positionnels) ou `:nom` (nommés) via le tableau `$params`.
+
+---
+
+### 3.2. Exemples de Conversion Concrets
+
+#### A. Requêtes de Lecture (SELECT)
+* **Code existant (vulnérable / concaténation) :**
+  ```php
+  function get_info_ordre($id_ordre) {
+      global $internaute;
+      $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+      $query = "SELECT * FROM ordres WHERE id_ordre = '" . sec($id_ordre) . "' AND idcompte = '$internaute->idcompte'";
+      $run_query = ExecRequete($query, $connexion);
+      return LigneSuivante($run_query);
+  }
+  ```
+
+* **Code cible (sécurisé avec requêtes préparées) :**
+  ```php
+  function get_info_ordre($id_ordre) {
+      global $internaute;
+      $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+      $query = "SELECT * FROM ordres WHERE id_ordre = ? AND idcompte = ?";
+      $run_query = ExecRequete($query, $connexion, [$id_ordre, $internaute->idcompte]);
+      return LigneSuivante($run_query);
+  }
+  ```
+
+#### B. Requêtes d'Écriture (INSERT / UPDATE)
+* **Code existant :**
+  ```php
+  function ModifLiquide($id_compte, $valeur, $signe) {
+      $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+      $query = "UPDATE compte SET cashback = cashback $signe " . sec($valeur) . " WHERE idcompte = '" . sec($id_compte) . "'";
+      return ExecRequete($query, $connexion);
+  }
+  ```
+
+* **Code cible :**
+  ```php
+  function ModifLiquide($id_compte, $valeur, $signe) {
+      $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+      // Whitelist stricte pour l'opérateur arithmétique (+ ou -)
+      $op = ($signe === '-') ? '-' : '+';
+      $query = "UPDATE compte SET cashback = cashback $op ? WHERE idcompte = ?";
+      return ExecRequete($query, $connexion, [(float)$valeur, (int)$id_compte]);
+  }
+  ```
+
+#### C. Clauses avec listes variables (`WHERE ... IN (...)`)
+* **Code existant :**
+  ```php
+  $query = "UPDATE cacval SET down = '0' WHERE yahooname IN ($chaineupdate)";
+  ```
+
+* **Code cible :**
+  ```php
+  $placeholders = implode(',', array_fill(0, count($tickers), '?'));
+  $query = "UPDATE cacval SET down = '0' WHERE yahooname IN ($placeholders)";
+  ExecRequete($query, $connexion, $tickers);
+  ```
+
+---
+
+## 4. Plan de Migration par Priorité
+
+| Priorité | Module / Périmètre | Fichiers Cibles | Statut / Risque Métier |
+| :--- | :--- | :--- | :--- |
+| **P1 - Critique** | **Authentification, Sessions & Inscription** | `www/db_connect.php`<br>(`ChercheInternaute`, `ChercheSession`, `CreerSession`, `cookievalide`, `nbessai`, `deconnection`, `ChercheComptePseudo`)<br>`www/progfunc.php` (`ControleProgAcces`, `proglogin`, `progdeco`)<br>`www/nt2_pages.php` (`inscrjeu`)<br>`www/db_reqfunction.php` (`getinternauteinfo`, `setmdp`) | **✅ Traité** : Migré intégralement vers requêtes préparées avec paramètres `$params`. |
+| **P2 - Haute** | **Transactions Financières, Ordres & Portefeuilles** | `www/db_reqfunction.php`<br>(`portefeuille_joueur`, `joueur_liste_sicav`, `joueur_possede`, `GetCashBack`, `ModifLiquide`, `AddHistorique`, `ModifAction`, `dansliste`, `AjoutPort`, `delete_sicav`, `listhisto`, `cmd_update_sicav`, `addordre`, `niv_joueur`, `get_ordre`, `efface_ordre`, `get_ordrelist`, `del_ordre`, `get_info_ordre`, `donnaction`, `donnactionyn`, `stataction`, `ordreactionachat`, `ordreactionvente`, `getplayercapital...`)<br>`www/nt2_pages.php` (`doachat`, `dovente`, `execute_ordre`, `supprordre`)<br>`www/progreq.php` (`progreqportef`) | **✅ Traité** : Migré intégralement vers requêtes préparées avec paramètres `$params`. |
+| **P3 - Haute** | **API XML Client Lourd** | `www/progfunc.php`<br>`www/progreq.php`<br>`www/prog.php` | À traiter (Injection via paramètres GET non assainis) |
+| **P4 - Moyenne** | **Forums, Groupes & Messagerie** | `www/db_reqtableaux.php`<br>`www/db_reqfunction.php` (messages, groupes, forums) | À traiter (Altération ou extraction de données privées) |
+| **P5 - Moyenne** | **Interface d'Administration** | `www/nt2_adminfunction.php`<br>`www/index.php` | À traiter (Élévation de privilèges) |
+| **P6 - Clôture** | **Suppression de `sec()`** | Ensemble du projet | Dette technique résiduelle |
+
+---
+
+## 5. Dépréciation et Retrait de `sec()`
+
+Une fois l'ensemble des requêtes migrées vers la signature à trois paramètres `ExecRequete($sql, $connexion, $params)` :
+1. Déclarer la fonction `sec()` `@deprecated` avec avertissement dans les logs de développement.
+2. Nettoyer les appels restants dans le code applicatif.
+3. Supprimer définitivement la fonction `sec()` de `www/db_connect.php`.

@@ -14,6 +14,11 @@
 */
 //profil d'un groupe( classement integré)
 session_start();
+require_once __DIR__ . '/autoload.php';
+
+use NetTrader\Http\Request;
+use NetTrader\Auth\UserSession;
+
 include_once ("const.php");
 include_once ("constbdd.php");
 include_once ("db_connect.php");
@@ -22,7 +27,10 @@ include_once ("db_reqfunction.php");
 include_once ("nt2_function.php");
 include_once ("nt2_pages.php");
 
-global $do,$skinrep,$notupdated;
+$request = Request::createFromGlobals();
+$userSession = UserSession::current();
+
+global $do,$skinrep,$notupdated,$internaute;
 $format="";
 $sicavselecta="";
 $sicavselectv="";
@@ -30,23 +38,21 @@ $internaute="";
 $message="";
 $emailInternaute="";
 
-$souvenir=0;
-$numligne=0;
-$do = isset($_GET['do']) ? $_GET['do'] : "";
-$email = isset($_POST['email']) ? $_POST['email'] : "";
-$motDePasse = isset($_POST['motDePasse']) ? $_POST['motDePasse'] : "";
-$format = isset($_GET['format']) ? $_GET['format'] : "";
-$sicavselecta = isset($_REQUEST['sicavselachat']) ? $_REQUEST['sicavselachat'] : "";
-$sicavselectv = isset($_REQUEST['sicavselvendr']) ? $_REQUEST['sicavselvendr'] : "";
-$souvenir = isset($_POST['souvenir']) ? $_POST['souvenir'] : 0;
-$numligne = isset($_GET['numligne']) ? intval($_GET['numligne']) : 0;
-if($numligne < 0) {
-    $numligne = 0;
+$do = $request->getAction('accueil');
+if ($do === '') {
+    $do = 'accueil';
 }
-$cherche = isset($_REQUEST['cherche']) ? $_REQUEST['cherche'] : "";
+$email = $request->post('email', '');
+$motDePasse = $request->post('motDePasse', '');
+$format = $request->getString('format', '');
+$sicavselecta = $request->get('sicavselachat', '');
+$sicavselectv = $request->get('sicavselvendr', '');
+$souvenir = $request->getInt('souvenir', 0);
+$numligne = max(0, $request->getInt('numligne', 0));
+$cherche = $request->getString('cherche', '');
 
-$dateclasstmp1 = isset($_POST['moisclasse']) ? $_POST['moisclasse'] : null;
-$dateclasstmp2 = isset($_GET['moisclasse']) ? $_GET['moisclasse'] : null;
+$dateclasstmp1 = $request->post('moisclasse', null);
+$dateclasstmp2 = $request->get('moisclasse', null);
 if($dateclasstmp1 === null)
 {
     $dateclass = $dateclasstmp2;
@@ -61,6 +67,7 @@ if($dateclass === null || $dateclass === '')
 if($do <> "inscrjeu")
 {
     $message = ControleAcces($email, $motDePasse, $emailInternaute, sec(session_id()), $souvenir);
+    $userSession->setUser(is_object($internaute) ? $internaute : null);
 }
 if(!defined('INCONC') || !INCONC)
 {

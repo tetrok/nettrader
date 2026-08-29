@@ -276,8 +276,7 @@ function formlistaction($liste)
  */
 function dovente($idcompte,$sicav,$nombre,$dernvaleur)
 {
-    $sicav = sec($sicav);
-    $nombre = sec($nombre);
+    $nombre = intval($nombre);
     $possede = joueur_possede($sicav,$idcompte);
     $nivjoueur = niv_joueur($idcompte);
     $vad_autorise = (is_object($nivjoueur) && isset($nivjoueur->vad) && $nivjoueur->vad);
@@ -362,7 +361,7 @@ function inscrjeu($pseudo, $nom, $prenom, $adresse, $cp, $ville, $tel, $mail, $e
     
     // Vérification existence
     if (defined('INCONC') && INCONC) {
-        $resultat = ExecRequete("SELECT pseudonyme, adresse FROM compte WHERE pseudonyme LIKE '$pseudo' OR adresse LIKE '$adresse'", $connexion);
+        $resultat = ExecRequete("SELECT pseudonyme, adresse FROM compte WHERE pseudonyme LIKE ? OR adresse LIKE ?", $connexion, [$pseudo, $adresse]);
         while ($r = $resultat->fetch(PDO::FETCH_BOTH)) {
             if (strtolower($r["adresse"]) == strtolower($adresse)) {
                 return "Un seul compte par foyer autorisé, cette adresse est déjà utilisée par un autre joueur.";
@@ -371,7 +370,7 @@ function inscrjeu($pseudo, $nom, $prenom, $adresse, $cp, $ville, $tel, $mail, $e
             }
         }
     } else {
-        $resultat = ExecRequete("SELECT pseudonyme, email FROM compte WHERE pseudonyme LIKE '$pseudo' OR email='$mail'", $connexion);
+        $resultat = ExecRequete("SELECT pseudonyme, email FROM compte WHERE pseudonyme LIKE ? OR email = ?", $connexion, [$pseudo, $mail]);
         while ($r = $resultat->fetch(PDO::FETCH_OBJ)) {    
             if ($r->pseudonyme == $pseudo) {
                 return lang(85);
@@ -399,10 +398,15 @@ function inscrjeu($pseudo, $nom, $prenom, $adresse, $cp, $ville, $tel, $mail, $e
             `adresse`, `cp`, `ville`, `tel`, `email`, 
             `etablissement`, `idniveau`, `cashback`, `lastpostaction`, `dateactivite`
         ) VALUES (
-            '$pseudo', '$nom', '$prenom', '$cryptpasse', '$maintenant', 
-            '$adresse', '$cp', '$ville', '$tel', '$mail', 
-            '$etab', '$niveau', '$capdeb', '0', '$maintenant'
+            ?, ?, ?, ?, ?, 
+            ?, ?, ?, ?, ?, 
+            ?, ?, ?, '0', ?
         )";
+        $params = [
+            $pseudo, $nom, $prenom, $cryptpasse, $maintenant,
+            $adresse, $cp, $ville, $tel, $mail,
+            $etab, $niveau, $capdeb, $maintenant
+        ];
     } else {
         $sql = "INSERT INTO `compte` (
             `pseudonyme`, `nom`, `prenom`, `passe`, `dateinscr`, 
@@ -410,14 +414,20 @@ function inscrjeu($pseudo, $nom, $prenom, $adresse, $cp, $ville, $tel, $mail, $e
             `etablissement`, `idniveau`, `cashback`, `maildaily`, `mailweekly`, 
             `lastpostaction`, `dateactivite`
         ) VALUES (
-            '$pseudo', '$nom', '$prenom', '$cryptpasse', '$maintenant', 
-            '$adresse', '$cp', '$ville', '$tel', '$mail', 
-            '$etab', '$niveau', '$capdeb', '$mailjour', '$mailsemaine', 
-            '0', '$maintenant'
+            ?, ?, ?, ?, ?, 
+            ?, ?, ?, ?, ?, 
+            ?, ?, ?, ?, ?, 
+            '0', ?
         )";
+        $params = [
+            $pseudo, $nom, $prenom, $cryptpasse, $maintenant,
+            $adresse, $cp, $ville, $tel, $mail,
+            $etab, $niveau, $capdeb, $mailjour, $mailsemaine,
+            $maintenant
+        ];
     }
 
-    ExecRequete($sql, $connexion);
+    ExecRequete($sql, $connexion, $params);
 
     // Envoi de l'email
     if (defined('INCONC') && INCONC) {    
@@ -519,8 +529,7 @@ function doachat($idcompte,$sicav,$nombre,$dernvaleur)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
     $joueur = ChercheInternaute ($idcompte, $connexion);
-    $sicav = sec($sicav);
-    $nombre = sec(intval(sec($nombre)));
+    $nombre = intval($nombre);
 
     $bddsico = dansliste($sicav);
     if(empty($bddsico))

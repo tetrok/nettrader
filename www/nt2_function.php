@@ -1,5 +1,12 @@
 <?php
 
+require_once __DIR__ . '/autoload.php';
+
+use NetTrader\Service\TradingService;
+use NetTrader\Service\FormattingService;
+use NetTrader\Service\MailerService;
+use NetTrader\Auth\UserSession;
+
 /**
  * Fichier: nt2_function.php
  * Ce fichier contient les fonctions suivantes :
@@ -76,12 +83,7 @@
  */
 function e($string)
 {
-    if ($string === null) {
-        return '';
-    }
-    // ENT_QUOTES : convertit les guillemets doubles et simples.
-    // ENT_SUBSTITUTE : remplace les caractères invalides par un caractère de remplacement (évite les erreurs).
-    return htmlspecialchars((string) $string, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    return FormattingService::escape($string);
 }
 
 function tabvaleurouzero($tableau,$valeur)
@@ -141,8 +143,7 @@ function compareclass($nom1,$nom2)
  */
 function sign($val)
 {
-    if($val != 0) return ($val / abs($val));
-    else return 0;
+    return (new TradingService())->getSign((float)$val);
 }
 
 /**
@@ -379,15 +380,7 @@ function ansgetvaleur($sico,$nouv=0)
  */
 function leading_zero($aNumber, $intPart, $floatPart=NULL, $dec_point=NULL, $thousands_sep=NULL) 
 {
-    $formattedNumber = $aNumber;
-    if (!$floatPart === null) {
-        $formattedNumber = number_format($formattedNumber, $floatPart, $dec_point, $thousands_sep);
-    }
-    $len = strlen(strval(floor(floatval($formattedNumber))));
-    if ($intPart > $len) {
-        $formattedNumber = str_repeat("0", $intPart - $len) . $formattedNumber;
-    }
-    return $formattedNumber;
+    return (new FormattingService())->formatZeroPadded($aNumber, (int)$intPart, $floatPart, $dec_point, $thousands_sep);
 }
 
 /**
@@ -521,16 +514,8 @@ function barrepage($nblignes,$ligneparpage,$lignecourante,$add="")
 function tempsjeu()
 {
     global $internaute;
-    $maintenant = date("U");
-    $deb = defined('DEBCONC') ? DEBCONC : 0;
-    $fin = defined('FINCONC') ? FINCONC : 0;
-    $id_compte = (is_object($internaute) && isset($internaute->idcompte)) ? $internaute->idcompte : 0;
-    if(($maintenant > $deb && $maintenant < $fin) || $id_compte == 1)
-    {
-        return true;
-    } else {
-        return false;
-    }
+    $id_compte = (is_object($internaute) && isset($internaute->idcompte)) ? (int)$internaute->idcompte : null;
+    return (new TradingService())->isMarketOpen(null, $id_compte);
 }
 
 /**
@@ -610,14 +595,7 @@ function updatenomsicav()
  */
 function getnbactionmax($cashback,$valeursicav)
 {
-    if($valeursicav == 0)
-        return 0;
-    $NbActionMax = floor((0.99642482771815 * $cashback) / $valeursicav);
-    if($cashback < 4.95 + $valeursicav)
-    {
-        $NbActionMax = 0;
-    }
-    return $NbActionMax;
+    return (new TradingService())->getMaxBuyableShares((float)$cashback, (float)$valeursicav);
 }
 
 /**
@@ -627,12 +605,7 @@ function getnbactionmax($cashback,$valeursicav)
  */
 function gettaxe($valeursicav,$nombre)
 {
-    $taxe = Round(($nombre * $valeursicav) * 0.0030 * (1 + 0.196), 2);
-    if($taxe < 4.95)
-    {
-        $taxe = 4.95;
-    }
-    return $taxe;
+    return (new TradingService())->calculateTax((float)$valeursicav, (int)$nombre);
 }
 
 /**
@@ -641,17 +614,7 @@ function gettaxe($valeursicav,$nombre)
  */
 function getmontantvadpossible($idcompte)
 {
-    $capitalhorsvad = getplayercapitalhorsvad($idcompte);
-    $capitalvad = getplayercapitalvad($idcompte);
-    $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
-    $joueur = ChercheInternaute($idcompte, $connexion);
-    $cashback = (is_object($joueur) && isset($joueur->cashback)) ? $joueur->cashback : 0;
-    $limitevad = ($cashback - $capitalvad) * 1 + $capitalhorsvad * 1;
-    $limitevadpossible = $limitevad - $capitalvad;
-
-    if($limitevadpossible < 0) $limitevadpossible = 0;
-
-    return $limitevadpossible;
+    return (new TradingService())->getMaxVadPossible((int)$idcompte);
 }
 
 /**
@@ -1198,61 +1161,9 @@ function lienordre($champ,$titre)
  */
 function bbtohtml($text)
 {
-    // 1. Échapper tout le HTML natif
-    $text = e($text);
-
     global $skinrep;
-    $bbcode = [
-        "[list]", "[*]", "[/list]",
-        "[img]", "[/img]",
-        "[b]", "[/b]",
-        "[u]", "[/u]",
-        "[i]", "[/i]",
-        '[color="', "[/color]",
-        "[size=", "[/size]",
-        '[url="', "[/url]",
-        "[mail=\"", "[/mail]",
-        "[code]", "[/code]",
-        "[quote]", "[/quote]",
-        '"]',
-        ']',":D",":)",":(",":o ",":shock:",":? ","8)",":lol:",":x",":oops:",":cry:",":evil:",":roll:",":wink:",":!:",":?:",":idea:",":arrow:",":neutral:",":mrgreen:"
-    ];
-    $htmlcode = [
-        "<ul>", "<li>", "</ul>",
-        "<img src=\"", "\">",
-        "<b>", "</b>",
-        "<u>", "</u>",
-        "<i>", "</i>",
-        "<span style=\"color:", "</span>",
-        "<span style=\"font-size:", "</span>",
-        '<a href="', "</a>",
-        "<a href=\"mailto:", "</a>",
-        "<code>", "</code>",
-        opentab(" width=100% ").openligne("","citation")."<td>", "</td></tr></table>",
-        '">','">',
-        "<img src=\"$skinrep/smiles/icon_biggrin.gif\" title=\"Very Happy\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_smile.gif\" title=\"Smile\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_sad.gif\" title=\"Sad\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_surprised.gif\" title=\"Surprised\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_eek.gif\" title=\"Shocked\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_confused.gif\" title=\"Confused\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_cool.gif\" title=\"Cool\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_lol.gif\" title=\"Laughing\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_mad.gif\" title=\"Mad\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_redface.gif\" title=\"Embarassed\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_cry.gif\" title=\"Crying or Very sad\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_evil.gif\" title=\"Evil or Very Mad\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_rolleyes.gif\" title=\"Rolling Eyes\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_wink.gif\" title=\"Wink\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_exclaim.gif\" title=\"Exclamation\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_question.gif\" title=\"Question\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_idea.gif\" title=\"Idea\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_arrow.gif\" title=\"Arrow\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_neutral.gif\" title=\"Neutral\" border=\"0\">",
-        "<img src=\"$skinrep/smiles/icon_mrgreen.gif\" title=\"Mr. Green\" border=\"0\">"
-    ];
-    $newtext = str_replace($bbcode, $htmlcode, $text ?? '');
-    return nl2br($newtext);
+    $skin = !empty($skinrep) ? $skinrep : 'skin/default';
+    return (new FormattingService())->parseBBCode($text, $skin);
 }
 
 /**
@@ -1299,17 +1210,7 @@ function getidgroupe($idcompte)
  */
 function envoimail($email,$titre,$corps)
 {
-    $from_email  = defined('EMAILADMIN') ? EMAILADMIN : 'admin@localhost';
-    $entetedate  = date("D, j M Y H:i:s -0600");
-    $entetemail  = "From: $from_email \n";
-    $entetemail .= "Reply-To: $from_email \n";
-    $entetemail .= "X-Mailer: PHP/" . phpversion() . "\n";
-    $entetemail .= "Date: $entetedate";
-    $titre = "NetTrader : ".$titre;
-    $corps .= "\n\n\n\nPour ne plus recevoir d'email provenant du site Nettrader veuillez vous désinscrire de nettrader par le site via le lien \"R.A.Z. joueur\" (immédiat : ".(defined('ADDRNT') ? ADDRNT : '')."/index.php?do=formrazjoueur ) ou contacter l'administrateur en répondant à ce mail.";
-    if(isset($_SERVER['REMOTE_ADDR']) && $_SERVER['REMOTE_ADDR'] != "127.0.0.1")
-        @mail($email, $titre, stripslashes($corps), stripslashes($entetemail));
-    return 0;
+    return (new MailerService())->sendRawMail((string)$email, (string)$titre, (string)$corps) ? 1 : 0;
 }
 
 /**
@@ -1348,9 +1249,8 @@ function majstats()
 function print_reward($medor,$medargent,$medbronze)
 {
     global $skinrep;
-    return str_repeat("<IMG SRC=\"$skinrep/premier.png\" border=0>", intval($medor)) .
-           str_repeat("<IMG SRC=\"$skinrep/deus.png\" border=0>", intval($medargent)) .
-           str_repeat("<IMG SRC=\"$skinrep/tres.png\" border=0>", intval($medbronze));
+    $skin = !empty($skinrep) ? $skinrep : 'skin/default';
+    return (new FormattingService())->formatRewards((int)$medor, (int)$medargent, (int)$medbronze, $skin);
 }
 
 /**
@@ -1360,11 +1260,7 @@ function print_reward($medor,$medargent,$medbronze)
  */
 function forum_peut_editer($lignemessage,$infoforum)
 {
-    global $internaute;
-    if(!is_object($internaute) || !is_object($lignemessage)) return false;
-    $id_compte = isset($internaute->idcompte) ? $internaute->idcompte : 0;
-    $auth_level = isset($internaute->authlevel) ? $internaute->authlevel : 0;
-    return ($lignemessage->idcompte == $id_compte || $auth_level > 1);
+    return UserSession::current()->canEditForumPost(is_object($lignemessage) ? $lignemessage : null);
 }
 
 /**

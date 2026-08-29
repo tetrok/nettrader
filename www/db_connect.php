@@ -28,31 +28,22 @@
 * @author Nicolas Fortin <nfortin@nettrader.fr>
 */
 
-function sec($input="")
+/**
+ * Fonction sec (Obsolète : remplacée par les requêtes préparées PDO)
+ * @deprecated
+ * @param mixed $input
+ * @return mixed
+ */
+function sec($input = "")
 {
     if (is_array($input)) {
         $output = [];
         foreach ($input as $key => $champ) {
             $output[$key] = sec($champ);
         }
-    } else {
-        $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
-
-        if ($input === '' || $input === null) {
-            $quoted = "''";
-        } else {
-            $quoted = $connexion->quote($input);
-        }
-
-        if (strlen((string)$quoted) >= 2 && substr((string)$quoted, 0, 1) === "'" && substr((string)$quoted, -1) === "'") {
-            $escaped = substr((string)$quoted, 1, -1);
-        } else {
-            $escaped = $quoted;
-        }
-
-        $output = htmlentities($escaped);
+        return $output;
     }
-    return $output;
+    return $input;
 }
 
 /**
@@ -104,12 +95,12 @@ function cookievalide($idSession)
                 $tempsLimite = $maintenant + (3600 * 24); 
 
                 $insSession = "INSERT INTO session (idSession, idcompte, tempsLimite, tempsconnect) "
-                            . "VALUES ('$idSession', '$idcompte', '$tempsLimite', '$maintenant')";       
-                ExecRequete($insSession, $connexion);
+                            . "VALUES (?, ?, ?, ?)";       
+                ExecRequete($insSession, $connexion, [$idSession, $idcompte, $tempsLimite, $maintenant]);
                 forum_majtoutvuforum($idcompte);
                 
-                $requete = "UPDATE compte SET dateactivite = '$maintenant' WHERE idcompte='$idcompte'";
-                ExecRequete($requete, $connexion);
+                $requete = "UPDATE compte SET dateactivite = ? WHERE idcompte = ?";
+                ExecRequete($requete, $connexion, [$maintenant, $idcompte]);
                 $_SESSION['idcompte'] = $idcompte;
                 return $idcompte;
             }
@@ -224,13 +215,13 @@ if (!isset($FichierExecRequete)) {
  */
 function ChercheInternaute($idcompte = 0, $connexion, $mail = "")
 {
-    $mail = sec($mail);
     if ($mail == "") {
-        $requete = "SELECT * FROM compte,skin,niveau WHERE idcompte = '$idcompte' AND compte.idskin = skin.idskin AND compte.idniveau = niveau.idniveau";
+        $requete = "SELECT * FROM compte,skin,niveau WHERE idcompte = ? AND compte.idskin = skin.idskin AND compte.idniveau = niveau.idniveau";
+        $resultat = ExecRequete($requete, $connexion, [$idcompte]);
     } else {
-        $requete = "SELECT * FROM compte,skin,niveau WHERE email = '$mail' AND compte.idskin = skin.idskin AND compte.idniveau = niveau.idniveau";
+        $requete = "SELECT * FROM compte,skin,niveau WHERE email = ? AND compte.idskin = skin.idskin AND compte.idniveau = niveau.idniveau";
+        $resultat = ExecRequete($requete, $connexion, [$mail]);
     }
-    $resultat = ExecRequete($requete, $connexion);
     return LigneSuivante($resultat);
 }
 
@@ -241,9 +232,9 @@ function ChercheInternaute($idcompte = 0, $connexion, $mail = "")
 function nbessai($idcompte)
 {
     $depuis = date("U") - 5 * 60;
-    $query = "SELECT COUNT(idcompte) as nbessai FROM `tabforcing` WHERE idcompte='$idcompte' AND dateforcing>'$depuis'";
+    $query = "SELECT COUNT(idcompte) as nbessai FROM `tabforcing` WHERE idcompte = ? AND dateforcing > ?";
     $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete($query, $connexion);
+    $run_query = ExecRequete($query, $connexion, [$idcompte, $depuis]);
     $resultat = LigneSuivante($run_query);
     return is_object($resultat) ? $resultat->nbessai : 0;
 }
@@ -255,9 +246,8 @@ function nbessai($idcompte)
  */
 function ChercheSession($idSession, $connexion) 
 {
-    $idSession = sec($idSession);    
-    $requete = "SELECT * FROM session,compte,skin,niveau WHERE idSession = '$idSession' AND session.idcompte = compte.idcompte AND compte.idskin = skin.idskin AND compte.idniveau = niveau.idniveau ORDER BY tempsLimite DESC";
-    $resultat = ExecRequete($requete, $connexion);
+    $requete = "SELECT * FROM session,compte,skin,niveau WHERE idSession = ? AND session.idcompte = compte.idcompte AND compte.idskin = skin.idskin AND compte.idniveau = niveau.idniveau ORDER BY tempsLimite DESC";
+    $resultat = ExecRequete($requete, $connexion, [$idSession]);
     return LigneSuivante($resultat);
 }
 
@@ -275,18 +265,18 @@ function SessionValide($connexion, $session)
         }
         setcookie("nettrader2session", "", time() + 3600 * 24 * 30, "/");
         if (is_object($session)) {
-            $sessId = sec($session->idSession);
-            $requete = "DELETE FROM session WHERE idSession='$sessId' OR tempsLimite<'$maintenant'";
-            ExecRequete($requete, $connexion);
+            $sessId = $session->idSession;
+            $requete = "DELETE FROM session WHERE idSession = ? OR tempsLimite < ?";
+            ExecRequete($requete, $connexion, [$sessId, $maintenant]);
         }
         return false;
     } else {
         if ($session->tempsconnect < $maintenant - 5 * 60) {
-            $requete = "UPDATE session SET tempsconnect = '$maintenant' WHERE idcompte='$session->idcompte'";
-            ExecRequete($requete, $connexion);
+            $requete = "UPDATE session SET tempsconnect = ? WHERE idcompte = ?";
+            ExecRequete($requete, $connexion, [$maintenant, $session->idcompte]);
             forum_majtoutvuforum($session->idcompte);
-            $requete = "UPDATE compte SET dateactivite = '$maintenant' WHERE idcompte='$session->idcompte'";
-            ExecRequete($requete, $connexion);
+            $requete = "UPDATE compte SET dateactivite = ? WHERE idcompte = ?";
+            ExecRequete($requete, $connexion, [$maintenant, $session->idcompte]);
         }
         return true;
     }
@@ -311,34 +301,50 @@ function CreerSession($connexion, $email, $motDePasse, $idSession, $souvenir)
             $internaute = "";
             return lang(88);      
         }      
-        if ($internaute->passe == md5($motDePasse)) {
+        $passwordMatch = false;
+        if (password_verify($motDePasse, (string)$internaute->passe)) {
+            $passwordMatch = true;
+        } elseif ($internaute->passe === md5($motDePasse)) {
+            $passwordMatch = true;
+            // Mise à niveau transparente du hash vers BCRYPT
+            $newHash = password_hash($motDePasse, PASSWORD_BCRYPT);
+            ExecRequete("UPDATE compte SET passe = ? WHERE idcompte = ?", $connexion, [$newHash, $internaute->idcompte]);
+            $internaute->passe = $newHash;
+        }
+
+        if ($passwordMatch) {
             $maintenant = date("U");
             $tempsLimite = $maintenant + (3600 * 24); 
 
             $insSession = "INSERT INTO session (idSession, idcompte, tempsLimite, tempsconnect) "
-                        . "VALUES ('$idSession', '$internaute->idcompte', '$tempsLimite', '$maintenant')";       
-            ExecRequete($insSession, $connexion);
+                        . "VALUES (?, ?, ?, ?)";       
+            ExecRequete($insSession, $connexion, [$idSession, $internaute->idcompte, $tempsLimite, $maintenant]);
             forum_majtoutvuforum($internaute->idcompte);
-            $requete = "UPDATE compte SET dateactivite = '$maintenant' WHERE idcompte='$internaute->idcompte'";
-            ExecRequete($requete, $connexion);
+            $requete = "UPDATE compte SET dateactivite = ? WHERE idcompte = ?";
+            ExecRequete($requete, $connexion, [$maintenant, $internaute->idcompte]);
             
             list($hour, $min, $sec, $day, $mon, $yr) = explode(" ", date("H i s d m y"));
             $date3 = mktime(0, 0, 0, 0, 0, $yr);
             if ($souvenir == 1) {
-                setcookie("nettrader2session", "$internaute->idcompte-" . md5($internaute->idcompte . $date3 . $internaute->passe . $internaute->cookiesess), time() + 3600 * 24 * 30, "/");
+                setcookie("nettrader2session", "$internaute->idcompte-" . md5($internaute->idcompte . $date3 . $internaute->passe . $internaute->cookiesess), [
+                    'expires' => time() + 3600 * 24 * 30,
+                    'path' => '/',
+                    'httponly' => true,
+                    'samesite' => 'Lax'
+                ]);
             }
             $_SESSION['idcompte'] = $internaute->idcompte;
             return "TRUE";
         }
         $maintenant = date("U");
-        $insSession = "INSERT INTO `tabforcing` (`idcompte`, `dateforcing`) VALUES ('$internaute->idcompte', '$maintenant');";       
-        ExecRequete($insSession, $connexion); 
+        $insSession = "INSERT INTO `tabforcing` (`idcompte`, `dateforcing`) VALUES (?, ?);";       
+        ExecRequete($insSession, $connexion, [$internaute->idcompte, $maintenant]); 
         $internaute = "";
         include_once("lang/lang_fr.php"); 
         return "<B>" . lang(26) . "<P></B>\n";
     } else {
         $internaute = "";
-        include_once("lang/lang_fr.php");
+        include_once("lang/lang_fr.php"); 
         return "<B>" . lang(27) . "</B><P>\n";
     }
 }
@@ -354,7 +360,6 @@ function CreerSession($connexion, $email, $motDePasse, $idSession, $souvenir)
 function ControleAcces(&$email, &$motDePasse, &$emailInternaute, $idSession, $souvenir)
 {
     global $internaute;
-    $emailInternaute = sec($emailInternaute);
     $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
     $sessionCourante = ChercheSession($idSession, $connexion);
     
@@ -373,7 +378,6 @@ function ControleAcces(&$email, &$motDePasse, &$emailInternaute, $idSession, $so
     }
 
     if (!empty($email)) {
-        $email = sec($email);
         $message = CreerSession($connexion, $email, $motDePasse, $idSession, $souvenir);
         if ($message == "TRUE") {
             $emailInternaute = $email;
@@ -393,12 +397,12 @@ function deconnection()
     if (!is_object($internaute)) return "";
     effacvieuxordres();
     $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
-    $requete = "DELETE FROM session WHERE idcompte='$internaute->idcompte' OR tempsLimite<UNIX_TIMESTAMP()";
+    $requete = "DELETE FROM session WHERE idcompte = ? OR tempsLimite < UNIX_TIMESTAMP()";
     setcookie("nettrader2session", "", time() - 3600, "/");
-    ExecRequete($requete, $connexion);
+    ExecRequete($requete, $connexion, [$internaute->idcompte]);
     $tag = md5(getmicrotime());
-    $requete = "UPDATE compte SET cookiesess='$tag' WHERE idcompte='$internaute->idcompte'";
-    ExecRequete($requete, $connexion);
+    $requete = "UPDATE compte SET cookiesess = ? WHERE idcompte = ?";
+    ExecRequete($requete, $connexion, [$tag, $internaute->idcompte]);
     if (session_status() === PHP_SESSION_ACTIVE) {
         session_destroy();
     }
@@ -413,8 +417,8 @@ function deconnection()
  */
 function ChercheComptePseudo($pseudo, $connexion)
 {
-    $requete = "SELECT * FROM compte WHERE pseudonyme = '$pseudo'";
-    $resultat = ExecRequete($requete, $connexion);
+    $requete = "SELECT * FROM compte WHERE pseudonyme = ?";
+    $resultat = ExecRequete($requete, $connexion, [$pseudo]);
     return LigneSuivante($resultat);
 }
 ?>

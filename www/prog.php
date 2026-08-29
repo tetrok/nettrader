@@ -12,6 +12,11 @@
 * @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
 * @author Nicolas Fortin <nfortin@nettrader.fr>
 */
+require_once __DIR__ . '/autoload.php';
+
+use NetTrader\Http\Request;
+use NetTrader\Auth\UserSession;
+
 include_once ("const.php");
 include_once ("constbdd.php");
 include_once ("db_connect.php");
@@ -22,14 +27,14 @@ include_once ("nt2_function.php");
 include_once ("lang/lang_fr.php");
 include_once ("nt2_pages.php");
 
+$request = Request::createFromGlobals();
+
 global $internaute,$explorer;
-$explorer=0;
-$explorer=intval($_GET['explorer']);
+$explorer = $request->getInt('explorer', 0);
 $internaute="";
-$do="";
-$do=($_GET['do'] ?? "");
-$sess="";
-$sess=($_GET['sess'] ?? "");
+$do = $request->getAction();
+$sess = $request->getString('sess', '');
+$mess = "";
 
 if($do<>"login")
 {
@@ -38,19 +43,19 @@ if($do<>"login")
 		$mess= ControleProgAcces(sec($sess));
 	}
 }else{
-	$mess= proglogin(($_GET['pseudo'] ?? ""),($_GET['pass'] ?? ""));
+	$mess= proglogin($request->getString('pseudo', ''), $request->getString('pass', ''));
 }
 echo "<xml><flux>".$mess;
-switch($do) //sans etre logg�
+switch($do) //sans etre logg
 {
 	case "infomsg": //message d'info
                 echo proginfomess(sec(($_GET['progver'] ?? "")),sec(($_GET['progtyp'] ?? "")));
 		break;
 }
 
-if($internaute->authlevel>=1)
+if(is_object($internaute) && isset($internaute->authlevel) && $internaute->authlevel>=1)
 {
-	switch($do) //en �tant logg�
+	switch($do) //en tant logg
 	{
 		case "deco": //deco
 			echo xmess(progdeco());

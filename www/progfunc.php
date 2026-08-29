@@ -145,16 +145,17 @@ function ControleProgAcces($session)
 	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
 	$testinternaute=ChercheSession ($session, $connexion);
 
-	if($testinternaute->tempsLimite < date("U"))
+	if(!is_object($testinternaute) || $testinternaute->tempsLimite < date("U"))
 	{
-  		//session expir�
+  		//session expiree
 		//echo "(".$testinternaute->tempsLimite.")";
   		exit(errorxmlmessage(3));
 	}else{
 	        $internaute=$testinternaute;
 	        // session encore valide
-	        $requete  = "UPDATE compte SET dateactivite = '$maintenant' WHERE idcompte='$session->idcompte'";
-		$resultat = ExecRequete ($requete, $connexion);
+	        $maintenant = date("U");
+	        $requete  = "UPDATE compte SET dateactivite = ? WHERE idcompte = ?";
+		$resultat = ExecRequete ($requete, $connexion, [$maintenant, $internaute->idcompte]);
 		return "";  //si session encore valide
 	}
 }
@@ -166,41 +167,38 @@ function ControleProgAcces($session)
  */
 function proglogin($pseudo,$pass)
 {
-  // on test le login et mot de passe, si c'est bon on cr�� la session
+  // on test le login et mot de passe, si c'est bon on cree la session
   $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
   $tempinternaute = ChercheComptePseudo ($pseudo, $connexion);
 
-  if($tempinternaute->authlevel>=1 && nbessai($tempinternaute->idcompte)>=3)
+  if(is_object($tempinternaute) && $tempinternaute->authlevel>=1 && nbessai($tempinternaute->idcompte)>=3)
   {
-        exit(errorxmlmessage(6)); //nombre d'essai d�pass�
+        exit(errorxmlmessage(6)); //nombre d'essai depasse
   }
 
-  if($tempinternaute->passe==$pass and $tempinternaute->authlevel>=1)
+  if(is_object($tempinternaute) && $tempinternaute->passe==$pass and $tempinternaute->authlevel>=1)
   {
 	//si utilisateur correcte
-	//on cr�� une session
+	//on cree une session
 	$internaute=$tempinternaute;
 	$maintenant = date ("U");
         $tempsLimite = $maintenant + (3600 * 24);
 	$idsession=md5(getmicrotime()+rand(1,200));
-        $insSession = "INSERT INTO session (idSession, idcompte"
-                     . ",tempsLimite,tempsconnect) VALUES ('$idsession', "
-                     . "'$internaute->idcompte',"
-                     . "'$tempsLimite','$maintenant')";
-        $resultat = ExecRequete ($insSession, $connexion);
-        $requete  = "UPDATE compte SET dateactivite = '$maintenant' WHERE idcompte='$internaute->idcompte'";
-        $resultat = ExecRequete ($requete, $connexion);
+        $insSession = "INSERT INTO session (idSession, idcompte, tempsLimite, tempsconnect) "
+                     . "VALUES (?, ?, ?, ?)";
+        $resultat = ExecRequete ($insSession, $connexion, [$idsession, $internaute->idcompte, $tempsLimite, $maintenant]);
+        $requete  = "UPDATE compte SET dateactivite = ? WHERE idcompte = ?";
+        $resultat = ExecRequete ($requete, $connexion, [$maintenant, $internaute->idcompte]);
 		$internaute=ChercheSession ($idsession, $connexion);
         return "<erreur>faux</erreur><session>$idsession</session><vad>$internaute->vad</vad>";
   }else{
-	if($tempinternaute=="")  //Si utilisateur non trouv�
+	if(!is_object($tempinternaute))  //Si utilisateur non trouve
 	{
  		exit(errorxmlmessage(2));
 	}else{       //mot de passe invalide
 		$maintenant = date ("U");
-		$insSession = "INSERT INTO `tabforcing` ( `idcompte` , `dateforcing` )
-		VALUES ('$tempinternaute->idcompte', '$maintenant');";
-      		$resultat = ExecRequete ($insSession, $connexion);
+		$insSession = "INSERT INTO `tabforcing` ( `idcompte` , `dateforcing` ) VALUES (?, ?);";
+      		$resultat = ExecRequete ($insSession, $connexion, [$tempinternaute->idcompte, $maintenant]);
 	        exit(errorxmlmessage(1));
 	}
   }
@@ -212,14 +210,15 @@ function proglogin($pseudo,$pass)
 function progdeco()
 {
 	global $internaute;
+	if (!is_object($internaute)) return "deconnecte";
 	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $requete  = "DELETE FROM session WHERE idcompte='$internaute->idcompte' OR tempsLimite<UNIX_TIMESTAMP()";
-	$resultat = ExecRequete ($requete, $connexion);
+    $requete  = "DELETE FROM session WHERE idcompte = ? OR tempsLimite < UNIX_TIMESTAMP()";
+	$resultat = ExecRequete ($requete, $connexion, [$internaute->idcompte]);
 	$tag=md5(getmicrotime());
-    $requete = "UPDATE compte SET cookiesess='$tag' WHERE idcompte='$internaute->idcompte'";
-	$resultat = ExecRequete ($requete, $connexion);
+    $requete = "UPDATE compte SET cookiesess = ? WHERE idcompte = ?";
+	$resultat = ExecRequete ($requete, $connexion, [$tag, $internaute->idcompte]);
 	$internaute="";
-    return "deconnect�";
+    return "deconnecte";
 }
 
 /**

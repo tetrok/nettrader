@@ -17,16 +17,17 @@
 */
 function progreqportef()
 {
-global $internaute;
-$idcompte=$internaute->idcompte;
-	$query = "SELECT lasttime AS laststamp,cacval.codesico AS codesicav,cacval.nom AS nomsicav,portef.quant AS nombsicav,cacval.valeur AS valsicav,portef.ansvaleur as ansvalsicav
+    global $internaute;
+    if (!is_object($internaute) || !isset($internaute->idcompte)) return false;
+    $idcompte = $internaute->idcompte;
+    $query = "SELECT lasttime AS laststamp,cacval.codesico AS codesicav,cacval.nom AS nomsicav,portef.quant AS nombsicav,cacval.valeur AS valsicav,portef.ansvaleur as ansvalsicav
           FROM cacval,portef
           WHERE cacval.codesico = portef.codesico
-		AND portef.idcompte = '$idcompte'
+          AND portef.idcompte = ?
           ORDER BY cacval.nom ";
-	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-	$run_query =  ExecRequete ($query, $connexion);
-   return $run_query;
+    $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
+    $run_query = ExecRequete ($query, $connexion, [$idcompte]);
+    return $run_query;
 }
 
 /**

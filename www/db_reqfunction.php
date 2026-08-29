@@ -144,8 +144,8 @@ function updatecptpost()
     global $internaute;
     if (!is_object($internaute) || !isset($internaute->idcompte)) return;
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $query="UPDATE compte SET lastpostaction=UNIX_TIMESTAMP() where idcompte='$internaute->idcompte'";
-    $run_query = ExecRequete ($query, $connexion);
+    $query = "UPDATE compte SET lastpostaction=UNIX_TIMESTAMP() WHERE idcompte = ?";
+    $run_query = ExecRequete ($query, $connexion, [$internaute->idcompte]);
 }
 
 /**
@@ -157,9 +157,9 @@ function getcptpost()
     global $internaute;
     if (!is_object($internaute) || !isset($internaute->idcompte)) return 0;
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $query="SELECT lastpostaction FROM compte where idcompte='$internaute->idcompte'";
-    $run_query = ExecRequete ($query, $connexion);
-    $ligne=LigneSuivante($run_query);
+    $query = "SELECT lastpostaction FROM compte WHERE idcompte = ?";
+    $run_query = ExecRequete ($query, $connexion, [$internaute->idcompte]);
+    $ligne = LigneSuivante($run_query);
     return is_object($ligne) ? $ligne->lastpostaction : 0;
 }
 
@@ -170,14 +170,14 @@ function portefeuille_joueur()
 {  
     global $internaute;
     if (!is_object($internaute) || !isset($internaute->idcompte)) return [];
-    $idcompte=$internaute->idcompte;
+    $idcompte = $internaute->idcompte;
     $query = "SELECT lasttime AS laststamp,cacval.codesico AS codesicav,cacval.nom AS nomsicav,cacval.yahooname as helpurl ,portef.quant AS nombsicav,(portef.quant*cacval.valeur) AS valtotsicav,cacval.valeur AS valsicav,((portef.quant*cacval.valeur)-(portef.quant*portef.ansvaleur)) AS benefsicav,(((cacval.valeur-portef.ansvaleur)/portef.ansvaleur)*100*SIGN(portef.quant)) AS pourcentsicav,portef.ansvaleur as ansvalsicav,(portef.ansvaleur*portef.quant) AS ansvaltotsicav,stats.prog
-          FROM cacval,portef LEFT JOIN statsclassement stats ON ('$internaute->idcompte'=stats.idcompte)
+          FROM cacval,portef LEFT JOIN statsclassement stats ON (?=stats.idcompte)
           WHERE cacval.codesico = portef.codesico
-              AND portef.idcompte = '$idcompte'
+              AND portef.idcompte = ?
           ORDER BY ".tabordre("portef");
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$idcompte, $idcompte]);    
     $return = [];
     while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
     {   
@@ -193,23 +193,26 @@ function portefeuille_joueur()
  */
 function joueur_liste_sicav($idcompte="",$timemodif=0)
 {  
-    $condition="";
-    $table="";
-    if($idcompte<>"")
-    {
-        $idcompte = "    AND portef.idcompte = '$idcompte'";
-        $condition = "cacval.codesico = portef.codesico AND";
-        $table=",portef";
-    }
-    $letimestamp=get_refresh();
-    $datesql=$letimestamp->datesql+$timemodif;
-    $datedown=$letimestamp->datedown+$timemodif;
-    $query = "SELECT cacval.codesico AS codesicav,cacval.nom AS nomsicav,cacval.valeur AS valeursicav
-          FROM cacval $table
-          WHERE $condition (lasttime <= '$datesql' AND lasttimedown <= '$datedown') $idcompte AND down='1'
-          ORDER BY cacval.nom ";
+    $letimestamp = get_refresh();
+    $datesql = $letimestamp->datesql + $timemodif;
+    $datedown = $letimestamp->datedown + $timemodif;
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    
+    if($idcompte !== "")
+    {
+        $query = "SELECT cacval.codesico AS codesicav,cacval.nom AS nomsicav,cacval.valeur AS valeursicav
+              FROM cacval,portef
+              WHERE cacval.codesico = portef.codesico AND (lasttime <= ? AND lasttimedown <= ?) AND portef.idcompte = ? AND down='1'
+              ORDER BY cacval.nom ";
+        $params = [$datesql, $datedown, $idcompte];
+    } else {
+        $query = "SELECT cacval.codesico AS codesicav,cacval.nom AS nomsicav,cacval.valeur AS valeursicav
+              FROM cacval
+              WHERE (lasttime <= ? AND lasttimedown <= ?) AND down='1'
+              ORDER BY cacval.nom ";
+        $params = [$datesql, $datedown];
+    }
+    $run_query = ExecRequete ($query, $connexion, $params);
     $return = [];
     while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
     {   
@@ -225,13 +228,12 @@ function joueur_liste_sicav($idcompte="",$timemodif=0)
  */
 function joueur_possede($sico,$idcompte)
 {  
-    $sico=sec($sico);
     $query = "SELECT cacval.nom AS nomsicav,portef.quant AS nombsicav,ansvaleur,valeur
           FROM cacval,portef
           WHERE cacval.codesico = portef.codesico
-              AND portef.idcompte = '$idcompte' AND cacval.codesico = '$sico'";
+              AND portef.idcompte = ? AND cacval.codesico = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$idcompte, $sico]);    
     return LigneSuivante($run_query);
 }
 
@@ -241,12 +243,11 @@ function joueur_possede($sico,$idcompte)
  */
 function GetCashBack($idjoueur)
 {
-    $idjoueur=sec($idjoueur);
     $query = "SELECT cashback
           FROM compte
-          WHERE idcompte = '$idjoueur'";
+          WHERE idcompte = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$idjoueur]);
     $objet = $run_query->fetch(PDO::FETCH_BOTH);
     return is_array($objet) ? $objet[0] : 0;
 }
@@ -259,12 +260,12 @@ function GetCashBack($idjoueur)
 function ModifLiquide($idcompte,$somme)
 {
     global $internaute;
-    $somme=round($somme+getcashback($idcompte),2);
-    $query = "UPDATE compte SET `cashback`=$somme
-          WHERE compte.idcompte = '$idcompte'";
+    $somme = round($somme + getcashback($idcompte), 2);
+    $query = "UPDATE compte SET `cashback` = ?
+          WHERE compte.idcompte = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
-    if (is_object($internaute)) {
+    $run_query = ExecRequete ($query, $connexion, [$somme, $idcompte]);    
+    if (is_object($internaute) && isset($internaute->idcompte) && $internaute->idcompte == $idcompte) {
         $internaute->cashback = $somme;
     }
     return 0;
@@ -282,10 +283,10 @@ function ModifLiquide($idcompte,$somme)
  */
 function AddHistorique($idcompte,$operation,$sicav,$nombre,$valunique, $taxe, $profit)
 {
-    $maintenant=date("U");
-    $query = "INSERT INTO `historique` ( `temps` , `codesico` , `idcompte` , `sens` , `nbr` , `valeurunique` , `taxe`, `profit` ) VALUES ( '$maintenant', '$sicav', '$idcompte', '$operation', '$nombre', '$valunique', '$taxe', '$profit' );";
+    $maintenant = date("U");
+    $query = "INSERT INTO `historique` ( `temps` , `codesico` , `idcompte` , `sens` , `nbr` , `valeurunique` , `taxe`, `profit` ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$maintenant, $sicav, $idcompte, $operation, $nombre, $valunique, $taxe, $profit]);
     return 0;
 }
 
@@ -298,23 +299,25 @@ function AddHistorique($idcompte,$operation,$sicav,$nombre,$valunique, $taxe, $p
  */
 function ModifAction($idcompte,$sicav,$quant,$valeur)
 {
-    $possede=joueur_possede($sicav,$idcompte);
-    if($quant==0)
-    {
-        $query = "DELETE FROM `portef` WHERE `idcompte` = '$idcompte' AND `codesico` = '$sicav'";
-    } else {
-        $nombdiff=$quant-$possede->nombsicav;
-        if(($possede->nombsicav<0 && $quant<$possede->nombsicav)||($possede->nombsicav>0 && $quant>$possede->nombsicav))
-            $val=((( $possede->nombsicav*$possede->ansvaleur)+($nombdiff*$valeur))/($nombdiff+$possede->nombsicav));
-        else
-            if(($possede->nombsicav<0 && $quant>0)||($possede->nombsicav>0 && $quant<0))
-                $val=$valeur;
-            else
-                $val=$possede->ansvaleur;
-        $query = "UPDATE portef SET `quant`='$quant',`ansvaleur`='$val' WHERE portef.idcompte = '$idcompte' AND portef.codesico = '$sicav'";
-    }      
+    $possede = joueur_possede($sicav,$idcompte);
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    if($quant == 0)
+    {
+        $query = "DELETE FROM `portef` WHERE `idcompte` = ? AND `codesico` = ?";
+        $run_query = ExecRequete ($query, $connexion, [$idcompte, $sicav]);
+    } else {
+        $nombdiff = $quant - (is_object($possede) ? $possede->nombsicav : 0);
+        if(is_object($possede) && (($possede->nombsicav < 0 && $quant < $possede->nombsicav) || ($possede->nombsicav > 0 && $quant > $possede->nombsicav))) {
+            $val = ((( $possede->nombsicav * $possede->ansvaleur) + ($nombdiff * $valeur)) / ($nombdiff + $possede->nombsicav));
+        } else {
+            if(is_object($possede) && (($possede->nombsicav < 0 && $quant > 0) || ($possede->nombsicav > 0 && $quant < 0)))
+                $val = $valeur;
+            else
+                $val = is_object($possede) ? $possede->ansvaleur : $valeur;
+        }
+        $query = "UPDATE portef SET `quant` = ?, `ansvaleur` = ? WHERE portef.idcompte = ? AND portef.codesico = ?";
+        $run_query = ExecRequete ($query, $connexion, [$quant, $val, $idcompte, $sicav]);
+    }      
     return 0;
 }
 
@@ -324,9 +327,9 @@ function ModifAction($idcompte,$sicav,$quant,$valeur)
  */
 function ChercheSkin($idskin)
 {
-    $query = "SELECT * FROM skin WHERE idskin='$idskin'";
+    $query = "SELECT * FROM skin WHERE idskin = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$idskin]);    
     return LigneSuivante($run_query);
 }
 
@@ -481,12 +484,11 @@ function listvaleur()
  */
 function dansliste($sico)
 {  
-    $sico=addslashes($sico);
     $query = "SELECT * 
           FROM cacval
-          WHERE cacval.codesico = '$sico' and cacval.authachat='1'";
+          WHERE cacval.codesico = ? AND cacval.authachat = '1'";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$sico]);    
     return LigneSuivante($run_query);
 }
 
@@ -499,12 +501,11 @@ function dansliste($sico)
  */
 function AjoutPort($idcompte,$sicav,$quant,$valeur)
 {
-    $possede=joueur_possede($sicav,$idcompte);
-    if($quant<>0)
+    if($quant != 0)
     {
-        $query = "INSERT INTO `portef` ( `idcompte` , `codesico` , `quant` , `ansvaleur` ) VALUES ( '$idcompte', '$sicav', '$quant', '$valeur' )";
+        $query = "INSERT INTO `portef` ( `idcompte` , `codesico` , `quant` , `ansvaleur` ) VALUES ( ?, ?, ?, ? )";
         $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-        $run_query = ExecRequete ($query, $connexion);    
+        $run_query = ExecRequete ($query, $connexion, [$idcompte, $sicav, $quant, $valeur]);    
     }      
     return 0;
 }
@@ -515,9 +516,9 @@ function AjoutPort($idcompte,$sicav,$quant,$valeur)
  */
 function delete_sicav($sicav)
 {
-    $query = "DELETE FROM `cacval` WHERE codesico=$sicav";
+    $query = "DELETE FROM `cacval` WHERE codesico = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$sicav]);    
 }
 
 /**
@@ -527,7 +528,7 @@ function delete_sicav($sicav)
 function listmenu($type="menu")
 {  
     global $internaute;
-    $visiteur=0;
+    $visiteur = 0;
     if(!is_object($internaute) || !isset($internaute->authlevel) || $internaute->authlevel < 1)
     {
         $authlevel = -1;
@@ -537,10 +538,10 @@ function listmenu($type="menu")
     }
     $query = "SELECT idmenu,type_menu,text_id,CONCAT(link_menu,'do=',do) AS link_menu,alldo,do
     FROM menu
-    WHERE (type_menu='menu' or type_menu='$type') AND ((`authlevel`<='$authlevel' AND `visiteurseulement`='$visiteur') OR `authlevel`='0')
+    WHERE (type_menu = 'menu' OR type_menu = ?) AND ((`authlevel` <= ? AND `visiteurseulement` = ?) OR `authlevel` = '0')
     ORDER BY idmenu";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$type, $authlevel, $visiteur]);
     $return = [];
     while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
     {   
@@ -559,14 +560,23 @@ function listhisto($deblign,$nblign,$depuis=0)
 {  
     global $internaute;
     if(!is_object($internaute) || !isset($internaute->idcompte)) return [];
-    $reqsup="";
-    if($depuis>0) $reqsup=" and historique.temps>'$depuis'";
-    $query = "SELECT temps AS LADATE,cacval.nom AS LENOM,sens AS LESENS,nbr AS LENOMBRE,CONCAT( valeurunique, ' € ( ', valeurunique * nbr, ' € )' )  AS LEHT,round(ABS(taxe),2) AS LATAXE, round(valeurunique*nbr + taxe,2) AS LETTC, temps as UNIX, (valeurunique * nbr) AS LETOTHT, CONCAT( profit, ' €') as PROFITOP
-          FROM cacval,historique
-          WHERE idcompte='$internaute->idcompte' and historique.codesico = cacval.codesico $reqsup
-          ORDER BY ".tabordre("historique")." LIMIT $deblign,$nblign";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $deblign = (int)$deblign;
+    $nblign = (int)$nblign;
+    if($depuis > 0) {
+        $query = "SELECT temps AS LADATE,cacval.nom AS LENOM,sens AS LESENS,nbr AS LENOMBRE,CONCAT( valeurunique, ' € ( ', valeurunique * nbr, ' € )' ) AS LEHT,round(ABS(taxe),2) AS LATAXE, round(valeurunique*nbr + taxe,2) AS LETTC, temps as UNIX, (valeurunique * nbr) AS LETOTHT, CONCAT( profit, ' €') as PROFITOP
+              FROM cacval,historique
+              WHERE idcompte = ? and historique.codesico = cacval.codesico and historique.temps > ?
+              ORDER BY ".tabordre("historique")." LIMIT $deblign,$nblign";
+        $params = [$internaute->idcompte, $depuis];
+    } else {
+        $query = "SELECT temps AS LADATE,cacval.nom AS LENOM,sens AS LESENS,nbr AS LENOMBRE,CONCAT( valeurunique, ' € ( ', valeurunique * nbr, ' € )' ) AS LEHT,round(ABS(taxe),2) AS LATAXE, round(valeurunique*nbr + taxe,2) AS LETTC, temps as UNIX, (valeurunique * nbr) AS LETOTHT, CONCAT( profit, ' €') as PROFITOP
+              FROM cacval,historique
+              WHERE idcompte = ? and historique.codesico = cacval.codesico
+              ORDER BY ".tabordre("historique")." LIMIT $deblign,$nblign";
+        $params = [$internaute->idcompte];
+    }
+    $run_query = ExecRequete ($query, $connexion, $params);    
     $return = [];
     while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
     {   
@@ -821,9 +831,9 @@ function listclassement($mois,$ligncour,$maxligne,$cherche="")
  */
 function listclassementcount($moisstamp)
 {
-    $query = "SELECT COUNT(*) as nbrplayer FROM compte WHERE authlevel='1' and dateinscr<'$moisstamp'"; 
+    $query = "SELECT COUNT(*) as nbrplayer FROM compte WHERE authlevel = '1' AND dateinscr < ?"; 
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$moisstamp]);    
     $lignresult = LigneSuivante($run_query);
     return is_object($lignresult) ? $lignresult->nbrplayer : 0;
 }
@@ -833,16 +843,16 @@ function listclassementcount($moisstamp)
  */
 function getclassementsicavlist()
 {  
-    $letimestamp=get_refresh();
-    $datesql=$letimestamp->datesql;
-    $datedown=$letimestamp->datedown;
+    $letimestamp = get_refresh();
+    $datesql = $letimestamp->datesql;
+    $datedown = $letimestamp->datedown;
     $query = "SELECT cacval.codesico AS codesicav,cacval.nom AS nomsicav,cacval.valeur AS valeursicav
           FROM cacval,portef
           WHERE cacval.codesico = portef.codesico
-          AND !(lasttime > '$datesql' OR lasttimedown > '$datedown')
+          AND !(lasttime > ? OR lasttimedown > ?)
           GROUP BY codesicav,nomsicav,valeursicav";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$datesql, $datedown]);    
     $return = [];
     while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
     {   
@@ -861,8 +871,9 @@ function getclassementsicavlist()
 function cmd_update_sicav($codesico,$valeur,$lasttime,$lasttimedown )
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $codesico=intval($codesico);
-    $resultat=ExecRequete("UPDATE cacval SET valeur=$valeur, lasttime=$lasttime, lasttimedown=$lasttimedown WHERE codesico = $codesico AND lasttime<=$lasttime AND lasttimedown<$lasttimedown",$connexion);
+    $codesico = intval($codesico);
+    $query = "UPDATE cacval SET valeur = ?, lasttime = ?, lasttimedown = ? WHERE codesico = ? AND lasttime <= ? AND lasttimedown < ?";
+    $resultat = ExecRequete($query, $connexion, [$valeur, $lasttime, $lasttimedown, $codesico, $lasttime, $lasttimedown]);
     return 0;
 }
 
@@ -897,13 +908,10 @@ function get_dernier_timestamp()
  */
 function addordre($codesico,$idcompte,$datecreation,$sens,$nbr,$pourc,$tempslim,$coursmin,$coursmax)
 {
-    if(intval($pourc)==0)
-        $pourc="NULL";
-    else
-        $pourc="'".$pourc."'";
-    $query = "INSERT INTO `ordre` ( `codesico` , `idcompte` , `datecreation` , `sens` , `nbr` , `pourc` , `tempslim` , `coursmin` , `coursmax` ) VALUES ('$codesico','$idcompte','$datecreation','$sens','$nbr',$pourc,'$tempslim','$coursmin','$coursmax');";
+    $pourc_val = (intval($pourc) == 0) ? null : $pourc;
+    $query = "INSERT INTO `ordre` ( `codesico` , `idcompte` , `datecreation` , `sens` , `nbr` , `pourc` , `tempslim` , `coursmin` , `coursmax` ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$codesico, $idcompte, $datecreation, $sens, $nbr, $pourc_val, $tempslim, $coursmin, $coursmax]);
     return 0;
 }
 
@@ -915,9 +923,9 @@ function niv_joueur($idcompte)
 {  
     $query = "SELECT niveau.* 
           FROM compte,niveau
-          WHERE compte.idcompte = $idcompte AND compte.idniveau = niveau.idniveau";
+          WHERE compte.idcompte = ? AND compte.idniveau = niveau.idniveau";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$idcompte]);    
     return LigneSuivante($run_query);
 }
 
@@ -928,23 +936,23 @@ function get_ordre()
 {
     if(defined('SECURE') && SECURE)
     {
-        $add=" AND datecreation-".SECURETIMEDELAY." <= cacval.lasttime";
+        $add = " AND datecreation-".SECURETIMEDELAY." <= cacval.lasttime";
     } else {
-        $add="";
+        $add = "";
     }
 
-    $letimestamp=get_refresh();
-    $datesql=$letimestamp->datesql;
-    $datedown=$letimestamp->datedown;
-    $now=date("U");
+    $letimestamp = get_refresh();
+    $datesql = $letimestamp->datesql;
+    $datedown = $letimestamp->datedown;
+    $now = date("U");
     $query = " SELECT * 
     FROM ordre,cacval
-    WHERE ordre.codesico = cacval.codesico AND ( lasttime > '$datesql' OR lasttimedown > '$datedown')
+    WHERE ordre.codesico = cacval.codesico AND ( lasttime > ? OR lasttimedown > ?)
      AND ( ( ordre.coursmin <= cacval.valeur AND ordre.coursmax >= cacval.valeur ) OR ( ordre.coursmin <= cacval.valeur AND ordre.coursmax = '-1' ) )
-     $add AND $now <= tempslim and (cacval.authachat='1' or ordre.sens='vente') and etat='1' ORDER BY datecreation ASC";
+     $add AND ? <= tempslim and (cacval.authachat='1' or ordre.sens='vente') and etat='1' ORDER BY datecreation ASC";
 
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$datesql, $datedown, $now]);    
     $return = [];
     while ( $run_result = $run_query->fetch(PDO::FETCH_BOTH) )
     {   
@@ -1007,9 +1015,9 @@ function dodelmessage($idmessage)
  */
 function efface_ordre($codesico,$idcompte,$datecreation)
 {
-    $query = "UPDATE `ordre` SET etat='0' WHERE `codesico` = '$codesico' AND `idcompte` = '$idcompte' AND CONCAT(`datecreation`) = '$datecreation' LIMIT 1";
+    $query = "UPDATE `ordre` SET etat='0' WHERE `codesico` = ? AND `idcompte` = ? AND CONCAT(`datecreation`) = ? LIMIT 1";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$codesico, $idcompte, $datecreation]);
     return ($GLOBALS['last_pdo_stmt'] ? $GLOBALS['last_pdo_stmt']->rowCount() : 0);
 }
 
@@ -1023,9 +1031,9 @@ function get_ordrelist($condition="")
     if(!is_object($internaute) || !isset($internaute->idcompte)) return [];
     $query = " SELECT *
     FROM ordre,cacval
-    WHERE ordre.codesico = cacval.codesico and idcompte=$internaute->idcompte $condition ORDER BY datecreation DESC";
+    WHERE ordre.codesico = cacval.codesico and idcompte = ? $condition ORDER BY datecreation DESC";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$internaute->idcompte]);    
     $return = [];
     while ( $run_result = $run_query->fetch(PDO::FETCH_ASSOC) )
     {   
@@ -1040,12 +1048,11 @@ function get_ordrelist($condition="")
 function get_idmenu()
 {
     global $do;
-    $reqdo=sec($do);
     $query = "SELECT text_id 
           FROM menu
-          WHERE do='$reqdo'";
+          WHERE do = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$do]);    
     $temp=LigneSuivante($run_query);
     return is_object($temp) ? $temp->text_id : "";
 }
@@ -1058,9 +1065,9 @@ function del_ordre($datecreation)
 {
     global $internaute;
     if(!is_object($internaute) || !isset($internaute->idcompte)) return "";
-    $query = "DELETE FROM `ordre` WHERE `idcompte` = '$internaute->idcompte' AND CONCAT(`datecreation`) = '$datecreation' LIMIT 1";
+    $query = "DELETE FROM `ordre` WHERE `idcompte` = ? AND CONCAT(`datecreation`) = ? LIMIT 1";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$internaute->idcompte, $datecreation]);
     return "";
 }
 
@@ -1087,9 +1094,9 @@ function donnaction($codesico)
 {  
     $query = "SELECT * 
           FROM cacval
-          WHERE cacval.codesico='$codesico'";
+          WHERE cacval.codesico = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$codesico]);    
     return LigneSuivante($run_query);
 }
 
@@ -1101,9 +1108,9 @@ function donnactionyn($yn)
 {
     $query = "SELECT *
           FROM cacval,secteurent
-          WHERE cacval.idsecteur=secteurent.idsecteur and cacval.yahooname='$yn'";
+          WHERE cacval.idsecteur=secteurent.idsecteur and cacval.yahooname = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$yn]);
     return LigneSuivante($run_query);
 }
 
@@ -1116,10 +1123,10 @@ function stataction($codesico,$limit)
 {
     $query = "SELECT FROM_UNIXTIME( temps, '%d/%m/%Y' ) AS jour, sens,AVG(valeurunique) as valeurechang,SUM( nbr ) as nb , SUM(IF(profit>0,profit,0)) as profit,ABS(SUM(IF(profit<0,profit,0))) as perte
           FROM historique
-          WHERE historique.codesico='$codesico' and temps>'$limit'
+          WHERE historique.codesico = ? and temps > ?
             GROUP BY jour,sens ORDER BY temps DESC LIMIT 9";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$codesico, $limit]);
     return $run_query;
 }
 
@@ -1134,10 +1141,10 @@ function ordreactionachat($codesico,$tmps,$valaction)
     $secure_cond = (defined('SECURE') && !SECURE) ? " or 1" : "";
     $query = "SELECT coursmax as valeur, SUM( nbr ) as quant, AVG( pourc) * 100 as prc
           FROM ordre
-          WHERE ordre.codesico='$codesico' and etat='1' and (datecreation<='$tmps' $secure_cond) and sens='achat' and coursmax<'$valaction' and coursmax>0
+          WHERE ordre.codesico = ? and etat='1' and (datecreation<= ? $secure_cond) and sens='achat' and coursmax < ? and coursmax>0
             GROUP BY valeur ORDER BY valeur DESC LIMIT 4";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$codesico, $tmps, $valaction]);
     return $run_query;
 }
 
@@ -1152,10 +1159,10 @@ function ordreactionvente($codesico,$tmps,$valaction)
     $secure_cond = (defined('SECURE') && !SECURE) ? " or 1" : "";
     $query = "SELECT coursmin as valeur, SUM( nbr ) as quant, AVG( pourc) * 100 as prc
           FROM ordre
-          WHERE ordre.codesico='$codesico' and etat='1' and (datecreation<='$tmps' $secure_cond) and sens='vente' and coursmin>'$valaction'
+          WHERE ordre.codesico = ? and etat='1' and (datecreation<= ? $secure_cond) and sens='vente' and coursmin > ?
             GROUP BY valeur ORDER BY valeur DESC LIMIT 4";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$codesico, $tmps, $valaction]);
     return $run_query;
 }
 
@@ -1210,10 +1217,10 @@ function listhistocount($idcompte)
 {  
     $query = "SELECT COUNT(*) as nbrhisto
           FROM historique
-          WHERE idcompte=$idcompte";
+          WHERE idcompte = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
-    $ligne=LigneSuivante($run_query);
+    $run_query = ExecRequete ($query, $connexion, [$idcompte]);    
+    $ligne = LigneSuivante($run_query);
     return is_object($ligne) ? $ligne->nbrhisto : 0;
 }
 
@@ -1229,11 +1236,11 @@ function getplayercapital($idcompte)
     USING ( idcompte ) 
     LEFT  JOIN cacval
     USING ( codesico ) 
-    WHERE compte.idcompte =  '$idcompte'
+    WHERE compte.idcompte = ?
     GROUP  BY compte.idcompte"; 
 
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$idcompte]);    
     $resultat = LigneSuivante($run_query);
     return is_object($resultat) ? $resultat->capital : 0;
 }
@@ -1248,11 +1255,11 @@ function getplayercapitalhorsvad($idcompte)
     FROM portef
     LEFT  JOIN cacval
     USING ( codesico )
-    WHERE portef.idcompte =  '$idcompte' and portef.quant>'0'
+    WHERE portef.idcompte = ? and portef.quant>'0'
     GROUP  BY portef.idcompte";
 
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$idcompte]);
     $resultat = LigneSuivante($run_query);
     return is_object($resultat) ? doubleval($resultat->capital) : 0.0;
 }
@@ -1267,11 +1274,11 @@ function getplayercapitalvad($idcompte)
     FROM portef
     LEFT  JOIN cacval
     USING ( codesico )
-    WHERE portef.idcompte =  '$idcompte' and portef.quant<'0'
+    WHERE portef.idcompte = ? and portef.quant<'0'
     GROUP  BY portef.idcompte";
 
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$idcompte]);
     $resultat = LigneSuivante($run_query);
     return is_object($resultat) ? -doubleval($resultat->capital) : 0.0;
 }
@@ -1284,10 +1291,10 @@ function listmessagescount($idcompte)
 {  
     $query = "SELECT COUNT(*) as nbrmsg
           FROM messages
-          WHERE idcompte='$idcompte'";
+          WHERE idcompte = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
-    $ligne=LigneSuivante($run_query);
+    $run_query = ExecRequete ($query, $connexion, [$idcompte]);    
+    $ligne = LigneSuivante($run_query);
     return is_object($ligne) ? $ligne->nbrmsg : 0;
 }
 
@@ -1329,9 +1336,9 @@ function listskin()
  */
 function skin_existe($idskin)
 {
-    $query = "SELECT * FROM skin where idskin='$idskin'";
+    $query = "SELECT * FROM skin where idskin = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [$idskin]);
     return ($run_query && $run_query->rowCount() > 0) ? 1 : 0;
 }
 
@@ -1531,9 +1538,9 @@ function get_yahoosicavliste()
  */
 function getinternauteinfo($pseudo)
 {
-    $query = "SELECT * FROM `compte` where pseudonyme='$pseudo'";
+    $query = "SELECT * FROM `compte` WHERE pseudonyme = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$pseudo]);
     return LigneSuivante($run_query);
 }
 
@@ -1544,10 +1551,10 @@ function getinternauteinfo($pseudo)
  */
 function setmdp($idcompte,$mdp)
 {
-    $passe=md5($mdp);
-    $query = "UPDATE compte SET passe='$passe' WHERE idcompte='$idcompte'";
+    $passe = md5($mdp);
+    $query = "UPDATE compte SET passe = ? WHERE idcompte = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$passe, $idcompte]);
     return 1;
 }
 
@@ -1676,9 +1683,9 @@ function fctdoraz($liste,$optdel=0)
 function getCodesSicoSecteurPortef($idjoueur)
 {
     $query = "SELECT cacvalfinish.codesico
-          FROM cacval,portef,cacval as cacvalfinish WHERE cacval.codesico=portef.codesico AND portef.idcompte='$idjoueur' and cacval.idsecteur=cacvalfinish.idsecteur ORDER BY cacvalfinish.idsecteur";
+          FROM cacval,portef,cacval as cacvalfinish WHERE cacval.codesico=portef.codesico AND portef.idcompte = ? and cacval.idsecteur=cacvalfinish.idsecteur ORDER BY cacvalfinish.idsecteur";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$idjoueur]);
     $lst="";
     while($res=LigneSuivante($run_query))
     {
@@ -1694,9 +1701,9 @@ function getCodesSicoSecteurPortef($idjoueur)
  */
 function getCodesSicoPortef($idjoueur)
 {
-    $query = "SELECT portef.codesico FROM portef WHERE portef.idcompte='$idjoueur'";
+    $query = "SELECT portef.codesico FROM portef WHERE portef.idcompte = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$idjoueur]);
     $lst="";
     while($res=LigneSuivante($run_query))
     {
@@ -1732,13 +1739,14 @@ function getCodesSicoCote($idjoueur)
 function ajoutcommentaire($message,$idaide)
 {
     global $internaute;
-    if($message=="" || !is_object($internaute)) return "";
+    if($message=="" || !is_object($internaute) || !isset($internaute->idcompte)) return "";
+    $maintenant = date("U");
     $query = "INSERT INTO `tabaidecomment` ( `idcomment` , `idaide` , `idcompte` , `datecomment` , `textecomment` )
     VALUES (
-    '', '$idaide', '$internaute->idcompte', '".date("U")."', '$message'
+    '', ?, ?, ?, ?
     )";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$idaide, $internaute->idcompte, $maintenant, $message]);
     return "";
 }
 
@@ -1752,10 +1760,10 @@ function effacvieuxordres()
     $query = "DELETE FROM `ordre`
     WHERE (
     `etat` = '0' OR `tempslim` < UNIX_TIMESTAMP( )
-    ) AND `datecreation` < UNIX_TIMESTAMP( ) -3600*25 AND idcompte='$internaute->idcompte'";
+    ) AND `datecreation` < UNIX_TIMESTAMP( ) -3600*25 AND idcompte = ?";
 
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$internaute->idcompte]);
     return $query;
 }
 
@@ -1769,10 +1777,10 @@ function effacordresinactifs()
     $query = "DELETE FROM `ordre`
     WHERE (
     `etat` = '0' OR `tempslim` < UNIX_TIMESTAMP( )
-    ) AND idcompte='$internaute->idcompte'";
+    ) AND idcompte = ?";
 
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [$internaute->idcompte]);
     return $query;
 }
 
