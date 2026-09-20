@@ -113,7 +113,49 @@ class Request
      */
     public function isPost(): bool
     {
-        return strtoupper($this->server('REQUEST_METHOD', 'GET')) === 'POST';
+        return $this->getMethod() === 'POST';
+    }
+
+    /**
+     * Retourne la méthode HTTP de la requête (GET, POST, PUT, DELETE, OPTIONS...).
+     */
+    public function getMethod(): string
+    {
+        return strtoupper((string)$this->server('REQUEST_METHOD', 'GET'));
+    }
+
+    /**
+     * Récupère le corps de la requête décodé depuis JSON.
+     */
+    public function getJson(): array
+    {
+        $raw = file_get_contents('php://input');
+        if (!empty($raw)) {
+            $decoded = json_decode($raw, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+        return [];
+    }
+
+    /**
+     * Récupère le Bearer token dans l'en-tête Authorization.
+     */
+    public function getBearerToken(): ?string
+    {
+        $auth = (string)$this->server('HTTP_AUTHORIZATION', '');
+        if (empty($auth)) {
+            $auth = (string)$this->server('REDIRECT_HTTP_AUTHORIZATION', '');
+        }
+        if (empty($auth) && function_exists('apache_request_headers')) {
+            $headers = apache_request_headers();
+            $auth = (string)($headers['Authorization'] ?? $headers['authorization'] ?? '');
+        }
+        if (preg_match('/Bearer\s+(\S+)/i', $auth, $matches)) {
+            return $matches[1];
+        }
+        return null;
     }
 
     /**

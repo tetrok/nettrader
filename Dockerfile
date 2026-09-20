@@ -36,10 +36,12 @@ RUN mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" \
 # 5. Configuration Xdebug (désactivé par défaut)
 RUN echo "xdebug.mode = off" > "$PHP_INI_DIR/conf.d/docker-php-ext-xdebug.ini"
 
-# 6. Configuration Apache (Suppression warning FQDN + niveau de log debug)
+# 6. Configuration Apache (Suppression warning FQDN + niveau de log debug + rewrite)
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf \
     && sed -i 's/LogLevel warn/LogLevel debug/g' /etc/apache2/apache2.conf \
-    && sed -i 's/LogLevel warn/LogLevel debug/g' /etc/apache2/sites-available/000-default.conf
+    && sed -i 's/LogLevel warn/LogLevel debug/g' /etc/apache2/sites-available/000-default.conf \
+    && sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf \
+    && a2enmod rewrite
 
 # 7. Copier le code source de l'application
 COPY www/ /var/www/html/

@@ -38,6 +38,55 @@ class UserSession
     }
 
     /**
+     * Tente de résoudre l'utilisateur connecté depuis le Bearer token, la session PHP ou le cookie persistant.
+     */
+    public function resolveFromRequest(\NetTrader\Http\Request $request): ?object
+    {
+        if ($this->isLoggedIn()) {
+            return $this->getUser();
+        }
+
+        $conn = function_exists('Connexion') ? Connexion(NOM, PASSE, BASE, SERVEUR) : null;
+        if (!$conn) {
+            return null;
+        }
+
+        // 1. Tenter via Bearer token
+        $bearer = $request->getBearerToken();
+        if (!empty($bearer) && function_exists('ChercheSession')) {
+            $sess = ChercheSession($bearer, $conn);
+            if (is_object($sess) && function_exists('SessionValide') && SessionValide($conn, $sess)) {
+                $this->setUser($sess);
+                return $sess;
+            }
+        }
+
+        // 2. Tenter via session PHP native
+        if (!empty($_SESSION['idcompte']) && function_exists('ChercheInternaute')) {
+            $user = ChercheInternaute((int)$_SESSION['idcompte'], $conn, '');
+            if (is_object($user)) {
+                $this->setUser($user);
+                return $user;
+            }
+        }
+
+        // 3. Tenter via cookie persistant
+        if (function_exists('cookievalide') && function_exists('ChercheSession')) {
+            $sessId = session_id();
+            if (!empty($sessId)) {
+                cookievalide($sessId);
+                $sess = ChercheSession($sessId, $conn);
+                if (is_object($sess)) {
+                    $this->setUser($sess);
+                    return $sess;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Retourne l'objet utilisateur sous-jacent (compatible avec le legacy $internaute).
      */
     public function getUser(): ?object
