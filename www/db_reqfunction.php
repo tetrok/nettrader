@@ -970,12 +970,11 @@ function get_ordre()
  */
 function add_msg($idfrom,$idrecept,$title,$corps)
 {
-    $etat="non lu";
-    if($idrecept==0) $etat="lu";
-    $query = "INSERT INTO `messages` ( `idcompte` , `datemess` , `idenvoyeur` , `titre` , `corps` , `etat`) 
-    VALUES ('$idrecept', '".date("U")."', '$idfrom', '$title', '$corps', '$etat');";
+    $etat = ((int)$idrecept === 0) ? "lu" : "non lu";
+    $now = (int)date("U");
+    $query = "INSERT INTO `messages` (`idcompte`, `datemess`, `idenvoyeur`, `titre`, `corps`, `etat`) VALUES (?, ?, ?, ?, ?, ?)";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    ExecRequete($query, $connexion, [(int)$idrecept, $now, (int)$idfrom, (string)$title, (string)$corps, $etat]);
     return "";
 }
 
@@ -1943,9 +1942,9 @@ function getnvmessagesenvoye($idcompte=0)
  */
 function getgroupbyadmin($idcompte)
 {  
-    $query = "SELECT * FROM groupe WHERE idcompte='$idcompte'";
-    $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $query = "SELECT * FROM `groupe` WHERE idcompte = ?";
+    $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+    $run_query = ExecRequete($query, $connexion, [$idcompte]);    
     return LigneSuivante($run_query);
 }
 
@@ -1955,9 +1954,9 @@ function getgroupbyadmin($idcompte)
  */
 function getgroupbymembre($idcompte)
 {
-    $query = "SELECT * FROM groupe,membregroupe WHERE groupe.idgroupe=membregroupe.idgroupe and membregroupe.idcompte='$idcompte'";
-    $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $query = "SELECT * FROM `groupe`, `membregroupe` WHERE groupe.idgroupe = membregroupe.idgroupe AND membregroupe.idcompte = ?";
+    $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+    $run_query = ExecRequete($query, $connexion, [$idcompte]);    
     return LigneSuivante($run_query);
 }
 
@@ -1966,13 +1965,13 @@ function getgroupbymembre($idcompte)
  * @param mixed $idcompte
  * @param mixed $idgroupe
  */
-function membreestinvite($idcompte,$idgroupe)
+function membreestinvite($idcompte, $idgroupe)
 {
-    $query = "SELECT COUNT(*) AS nb FROM invitegroupe WHERE idgroupe='$idgroupe' and idcompte='$idcompte'";
-    $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
-    $ligne=LigneSuivante($run_query);
-    return is_object($ligne) ? $ligne->nb : 0;
+    $query = "SELECT COUNT(*) AS nb FROM `invitegroupe` WHERE idgroupe = ? AND idcompte = ?";
+    $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+    $run_query = ExecRequete($query, $connexion, [$idgroupe, $idcompte]);
+    $ligne = LigneSuivante($run_query);
+    return is_object($ligne) ? (int)$ligne->nb : 0;
 }
 
 /**
@@ -2046,9 +2045,9 @@ function doajgroupe($idcompte,$titregroupe,$diminutif,$url,$description)
 
         if( !is_object($groupe) || $groupe->idcompte!=$idcompte )
         {
-            $query = "INSERT INTO `verifgroupe` ( `idverifgroupe` , `idgroupe` , `idcompte` , `titregroupe` , `initialgroupe` , `urlsite` , `descriptiongroupe` )     VALUES ('', '0', '$idcompte', '$titregroupe', '$diminutif', '$url' , '$description')";
+            $query = "INSERT INTO `verifgroupe` ( `idverifgroupe` , `idgroupe` , `idcompte` , `titregroupe` , `initialgroupe` , `urlsite` , `descriptiongroupe` )     VALUES (NULL, '0', ?, ?, ?, ? , ?)";
             $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-            ExecRequete ($query, $connexion);
+            ExecRequete ($query, $connexion, [$idcompte, $titregroupe, $diminutif, $url, $description]);
             return msgtab(lang(193),lang(187));
         } else {
             return msgtab(lang(208),lang(187));
@@ -2102,10 +2101,10 @@ function domodifgroupe($idgroupe,$idcompte,$titregroupe,$diminutif,$url,$descrip
     }
     $query = "INSERT INTO `verifgroupe` ( `idverifgroupe` , `idgroupe` , `idcompte` , `titregroupe` , `initialgroupe` , `urlsite` , `descriptiongroupe` )
     VALUES (
-    '', '$idgroupe', '$idcompte', '$titregroupe', '$diminutif', '$url' , '$description'
+    NULL, ?, ?, ?, ?, ? , ?
     )";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    ExecRequete ($query, $connexion);
+    ExecRequete ($query, $connexion, [$idgroupe, $idcompte, $titregroupe, $diminutif, $url, $description]);
     return lang(194);
 }
 
@@ -2476,7 +2475,7 @@ function forum_peutposter($idcompte,$idforum)
     $infoforum=get_infoforum($idforum);
     $infojoueur=getinfojoueur($idcompte);
     if(!is_object($infojoueur) || !is_object($infoforum)) return false;
-    if($infojoueur->authlevel>1)
+    if($infojoueur->idcompte == 1 || $infojoueur->authlevel > 1)
         return true;
     if(defined('IDCOMPTEDEMO') && $infojoueur->idcompte==IDCOMPTEDEMO)
         return false;
@@ -2500,7 +2499,7 @@ function forum_peutlire($idcompte,$idforum)
 {
     $infoforum=get_infoforum($idforum);
     $infojoueur=getinfojoueur($idcompte);
-    if(is_object($infojoueur) && $infojoueur->authlevel>1)
+    if(is_object($infojoueur) && ($infojoueur->idcompte == 1 || $infojoueur->authlevel > 1))
         return true;
     if(!is_object($infoforum)) return false;
     if($infoforum->authread=="groupe")
@@ -2666,29 +2665,29 @@ function doforum_postmessage($sujet,$corps,$idforum,$idsujet=0,$edit=0,$idmessag
         $idmesssujet=forum_getidmessagesujet($idsujet);
         if($idmesssujet==$idmessage)
         {
-            $query="UPDATE `f_sujet` SET `txtsujet` = '$sujet' WHERE `idsujet` = '$idsujet' ";
-            ExecRequete ($query, $connexion);
+            $query="UPDATE `f_sujet` SET `txtsujet` = ? WHERE `idsujet` = ?";
+            ExecRequete ($query, $connexion, [(string)$sujet, (int)$idsujet]);
         }
-        $query="UPDATE `f_corps` SET `contenu` = '$corps' WHERE `idmessage` = '$idmessage'";
-        ExecRequete ($query, $connexion);
+        $query="UPDATE `f_corps` SET `contenu` = ? WHERE `idmessage` = ?";
+        ExecRequete ($query, $connexion, [(string)$corps, (int)$idmessage]);
         $corptab=lang(269)."<br><br>".html_lien(lang(265),"do=showlstsujets&idforum=$idforum")."<br><br>".html_lien(lang(266),"do=showlstposts&idsujet=$idsujet&last=1#last");
     } else {
         if($nouvsujet)
         {
             $query="INSERT INTO `f_sujet`
         ( `idforum` , `idcompteauteur` , `s_nbmessages` , `txtsujet` , `idlastmessage` , `nblectures` )
-        VALUES ( '$idforum', '$internaute->idcompte', '0', '$sujet', '0', '0')";
-            ExecRequete ($query, $connexion);
+        VALUES ( ?, ?, 0, ?, 0, 0)";
+            ExecRequete ($query, $connexion, [(int)$idforum, (int)$internaute->idcompte, (string)$sujet]);
             $idsujet=$connexion->lastInsertId();
         }
 
         setsujetpaslu($idsujet);
-        $query="INSERT INTO `f_message` (`idsujet`, `datepost`, `idcompte`) VALUES ('$idsujet', UNIX_TIMESTAMP(), '$internaute->idcompte')";
-        ExecRequete ($query, $connexion);
+        $query="INSERT INTO `f_message` (`idsujet`, `datepost`, `idcompte`) VALUES (?, UNIX_TIMESTAMP(), ?)";
+        ExecRequete ($query, $connexion, [(int)$idsujet, (int)$internaute->idcompte]);
         $nummess=$connexion->lastInsertId();
 
-        $query="INSERT INTO `f_corps` ( `idmessage` , `contenu` ) VALUES ('$nummess', '$corps')";
-        ExecRequete ($query, $connexion);
+        $query="INSERT INTO `f_corps` ( `idmessage` , `contenu` ) VALUES (?, ?)";
+        ExecRequete ($query, $connexion, [(int)$nummess, (string)$corps]);
 
         $query="UPDATE f_forum ff SET idlastmessage='$nummess'".retiftrue(",`nbsujets`=`nbsujets`+1",$nouvsujet).",`nbmessages`=`nbmessages`+1 WHERE ff.idforum='$idforum'";
         ExecRequete ($query, $connexion);

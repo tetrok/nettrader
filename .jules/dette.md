@@ -21,23 +21,14 @@ Plusieurs points critiques d'obsolescence, de sécurité et d'architecture ont d
 
 ---
 
-## 2. Dettes Techniques Restantes
-
-### 🔒 Sécurité
-
-1. **Migration systématique vers les requêtes préparées (Injections SQL - P3 à P6 restants) :**
-   - *Constat :* Les périmètres P1 (Authentification) et P2 (Trading & Ordres) sont désormais 100% sécurisés avec requêtes préparées. Il reste à migrer l'API XML (`progfunc.php`, `progreq.php`), les tableaux de forums et messagerie (`db_reqtableaux.php`, `db_reqfunction.php`), et l'administration (`nt2_adminfunction.php`).
-   - *Objectif :* Finaliser les priorités P3 à P5 puis supprimer définitivement la fonction `sec()` (P6).
-
-2. **Échappement XSS systématique dans les vues :**
-   - *Constat :* Les vues dans `www/nt2_pages.php`, `www/index.php` et `www/nt2_adminfunction.php` injectent directement des variables issues de la base de données ou de l'utilisateur (pseudonymes, titres, corps de messages, commentaires de forum, descriptions de groupe) sans appel systématique à `e()`.
-   - *Objectif :* Sécuriser l'ensemble des concaténations d'affichage avant la mise en place d'un moteur de templates.
-
-3. **Authentification et Mots de passe (Cryptographie obsolète) :**
-   - *Constat :* Les mots de passe sont hachés avec un simple `md5()` sans sel dans `www/db_connect.php`, et les sessions personnalisées sont stockées de façon rudimentaire en table `session`.
-   - *Objectif :* Adopter `password_hash()` et `password_verify()` (BCRYPT / ARGON2ID) avec migration transparente à la connexion, et sécuriser le mécanisme de session/cookies (HttpOnly, Secure, SameSite).
+- **Sécurisation Critique Intégrale (Phase 1 terminée) :**
+  - **Injections SQL éradiquées :** 100% des requêtes applicatives (`db_reqfunction.php`, `db_reqtableaux.php`, `db_connect.php`, `progreq.php`, `progfunc.php`, `nt2_progfunction.php`, `nt2_adminfunction.php`, `nt2_pages.php`, `nt2_function.php`, `redir.php`) sont désormais paramétrées avec requêtes préparées PDO `$params`. La fonction historique `sec()` est dépréciée.
+  - **Échappement XSS systématique :** Application du helper `e()` sur l'ensemble des variables dynamiques dans les vues de `nt2_pages.php`, `nt2_adminfunction.php`, les formulaires de skins et BBCode.
+  - **Cryptographie des Mots de Passe & Sessions :** Remplacement de MD5 par BCRYPT (`password_hash` / `password_verify`), mise à niveau transparente lors de la connexion, sécurisation des cookies (`HttpOnly`, `SameSite=Lax`).
 
 ---
+
+## 2. Dettes Techniques Restantes (Phases 3 à 5)
 
 ### 🏛️ Architecture et Conception
 

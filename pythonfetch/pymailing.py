@@ -58,8 +58,15 @@ def f_sendmail(emailfrom, pseudofrom, emailto, pseudoto, titre, corps):
 
 col = {"idmail": 0, "from_mail": 1, "from_pseudo": 2, "to_mail": 3, "to_pseudo": 4, "titre": 5, "corps": 6, "etat": 7}
 
-db = pymysql.connect(host=C_HOST, user=C_USER, passwd=C_PWD, db=C_DBNAME)
-while 1:
+def get_db():
+    while True:
+        try:
+            return pymysql.connect(host=C_HOST, user=C_USER, passwd=C_PWD, db=C_DBNAME)
+        except Exception as e:
+            print("[%s] [ERREUR] Échec de connexion MySQL (pymailing): %s. Reconnexion dans 5s..." % (time.strftime("%d/%m/%Y %H:%M:%S"), str(e)))
+            time.sleep(5)
+
+def process_cycle(db):
     cursor = db.cursor()
     cursor.execute("UPDATE mail_tosend SET etat='traitement' WHERE etat='attente' and dateenvoi<UNIX_TIMESTAMP()")
     db.commit()
@@ -171,7 +178,28 @@ while 1:
             print(str(nbmailprepare) + " mail prepare en %s secondes et %s en erreur" % (str(time.time() - debcreation), str(nbmailprepareerr)))
             del statsengine
         cursor.close()
-        
-    time.sleep(C_CHECKTIME)        
+
+db = get_db()
+while 1:
+    try:
+        db.ping()
+    except Exception:
+        try:
+            db.close()
+        except Exception:
+            pass
+        db = get_db()
+
+    try:
+        process_cycle(db)
+    except pymysql.MySQLError as e:
+        print("[%s] [ERREUR] Erreur MySQL (pymailing): %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), str(e)))
+        try:
+            db.close()
+        except Exception:
+            pass
+        db = get_db()
+
+    time.sleep(C_CHECKTIME)
 
 db.close()

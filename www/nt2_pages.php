@@ -905,7 +905,7 @@ function profilaction($yahooname)
     $tabordres .= closetab();
     $corps .= opentab("width=\"100%\"","invi").openligne().opencol().$tabhisto.closecol().opencol().$tabordres.closecol().closeligne().closetab();
 
-    return msgtab($corps,$laction->nom." - ".$laction->libellesecteur);
+    return msgtab($corps, e($laction->nom)." - ".e($laction->libellesecteur));
 }
 
 /**
@@ -928,10 +928,10 @@ function txt_help($idhelpshowcomment=0)
         {
             if($liste <> "") $liste .= "</ul>";
             $anschap = $ligne->idchapaide;
-            $liste .= openfont("titre1")."$ligne->titrechap".closefont()."<ul>";
+            $liste .= openfont("titre1").e($ligne->titrechap).closefont()."<ul>";
         }
-        $liste .= "<li><a href=\"#$ligne->lnkaide\"> $ligne->titreaide</a></li><br>";
-        $laidetitre = "<a name=\"$ligne->lnkaide\">".$ligne->titreaide."</a>";
+        $liste .= "<li><a href=\"#$ligne->lnkaide\"> ".e($ligne->titreaide)."</a></li><br>";
+        $laidetitre = "<a name=\"$ligne->lnkaide\">".e($ligne->titreaide)."</a>";
         $laide .= $ligne->txtaide."<br>".html_lien($ligne->nbcomment." ".lang(159)." >>",getnewurl("idaide",$ligne->idligne)."#$ligne->lnkaide")."<br><br><br>";
         if($ligne->idligne == $idhelpshowcomment)
         {
@@ -942,7 +942,7 @@ function txt_help($idhelpshowcomment=0)
                 $is_author = is_object($internaute) && isset($internaute->idcompte) && $lignecomment->auteurid == $internaute->idcompte;
                 if($is_author || $is_admin) 
                     $messsuppr = html_lien("[ ".lang(163)." ]","do=suppcomment&idcomment=$lignecomment->idcomment#$ligne->lnkaide");
-                $laide .= "<br><hr>".lang(161)." ".$lignecomment->pseudonyme." ".lang(162)." ".date("j M Y H:i a",$lignecomment->datecomment)." ".$messsuppr."<br><br>".bbtohtml($lignecomment->textecomment);
+                $laide .= "<br><hr>".lang(161)." ".e($lignecomment->pseudonyme)." ".lang(162)." ".date("j M Y H:i a",$lignecomment->datecomment)." ".$messsuppr."<br><br>".bbtohtml($lignecomment->textecomment);
             }
             if(is_object($internaute) && isset($internaute->authlevel) && $internaute->authlevel >= 1)
             {
@@ -974,8 +974,8 @@ function txt_faq($idhelpshowcomment=0)
     $liste .= "<ul>";
     while($ligne = LigneSuivante($req))
     {
-        $liste .= "<li><a href=\"#$ligne->lnkaide\"> $ligne->titreaide</a></li><br>";
-        $laidetitre = "<a name=\"$ligne->lnkaide\">".$ligne->titreaide."</a>";
+        $liste .= "<li><a href=\"#$ligne->lnkaide\"> ".e($ligne->titreaide)."</a></li><br>";
+        $laidetitre = "<a name=\"$ligne->lnkaide\">".e($ligne->titreaide)."</a>";
         $laide .= $ligne->txtaide."<br><br>".html_lien($ligne->nbcomment." ".lang(165)." >>",getnewurl("idaide",$ligne->idligne)."#$ligne->lnkaide")."<br><br><br>";
         if($ligne->idligne == $idhelpshowcomment)
         {
@@ -986,7 +986,7 @@ function txt_faq($idhelpshowcomment=0)
                 $is_author = is_object($internaute) && isset($internaute->idcompte) && $lignecomment->auteurid == $internaute->idcompte;
                 if($is_author || $is_admin) 
                     $messsuppr = html_lien("[ ".lang(163)." ]","do=suppcommentfaq&idcomment=$lignecomment->idcomment#$ligne->lnkaide");
-                $laide .= "<br><hr>".lang(161)." ".$lignecomment->pseudonyme." ".lang(162)." ".date("j M Y H:i a",$lignecomment->datecomment)." ".$messsuppr."<br><br>".bbtohtml($lignecomment->textecomment);
+                $laide .= "<br><hr>".lang(161)." ".e($lignecomment->pseudonyme)." ".lang(162)." ".date("j M Y H:i a",$lignecomment->datecomment)." ".$messsuppr."<br><br>".bbtohtml($lignecomment->textecomment);
             }
             if(is_object($internaute) && isset($internaute->authlevel) && $internaute->authlevel >= 1)
             {
@@ -1178,17 +1178,16 @@ function chgmdp($nouvpass,$nouvpassconfirm)
         {
             return "Le nouveau mot de passe ne correspond pas au mot de passe de confirmation, vous devez entrez le même mot de passe dans ces deux champs.";
         } else {
-            $passe = md5($nouvpass);
+            $passe = password_hash($nouvpass, PASSWORD_BCRYPT);
         }
     } else {
         $passe = $internaute->passe;
     }
 
-    $chainesql = "UPDATE `compte` SET `passe` = '$passe' WHERE `idcompte` = '$internaute->idcompte'";
     $corps = "Bonjour,\n\nVotre demande de modification de mot de passe est effectuée, voici votre nouveau mot de passe :\n\nlogin:$internaute->email\npasse:$nouvpass\n\nVeuillez imprimer, sauvegarder ou noter ces informations afin de ne pas les perdre.\n\n-Nicolas\n";
-    envoimail($internaute->email,"Changement de mot de passe",$corps);
-    $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    ExecRequete($chainesql,$connexion);
+    envoimail($internaute->email, "Changement de mot de passe", $corps);
+    $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+    ExecRequete("UPDATE `compte` SET `passe` = ? WHERE `idcompte` = ?", $connexion, [$passe, $internaute->idcompte]);
 
     return lang(87);
 }
@@ -1225,18 +1224,21 @@ function editprofil($mail,$niveau,$nbhisto,$nbmsg,$nbclasse,$idskin,$mailjour,$m
     if(!($mailsemaine == 0 || $mailsemaine == 1) || !($mailjour == 0 || $mailjour == 1))
         return "";
 
-    $chainesql = "UPDATE `compte` SET
-    `email` = '$mail',
-    `idniveau` = '$niveau',
-    `histonbl` = '$nbhisto',
-    `msgnbl` = '$nbmsg',
-    `classenbl` = '$nbclasse',
-    `skin` = '$idskin',
-    `maildaily` = '$mailjour',
-    `mailweekly` = '$mailsemaine'
-    WHERE `idcompte` = '$internaute->idcompte'";
+    $sql = "UPDATE `compte` SET
+    `email` = ?,
+    `idniveau` = ?,
+    `histonbl` = ?,
+    `msgnbl` = ?,
+    `classenbl` = ?,
+    `idskin` = ?,
+    `maildaily` = ?,
+    `mailweekly` = ?
+    WHERE `idcompte` = ?";
 
-    ExecRequete($chainesql,$connexion);
+    ExecRequete($sql, $connexion, [
+        $mail, (int)$niveau, (int)$nbhisto, (int)$nbmsg, (int)$nbclasse,
+        (int)$idskin, (int)$mailjour, (int)$mailsemaine, $internaute->idcompte
+    ]);
     return lang(87);
 }
 
@@ -1435,8 +1437,8 @@ function formclasse($ligncour,$moisan,$cherche="")
         }
         $nomgroupe = "";
         if(is_array($nomsgroupes) && array_key_exists($value["idcompte"],$nomsgroupes))
-            $nomgroupe = "&nbsp;<a href=\"?do=viewgroupeprofil&idgroupe=".$nomsgroupes[$value["idcompte"]][1]."\"><font class=\"gain\"><b>[".$nomsgroupes[$value["idcompte"]][0]."]</b></font></a>";
-        $retour .= opencol().$i.closecol().opencol().retiftrue(" <a href=\"?do=incarner&idcompte=".$value["idcompte"]."\"><img src=\"skin/default/images/interr.gif\" border=\"0\"></a> ",$auth_admin).stripslashes($value["pseudonyme"]).$nomgroupe.closecol().opencol().$value["capital"]." €".closecol().opencol().$value["prog"]." %".closecol();
+            $nomgroupe = "&nbsp;<a href=\"?do=viewgroupeprofil&idgroupe=".$nomsgroupes[$value["idcompte"]][1]."\"><font class=\"gain\"><b>[".e($nomsgroupes[$value["idcompte"]][0])."]</b></font></a>";
+        $retour .= opencol().$i.closecol().opencol().retiftrue(" <a href=\"?do=incarner&idcompte=".$value["idcompte"]."\"><img src=\"skin/default/images/interr.gif\" border=\"0\"></a> ",$auth_admin).e(stripslashes($value["pseudonyme"])).$nomgroupe.closecol().opencol().$value["capital"]." €".closecol().opencol().$value["prog"]." %".closecol();
         $retour .= closeligne();
     }
     $retour .= closetab()."<br>";
@@ -1485,10 +1487,10 @@ function sous_formclasse($ligncour,$pos,$theliste,$cherche,$nomsgroupes)
         }
         $grp_lbl = (is_array($nomsgroupes) && isset($nomsgroupes[$value["idcompte"]])) ? $nomsgroupes[$value["idcompte"]][0] : "";
         $grp_id = (is_array($nomsgroupes) && isset($nomsgroupes[$value["idcompte"]])) ? $nomsgroupes[$value["idcompte"]][1] : 0;
-        $retour .= opencol().$i.closecol().opencol().stripslashes($value["pseudonyme"]).retiftrue("&nbsp;<a href=\"?do=viewgroupeprofil&idgroupe=".$grp_id."\"><font class=\"gain\"><b>[".$grp_lbl."]</b></font></a>",$grp_lbl).closecol().opencol().$value["capital"].closecol().opencol().$value["prog"]." %".closecol();
+        $retour .= opencol().$i.closecol().opencol().e(stripslashes($value["pseudonyme"])).retiftrue("&nbsp;<a href=\"?do=viewgroupeprofil&idgroupe=".$grp_id."\"><font class=\"gain\"><b>[".e($grp_lbl)."]</b></font></a>",$grp_lbl).closecol().opencol().$value["capital"].closecol().opencol().$value["prog"]." %".closecol();
         if(defined('INCONC') && INCONC)
         {
-            $retour .= opencol().stripslashes($value["etablissement"]).closecol();
+            $retour .= opencol().e(stripslashes($value["etablissement"])).closecol();
         }
         $retour .= closeligne();
     }
@@ -1560,13 +1562,13 @@ function form_messagerie($ligncour,$ouvre=0)
         foreach ($liste as $key => $value)
         {
             $corps = str_replace(array("&quot;"),array("\""), stripslashes(isset($value["corps"]) ? $value["corps"] : ""));
-            $html .= opentab("width=\"90%\" align=\"center\" ").openligne("","titre").opencol().lang(56).$value["pseudonyme"].closecol().opencol().lang(57).date("j/m/y H:i:s",$value["datemess"]).closecol().opencol().lang(58).$value["titre"].closecol().closeligne();
+            $html .= opentab("width=\"90%\" align=\"center\" ").openligne("","titre").opencol().lang(56).e($value["pseudonyme"]).closecol().opencol().lang(57).date("j/m/y H:i:s",$value["datemess"]).closecol().opencol().lang(58).e($value["titre"]).closecol().closeligne();
             if($ouvre == $value["idmsg"] && $value["etat"] == "non lu")
                 upd_msgetat($value["idmsg"]);
             if($value["etat"] == "lu" || $ouvre == $value["idmsg"])
             {
                 $html .= openligne().opencol("colspan=\"3\"").bbtohtml($corps).closecol().closeligne();
-                $html .= openligne().opencol("colspan=\"3\"")."<center><a href=\"index.php?do=nouvmessage&idjoueur=".$value["idenvoyeur"]."&titre=Re: ".$value["titre"]."\">".lang(175)."</a>&nbsp;&nbsp;&nbsp;&nbsp; <a href=\"index.php?do=delmessage&idmessage=".$value["idmsg"]."\" >".lang(176)."</a></center>".closecol().closeligne();
+                $html .= openligne().opencol("colspan=\"3\"")."<center><a href=\"index.php?do=nouvmessage&idjoueur=".$value["idenvoyeur"]."&titre=".urlencode("Re: ".$value["titre"])."\">".lang(175)."</a>&nbsp;&nbsp;&nbsp;&nbsp; <a href=\"index.php?do=delmessage&idmessage=".$value["idmsg"]."\" >".lang(176)."</a></center>".closecol().closeligne();
             }
             if($value["etat"] == "non lu" && $ouvre <> $value["idmsg"])
                 $html .= openligne().opencol("colspan=\"3\"")."<center><a href=\"index.php?do=listemessage&ouvre=".$value["idmsg"]."&numligne=$ligncour\" >".lang(174)."</a></center>".closecol().closeligne();
@@ -1582,7 +1584,7 @@ function form_messagerie($ligncour,$ouvre=0)
         foreach ($liste_env as $key => $value)
         {
             $corps = str_replace(array("&quot;"),array("\""), stripslashes(isset($value["corps"]) ? $value["corps"] : ""));
-            $html .= opentab("width=\"90%\" align=\"center\" ").openligne("","titre").opencol().lang(219).$value["pseudonyme"].closecol().opencol().lang(57).date("j/m/y H:i:s",$value["datemess"]).closecol().opencol().lang(58).$value["titre"].closecol().closeligne();
+            $html .= opentab("width=\"90%\" align=\"center\" ").openligne("","titre").opencol().lang(219).e($value["pseudonyme"]).closecol().opencol().lang(57).date("j/m/y H:i:s",$value["datemess"]).closecol().opencol().lang(58).e($value["titre"]).closecol().closeligne();
             $html .= openligne().opencol("colspan=\"3\"").bbtohtml($corps).closecol().closeligne();
             $html .= openligne().opencol("colspan=\"3\"")."<center><a href=\"index.php?do=delmessage&idmessage=".$value["idmsg"]."\" >".lang(179)."</a></center>".closecol().closeligne();
             $html .= closetab()."<br>";
@@ -1607,7 +1609,7 @@ function form_nouvmessage($idjoueur,$sujet,$corps)
     if($idjoueur > 0)
     {
         $destinataire = ChercheInternaute ($idjoueur, $connexion);
-        $form .= lang(168)." : ".(is_object($destinataire) ? $destinataire->pseudonyme : 'Inconnu');
+        $form .= lang(168)." : ".(is_object($destinataire) ? e($destinataire->pseudonyme) : 'Inconnu');
         $form .= "<input type=\"hidden\" name=\"destinataire\" value=\"$idjoueur\">";
     } else {
         $joueurs = get_players();
@@ -2658,12 +2660,12 @@ function tabgroupeprofil($idgroupe)
     if(is_object($infogroupe) && $infogroupe->idgroupe > 0)
     {
         $id_compte = is_object($internaute) && isset($internaute->idcompte) ? $internaute->idcompte : 0;
-        $form .= "<br>".opentab("align=\"center\"").openligne("","titre").opencol("colspan=\"2\"")."$infogroupe->titregroupe [$infogroupe->initialgroupe]".closecol().closeligne();
+        $form .= "<br>".opentab("align=\"center\"").openligne("","titre").opencol("colspan=\"2\"").e($infogroupe->titregroupe)." [".e($infogroupe->initialgroupe)."]".closecol().closeligne();
         $form .= openligne("","").opencol("colspan=\"2\"").lang(191)." :".closecol().closeligne();
-        $form .= openligne("","").opencol("colspan=\"2\"").$infogroupe->descriptiongroupe.closecol().closeligne();
-        $form .= openligne().opencol("align=\"left\"").lang(192)." :".closecol().opencol().html_lien($infogroupe->pseudonyme,"do=nouvmessage&idjoueur=$infogroupe->idcompte").closecol().closeligne();
+        $form .= openligne("","").opencol("colspan=\"2\"").bbtohtml($infogroupe->descriptiongroupe).closecol().closeligne();
+        $form .= openligne().opencol("align=\"left\"").lang(192)." :".closecol().opencol().html_lien(e($infogroupe->pseudonyme),"do=nouvmessage&idjoueur=$infogroupe->idcompte").closecol().closeligne();
         $form .= openligne().opencol("align=\"left\"").lang(236)." :".closecol().opencol().print_reward($infogroupe->medor,$infogroupe->medargent,$infogroupe->medbronze).closecol().closeligne();
-        $form .= openligne().opencol("align=\"left\"").lang(198)." :".closecol().opencol()."<a href=\"$infogroupe->urlsite\" target=\"_blank\">$infogroupe->urlsite</a>".closecol().closeligne();
+        $form .= openligne().opencol("align=\"left\"").lang(198)." :".closecol().opencol()."<a href=\"".e($infogroupe->urlsite)."\" target=\"_blank\">".e($infogroupe->urlsite)."</a>".closecol().closeligne();
         $form .= retiftrue(openligne().opencol("align=\"left\"").lang(271)." :".closecol().opencol().html_lien(lang(240),"do=showlstsujets&idforum=$infogroupe->idforum").closecol().closeligne(),forum_peutlire($id_compte,$infogroupe->idforum));
         $form .= openligne("","").opencol("colspan=\"2\"").lang(235)." :".closecol().closeligne();
         $res = getcompositionequipe($idgroupe);
@@ -2671,7 +2673,7 @@ function tabgroupeprofil($idgroupe)
         $form .= opentab("width=\"100%\"").openligne("","titre").opencol().lienordre("Pseudonyme",lang(21)).closecol().opencol().lienordre("Dateinscr",lang(238)).closecol().opencol().lienordre("Capitalinscr",lang(237)).closecol().opencol().lienordre("Portefeuille",lang(24)).closecol().opencol().lienordre("Plusvalue",lang(22)).closecol().closeligne();
         while($ligne = LigneSuivante($res))
         {
-            $form .= openligne().opencol().$ligne->pseudonyme.closecol().opencol().$ligne->dateinscription.closecol().opencol().$ligne->capitalinscr." €".closecol().opencol().$ligne->capital." €".closecol().opencol().$ligne->prog." %".closecol().closeligne();
+            $form .= openligne().opencol().e($ligne->pseudonyme).closecol().opencol().e($ligne->dateinscription).closecol().opencol().$ligne->capitalinscr." €".closecol().opencol().$ligne->capital." €".closecol().opencol().$ligne->prog." %".closecol().closeligne();
         }
         $form .= closetab().closecol().closeligne();
         $form .= openligne().opencol("colspan=\"2\" align=\"center\" ")."".closecol().closeligne().closetab();
@@ -2700,7 +2702,7 @@ function lstforums()
         if($anssection != $lignefo->libellesection)
         {
             $anssection = $lignefo->libellesection;
-            $html .= openligne("","titre").opencol("colspan=\"5\"").$lignefo->libellesection.closecol().closeligne();
+            $html .= openligne("","titre").opencol("colspan=\"5\"").e($lignefo->libellesection).closecol().closeligne();
         }
         if($lignefo->notif_new && $lignefo->nbsujets > 0 && !($lignefo->datepost < $toutvu))
             $lnk = "<img src=\"$skinrep/nouvmess.png\" border=\"0\" TITLE=\"".lang(247)."\">";
@@ -2708,8 +2710,8 @@ function lstforums()
             $lnk = "<img src=\"$skinrep/pasnouvmess.png\" border=\"0\" TITLE=\"".lang(246)."\">";
 
         $html .= openligne("","").opencol("width=\"25\"").$lnk.closecol().
-        opencol("width=\"80%\"")."<a href=\"?do=showlstsujets&idforum=".$lignefo->frmid."\">$lignefo->nomforum</a>"."<br>".$lignefo->descriptionforum.retiftrue("<div align=right>".html_lien("Synchroniser","do=syncforum&idforum=$lignefo->frmid")."</div>",$is_admin).closecol().opencol("align=\"center\"")."$lignefo->nbsujets".closecol().opencol("align=\"center\"")."$lignefo->nbmessages".closecol().
-        opencol("width=\"20%\"")."<nobr>".retiftrue(date("j M Y H:i a",$lignefo->datepost)."</nobr><br>$lignefo->pseudonyme ".html_lien("<img src=\"$skinrep/goto.gif\" border=\"0\" TITLE=\"".lang(249)."\">","do=showlstposts&idsujet=$lignefo->idsujet&last=1#last"),$lignefo->idsujet,lang(248)).closecol().closeligne();
+        opencol("width=\"80%\"")."<a href=\"?do=showlstsujets&idforum=".$lignefo->frmid."\">".e($lignefo->nomforum)."</a>"."<br>".e($lignefo->descriptionforum).retiftrue("<div align=right>".html_lien("Synchroniser","do=syncforum&idforum=$lignefo->frmid")."</div>",$is_admin).closecol().opencol("align=\"center\"")."$lignefo->nbsujets".closecol().opencol("align=\"center\"")."$lignefo->nbmessages".closecol().
+        opencol("width=\"20%\"")."<nobr>".retiftrue(date("j M Y H:i a",$lignefo->datepost)."</nobr><br>".e($lignefo->pseudonyme)." ".html_lien("<img src=\"$skinrep/goto.gif\" border=\"0\" TITLE=\"".lang(249)."\">","do=showlstposts&idsujet=$lignefo->idsujet&last=1#last"),$lignefo->idsujet,lang(248)).closecol().closeligne();
     }
     $html .= closetab();
     return $html;
@@ -2738,7 +2740,7 @@ function lstsujets($idforum,$numligne)
     $barre = barrepage($nb_sujets,NB_SUJETS_PAR_PAGE,$numligne,"&idforum=$idforum");
 
     $html .= $barre."<br>".opentab("align=\"center\" width=\"90%\" ");
-    $html .= openligne("","titre2")."<th colspan=\"2\" align=\"left\">"."<a href=\"?do=showlstforums\">".lang(158)."</a> -&#62; <a href=\"\">".$nom_forum."</a></th><th>".lang(251)."</th><th>".lang(252)."</th>".
+    $html .= openligne("","titre2")."<th colspan=\"2\" align=\"left\">"."<a href=\"?do=showlstforums\">".lang(158)."</a> -&#62; <a href=\"\">".e($nom_forum)."</a></th><th>".lang(251)."</th><th>".lang(252)."</th>".
     "<th>".lang(253)."</th><th>".lang(245)."</th>".closeligne();
     if(forum_peutposter($id_compte,$idforum))
         $html .= openligne("","titre").opencol("colspan=\"6\"")."<STRONG>".html_lien(lang(255),"do=forumpostmessage&idforum=$idforum")."</STRONG>".closecol().closeligne();
@@ -2752,8 +2754,8 @@ function lstsujets($idforum,$numligne)
                 $lnk = "<img src=\"$skinrep/pasnouvmess.png\" border=\"0\" TITLE=\"".lang(246)."\">";
 
             $html .= openligne("","").opencol("width=\"25\"").$lnk.closecol().
-            opencol("width=\"80%\"").html_lien($lignefo->txtsujet,"do=showlstposts&idsujet=".$lignefo->numsujet).closecol().opencol("align=\"center\"")."$lignefo->pseudoauteur".closecol().opencol("align=\"center\"")."$lignefo->s_nbmessages".closecol().opencol("align=\"center\"")."$lignefo->nblectures".closecol().
-            opencol("width=\"20%\"")."<span class=\"gensmall\"><nobr>".date("j M Y H:i a",$lignefo->datepost)."</nobr><br>$lignefo->lastpseudo </span> ".html_lien("<img src=\"$skinrep/goto.gif\" border=\"0\" TITLE=\"".lang(249)."\">","do=showlstposts&idsujet=$lignefo->numsujet&last=1#last").closecol().closeligne();
+            opencol("width=\"80%\"").html_lien(e($lignefo->txtsujet),"do=showlstposts&idsujet=".$lignefo->numsujet).closecol().opencol("align=\"center\"").e($lignefo->pseudoauteur).closecol().opencol("align=\"center\"")."$lignefo->s_nbmessages".closecol().opencol("align=\"center\"")."$lignefo->nblectures".closecol().
+            opencol("width=\"20%\"")."<span class=\"gensmall\"><nobr>".date("j M Y H:i a",$lignefo->datepost)."</nobr><br>".e($lignefo->lastpseudo)." </span> ".html_lien("<img src=\"$skinrep/goto.gif\" border=\"0\" TITLE=\"".lang(249)."\">","do=showlstposts&idsujet=$lignefo->numsujet&last=1#last").closecol().closeligne();
         }
     } else {
         $html .= openligne("","").opencol("colspan=\"6\"")."<center>".lang(254)."</center>".closecol().closeligne();
@@ -2797,12 +2799,12 @@ function lstposts($idsujet,$numligne,$seelast=false)
     $barre = barrepage($infosujet->s_nbmessages+1,NB_MESS_PAR_PAGE,$numligne,"last=0");
 
     $html .= $barre."<br>".opentab("align=\"center\" width=\"90%\" ");
-    $html .= openligne("","titre2")."<th colspan=\"2\" align=\"left\">"."<a href=\"?do=showlstforums\">".lang(158)."</a> -&#62; <a href=\"?do=showlstsujets&idforum=$infosujet->idforum\">$infosujet->nomforum</a> -&#62; <a href=\"\">".$infosujet->txtsujet."</a></th>".closeligne();
+    $html .= openligne("","titre2")."<th colspan=\"2\" align=\"left\">"."<a href=\"?do=showlstforums\">".lang(158)."</a> -&#62; <a href=\"?do=showlstsujets&idforum=$infosujet->idforum\">".e($infosujet->nomforum)."</a> -&#62; <a href=\"\">".e($infosujet->txtsujet)."</a></th>".closeligne();
     $html .= openligne("","titre")."<th>".lang(251)."</th>"."<th>".lang(256)."</th>".closeligne();
     $peutposter = forum_peutposter($id_compte,$infosujet->idforum);
     while($lignefo = LigneSuivante($reqforums))
     {
-        $html .= openligne("","").opencol("width=\"20%\" valign=\"top\"").retiftrue("<a name=\"last\"></a>",$lignefo->idmessage==$infosujet->idlastmessage)."<STRONG>".$lignefo->auteur."</STRONG><br>".retiftrue(print_reward($lignefo->medor,$lignefo->medargent,$lignefo->medbronze)."<br><a href=\"?do=viewgroupeprofil&idgroupe=$lignefo->idgroupe\"><font class=\"gain\">[$lignefo->initialgroupe]</font></a>",$lignefo->idgroupe)."<br><br>".lang(244).": $lignefo->nbpostforum"."<br>".lang(22).": ".round(floatval($lignefo->prog),2)." %".closecol().
+        $html .= openligne("","").opencol("width=\"20%\" valign=\"top\"").retiftrue("<a name=\"last\"></a>",$lignefo->idmessage==$infosujet->idlastmessage)."<STRONG>".e($lignefo->auteur)."</STRONG><br>".retiftrue(print_reward($lignefo->medor,$lignefo->medargent,$lignefo->medbronze)."<br><a href=\"?do=viewgroupeprofil&idgroupe=$lignefo->idgroupe\"><font class=\"gain\">[".e($lignefo->initialgroupe)."]</font></a>",$lignefo->idgroupe)."<br><br>".lang(244).": $lignefo->nbpostforum"."<br>".lang(22).": ".round(floatval($lignefo->prog),2)." %".closecol().
         opencol("valign=\"top\"")."<span class=\"gensmall\">".retiftrue("<div style=\"display: inline;float: right;\">".retiftrue(html_lien(lang(268),"do=forumpostmessage&idmessage=$lignefo->idmessage&idsujet=$lignefo->idsujet&edit=1")." ",forum_peut_editer($lignefo,$infosujet)).html_lien(lang(257),"do=forumpostmessage&idmessage=$lignefo->idmessage&idsujet=$lignefo->idsujet")."</div>",$peutposter).date("j M Y H:i a",$lignefo->datepost)."</span><hr>".bbtohtml(str_replace(array("&quot;"),array("\""), stripslashes(isset($lignefo->contenu) ? $lignefo->contenu : ""))).closecol().closeligne();
     }
 

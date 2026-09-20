@@ -142,12 +142,12 @@ Pour convertir le code procédural vers des requêtes préparées sécurisées, 
 
 | Priorité | Module / Périmètre | Fichiers Cibles | Statut / Risque Métier |
 | :--- | :--- | :--- | :--- |
-| **P1 - Critique** | **Authentification, Sessions & Inscription** | `www/db_connect.php`<br>(`ChercheInternaute`, `ChercheSession`, `CreerSession`, `cookievalide`, `nbessai`, `deconnection`, `ChercheComptePseudo`)<br>`www/progfunc.php` (`ControleProgAcces`, `proglogin`, `progdeco`)<br>`www/nt2_pages.php` (`inscrjeu`)<br>`www/db_reqfunction.php` (`getinternauteinfo`, `setmdp`) | **✅ Traité** : Migré intégralement vers requêtes préparées avec paramètres `$params`. |
+| **P1 - Critique** | **Authentification, Sessions & Inscription** | `www/db_connect.php`<br>(`ChercheInternaute`, `ChercheSession`, `CreerSession`, `cookievalide`, `nbessai`, `deconnection`, `ChercheComptePseudo`)<br>`www/progfunc.php` (`ControleProgAcces`, `proglogin`, `progdeco`)<br>`www/nt2_pages.php` (`inscrjeu`, `editpass`, `editprofil`)<br>`www/db_reqfunction.php` (`getinternauteinfo`, `setmdp`) | **✅ Traité** : Migré intégralement vers requêtes préparées avec paramètres `$params`. |
 | **P2 - Haute** | **Transactions Financières, Ordres & Portefeuilles** | `www/db_reqfunction.php`<br>(`portefeuille_joueur`, `joueur_liste_sicav`, `joueur_possede`, `GetCashBack`, `ModifLiquide`, `AddHistorique`, `ModifAction`, `dansliste`, `AjoutPort`, `delete_sicav`, `listhisto`, `cmd_update_sicav`, `addordre`, `niv_joueur`, `get_ordre`, `efface_ordre`, `get_ordrelist`, `del_ordre`, `get_info_ordre`, `donnaction`, `donnactionyn`, `stataction`, `ordreactionachat`, `ordreactionvente`, `getplayercapital...`)<br>`www/nt2_pages.php` (`doachat`, `dovente`, `execute_ordre`, `supprordre`)<br>`www/progreq.php` (`progreqportef`) | **✅ Traité** : Migré intégralement vers requêtes préparées avec paramètres `$params`. |
-| **P3 - Haute** | **API XML Client Lourd** | `www/progfunc.php`<br>`www/progreq.php`<br>`www/prog.php` | À traiter (Injection via paramètres GET non assainis) |
-| **P4 - Moyenne** | **Forums, Groupes & Messagerie** | `www/db_reqtableaux.php`<br>`www/db_reqfunction.php` (messages, groupes, forums) | À traiter (Altération ou extraction de données privées) |
-| **P5 - Moyenne** | **Interface d'Administration** | `www/nt2_adminfunction.php`<br>`www/index.php` | À traiter (Élévation de privilèges) |
-| **P6 - Clôture** | **Suppression de `sec()`** | Ensemble du projet | Dette technique résiduelle |
+| **P3 - Haute** | **API XML Client Lourd & Utilitaires** | `www/progfunc.php`<br>`www/progreq.php`<br>`www/prog.php`<br>`www/redir.php`<br>`www/nt2_progfunction.php` | **✅ Traité** : Migré intégralement vers requêtes préparées avec paramètres `$params`. |
+| **P4 - Moyenne** | **Forums, Groupes & Messagerie** | `www/db_reqtableaux.php`<br>`www/db_reqfunction.php` (messages, groupes, forums, invitations) | **✅ Traité** : Migré intégralement vers requêtes préparées avec paramètres `$params`. |
+| **P5 - Moyenne** | **Interface d'Administration** | `www/nt2_adminfunction.php`<br>`www/db_reqfunction.php` | **✅ Traité** : Migré intégralement vers requêtes préparées avec paramètres `$params`. |
+| **P6 - Clôture** | **Dépréciation de `sec()`** | `www/db_connect.php` | **✅ Traité** : `sec()` dépréciée et convertie en retour direct. |
 
 ---
 

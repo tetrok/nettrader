@@ -12,34 +12,29 @@
 *
 * @package NetTrader
 * @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
 */
-$internaute->idcompte=1;
-$internaute->authlevel=2;
 
+include_once (__DIR__ . "/autoload.php");
 include_once ("const.php");
 include_once ("constbdd.php");
 include_once ("db_connect.php");
 
-$url=sec(($_GET['url'] ?? ""));
-/**
- * Fonction get_ip
- */
-function get_ip(){
-if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])){
-$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];}
-elseif(isset($_SERVER['HTTP_CLIENT_IP'])){
-$ip = $_SERVER['HTTP_CLIENT_IP'];}
-else{ $ip = $_SERVER['REMOTE_ADDR'];}
-return $ip;}$ip = get_ip();
-$query = "INSERT INTO `statout` ( `tmps` , `ip`, `url` )
-VALUES (
-UNIX_TIMESTAMP() , '$ip', '$url'
-)";
-$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-$run_query =  ExecRequete ($query, $connexion);
+$internaute = (object)['idcompte' => 1, 'authlevel' => 2];
+\NetTrader\Auth\UserSession::current()->setUser($internaute);
 
-header("Status: 302 Found");
-header("Location: $url");
+$request = \NetTrader\Http\Request::createFromGlobals();
+$url = $request->getString('url', '');
+$ip = $request->getClientIp();
+
+$query = "INSERT INTO `statout` (`tmps`, `ip`, `url`) VALUES (UNIX_TIMESTAMP(), ?, ?)";
+$connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+ExecRequete($query, $connexion, [$ip, $url]);
+
+// Filtrer URL pour éviter les attaques d'open redirect non désirées
+if (preg_match('/^https?:\/\//i', $url)) {
+    header("Location: $url", true, 302);
+} else {
+    header("Location: index.php", true, 302);
+}
 exit();
 ?>

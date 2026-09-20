@@ -154,7 +154,7 @@ function sign($val)
 function getvaleur($sico,$nouv=0)
 {   
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $resultat = ExecRequete("SELECT valeur FROM cacval WHERE codesico = '$sico'",$connexion);
+    $resultat = ExecRequete("SELECT valeur FROM cacval WHERE codesico = ?", $connexion, [$sico]);
     $lastval = 0;
     if($resultat)
     {
@@ -227,7 +227,7 @@ function traitehtmlsicav($lines,$sico = 0)
     ksort($source, 0);
 
     $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
-    $resultat = ExecRequete("SELECT * FROM cacval WHERE down='1' ORDER BY codesico ASC",$connexion);
+    $resultat = ExecRequete("SELECT * FROM cacval WHERE down = '1' ORDER BY codesico ASC", $connexion);
     $destination = [];
     $stat = [];
     if($resultat)
@@ -239,8 +239,6 @@ function traitehtmlsicav($lines,$sico = 0)
         }
     }
 
-    $chaineupdate = "";
-    $mintimeupdate = 9999999999;
     $updates = 0;
     $grpupdate = 0;
     foreach($source as $cle => $tabval)
@@ -253,18 +251,17 @@ function traitehtmlsicav($lines,$sico = 0)
                 {
                     $corps = "L'action yahooname=$cle a changé de 25% (de ".$destination[$cle]["valeur"]." à ".$tabval["valeur"]." ), aller sur la page d'admin pour réactiver si il n'y a pas de multiplication ou division d'action.";
                     envoimail(EMAILADMIN,"NetTrader, valeur se modifie de 25% !",$corps);
-                    ExecRequete("UPDATE cacval SET down='0' WHERE yahooname='$cle'",$connexion);
+                    ExecRequete("UPDATE cacval SET down = '0' WHERE yahooname = ?", $connexion, [$cle]);
                 }
-                ExecRequete("UPDATE cacval SET valeur='".$tabval["valeur"]."', lasttime='".$tabval["unixtime"]."', lasttimedown='$maintenant' WHERE yahooname='$cle'",$connexion);
-                if(defined('DATEFINSTATS') && date("U") < DATEFINSTATS) ExecRequete("INSERT INTO `statmaj` ( `idstat` , `codesico` , `lasttime_ans` , `lasttimedown_ans` , `lasttime_nouv` , `lasttimedown_nouv` ) VALUES ('', '".$stat[$cle]["codesico"]."', '".$stat[$cle]["lasttime"]."', '".$stat[$cle]["lasttimedown"]."', '".$tabval["unixtime"]."', UNIX_TIMESTAMP( ));",$connexion);
+                ExecRequete("UPDATE cacval SET valeur = ?, lasttime = ?, lasttimedown = ? WHERE yahooname = ?", $connexion, [$tabval["valeur"], $tabval["unixtime"], $maintenant, $cle]);
+                if(defined('DATEFINSTATS') && date("U") < DATEFINSTATS) {
+                    ExecRequete("INSERT INTO `statmaj` (`codesico`, `lasttime_ans`, `lasttimedown_ans`, `lasttime_nouv`, `lasttimedown_nouv`) VALUES (?, ?, ?, ?, UNIX_TIMESTAMP())", $connexion, [
+                        $stat[$cle]["codesico"] ?? '', $stat[$cle]["lasttime"] ?? 0, $stat[$cle]["lasttimedown"] ?? 0, $tabval["unixtime"]
+                    ]);
+                }
                 $updates++;
             }
         }
-    }
-
-    if($chaineupdate != "")
-    {
-        ExecRequete("UPDATE cacval SET lasttime='$mintimeupdate', lasttimedown='$maintenant' WHERE yahooname IN ($chaineupdate)",$connexion);
     }
 
     echoadmin(" $updates updates $grpupdate updates de groupe");
@@ -297,7 +294,7 @@ function ansgetvaleur($sico,$nouv=0)
     $datedown = $letimestamp->datedown;
 
     $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
-    $resultat = ExecRequete("SELECT valeur FROM cacval WHERE codesico = '$sico' AND (lasttime > '$datesql' OR lasttimedown > '$datedown')",$connexion);
+    $resultat = ExecRequete("SELECT valeur FROM cacval WHERE codesico = ? AND (lasttime > ? OR lasttimedown > ?)", $connexion, [$sico, $datesql, $datedown]);
     if($resultat)
     {
         while($r = $resultat->fetch(PDO::FETCH_BOTH))
@@ -327,7 +324,7 @@ function ansgetvaleur($sico,$nouv=0)
         {
             if (preg_match("/name=(.*)/", $lines[$i], $regs))
             {
-                $NomSico = sec($regs[1]);
+                $NomSico = $regs[1];
             }
         }
         if(strpos((string)$lines[$i], 'title') !== false)
@@ -360,11 +357,11 @@ function ansgetvaleur($sico,$nouv=0)
     {
         if($valsicav != "" && $UnixStampTime != "" && $sico != "")
         {
-            ExecRequete("UPDATE cacval SET valeur=$valsicav, lasttime=$UnixStampTime, lasttimedown=$maintenant WHERE codesico=$sico",$connexion);
+            ExecRequete("UPDATE cacval SET valeur = ?, lasttime = ?, lasttimedown = ? WHERE codesico = ?", $connexion, [$valsicav, $UnixStampTime, $maintenant, $sico]);
         }
     } else {
         delete_sicav($sico);
-        ExecRequete("INSERT INTO `cacval` (`codesico`, `nom`, `valeur`, `lasttime`, `lasttimedown`) VALUES ('$sico', '$NomSico', '$valsicav', '$UnixStampTime', '$maintenant')",$connexion);
+        ExecRequete("INSERT INTO `cacval` (`codesico`, `nom`, `valeur`, `lasttime`, `lasttimedown`) VALUES (?, ?, ?, ?, ?)", $connexion, [$sico, $NomSico, $valsicav, $UnixStampTime, $maintenant]);
     } 
 
     return $valsicav;

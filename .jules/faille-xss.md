@@ -11,7 +11,7 @@ Ce document détaille l'état d'avancement et le plan de remédiation complet co
 | **1. Helper d'échappement global** | Implémentation de la fonction `e($string)` | `www/nt2_function.php` | ✅ **FAIT** |
 | **2. Sécurisation de `bbtohtml()`** | Échappement préventif du HTML avant transformation BBCode | `www/nt2_function.php` | ✅ **FAIT** |
 | **3. Sécurisation des helpers HTML** | Échappement des attributs dans `Html_texte`, `Html_pass`, etc. | `www/skin/*/include_interface.php` | ✅ **FAIT** |
-| **4. Échappement dans les vues** | Sécurisation systématique des concaténations de chaînes | `www/nt2_pages.php`, `nt2_adminfunction.php` | ⏳ **EN COURS** |
+| **4. Échappement dans les vues** | Sécurisation systématique des concaténations de chaînes | `www/nt2_pages.php`, `nt2_adminfunction.php` | ✅ **FAIT** |
 | **5. Moteur de templates (MVC)** | Migration vers Twig avec auto-escaping natif par défaut | Architecture globale / `templates/` | 📋 **PLANIFIÉ** (Phase 3) |
 
 ---

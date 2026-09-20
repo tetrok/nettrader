@@ -56,7 +56,7 @@ while($ligne=LigneSuivante($lst))
 {
 	$num++;
 	$tab.=openligne();
-	$tab.=opencol().$num.closecol().opencol()."<input type=\"checkbox\" name=\"sel[$num]\" value=\"$ligne->codesico\" id=\"checkbox_row_3\"/>".closecol().opencol()."$ligne->nom ( $ligne->codesico ) ( $ligne->authachat $ligne->down )".closecol().opencol().$ligne->valeur.closecol().opencol().date("j/m/y H:i:s",$ligne->lasttime).closecol();
+	$tab.=opencol().$num.closecol().opencol()."<input type=\"checkbox\" name=\"sel[$num]\" value=\"$ligne->codesico\" id=\"checkbox_row_3\"/>".closecol().opencol().e($ligne->nom)." ( $ligne->codesico ) ( $ligne->authachat $ligne->down )".closecol().opencol().$ligne->valeur.closecol().opencol().date("j/m/y H:i:s",$ligne->lasttime).closecol();
 	$tab.=closeligne();
 }
 $tab.=closetab()."<br><center><a href=\"\" onclick=\"setCheckboxesRange('listactions', true);return false;\"> Sel tous</A> <a href=\"\" onclick=\"setCheckboxesRange('listactions', false);return false;\"> Sel aucun</A>
@@ -141,7 +141,7 @@ while($ligne=LigneSuivante($lst))
 {
 	$num++;
 	$tab.=openligne();
-	$tab.=opencol().$num.closecol().opencol()."<input type=\"checkbox\" name=\"sel[$num]\" value=\"$ligne->id\" id=\"checkbox_row_3\"/>".closecol().opencol()."$ligne->pseudo ( $ligne->id )".closecol().opencol().$ligne->lastconnect.closecol().opencol().$ligne->dateinscrfrm.closecol();
+	$tab.=opencol().$num.closecol().opencol()."<input type=\"checkbox\" name=\"sel[$num]\" value=\"$ligne->id\" id=\"checkbox_row_3\"/>".closecol().opencol().e($ligne->pseudo)." ( $ligne->id )".closecol().opencol().$ligne->lastconnect.closecol().opencol().$ligne->dateinscrfrm.closecol();
 	$tab.=closeligne();
 }
 $tab.=closetab()."<br><center><a href=\"\" onclick=\"setCheckboxesRange('listplayer', true);return false;\"> Sel tous</A> <a href=\"\" onclick=\"setCheckboxesRange('listplayer', false);return false;\"> Sel aucun</A><br><br>".Html_bouton("submit","Supprimer")."</center></form>";
@@ -180,22 +180,19 @@ function dodelplayers($lst)
 {
 if(is_array($lst) && count($lst)>0)
 {
-        $liste="";
+    $ids = [];
 	foreach ($lst as $key => $champ)
 	{
-		if($lst[$key]<>"" and $lst[$key]>1)
+		if($champ <> "" and intval($champ) > 1)
 		{
-			// $lst[$i] c'est un idcompte � supprimer;
-			if($liste<>"")
-			{
-				$liste.=",";
-			}
-			$liste.="'".$lst[$key]."'";
+            $ids[] = intval($champ);
 		}
 	}
-	fctdoraz($liste);
+    foreach($ids as $idcompte) {
+        fctdoraz($idcompte, 1);
+    }
 }
-$mess=msgtab($liste." supprim�s.","Supression de joueurs");
+$mess=msgtab(count($ids)." joueur(s) supprimé(s).","Supression de joueurs");
 return $mess;
 }
 
@@ -209,40 +206,41 @@ return $mess;
  */
 function modiflstactions($lst,$optmodif,$facteur,$debmodif,$finmodif)
 {
+    $codes = [];
+    if(is_array($lst))
+    {
+        foreach ($lst as $key => $champ)
+        {
+            if($champ <> "")
+            {
+                $codes[] = $champ;
+            }
+        }
+    }
 
-$liste="";
-foreach ($lst as $key => $champ)
-{
-	if($lst[$key]<>"" and $lst[$key]>1)
-	{
-		// $lst[$i] c'est un idcompte � supprimer;
-		if($liste<>"")
-		{
-			$liste.=",";
-		}
-		$liste.="'".$lst[$key]."'";
-	}
-}
+    foreach($codes as $code)
+    {
+        switch($optmodif)
+        {
+            case "activer":
+                modifetatactions($code, 1, 1);
+                break;
+            case "supprimmer":
+                delactions($code);
+                break;
+            case "multiplier":
+                factoriseactions($code, (float)$facteur);
+                break;
+            case "diviser":
+                if((float)$facteur != 0) {
+                    factoriseactions($code, 1.0 / (float)$facteur);
+                }
+                break;
+        }
+    }
 
-switch($optmodif)
-{
-	case "activer":
-        modifetatactions($liste,1);
-		break;
-	case "supprimmer":
-        delactions($liste);
-		break;
-	case "multiplier":
-        factoriseactions($liste,"multiplier",$facteur,$debmodif,$finmodif);
-		break;
-	case "diviser":
-        factoriseactions($liste,"diviser",$facteur,$debmodif,$finmodif);
-		break;
-}
-
-
-$mess=msgtab("c bon","Modifications actions");
-return $mess;
+    $mess=msgtab("Modifications effectuées avec succès.","Modifications actions");
+    return $mess;
 }
 
 /**
@@ -261,26 +259,24 @@ if($idgroupe==0)
 {
 	$typemodif="Demande d'ajout d'un groupe.";
 }else{
-        $typemodif="<a href=\"index.php?do=profilgroupe&idgroupe=$idgroupe\" target=\"_blank\">Modification d'un groupe. ( Voir ancien groupe )</a>";
+    $typemodif="<a href=\"index.php?do=viewgroupeprofil&idgroupe=$idgroupe\" target=\"_blank\">Modification d'un groupe. ( Voir ancien groupe )</a>";
 }
-
-
 
 $form="<br>".opentab("align=\"center\"").openligne("","titre").opencol("colspan=\"2\"").$typemodif.closecol().closeligne();
 $form.="<form method=\"POST\" name=\"dogroupeaccepterefuse\" action=\"index.php?do=dogroupeaccepterefuse\">";
-$form.=openligne().opencol("align=\"right\"").lang(189)." :".closecol().opencol().$titre.closecol().closeligne();
-$form.=openligne().opencol("align=\"right\"").lang(190)." :".closecol().opencol().$titrecourt.closecol().closeligne();
+$form.=openligne().opencol("align=\"right\"").lang(189)." :".closecol().opencol().e($titre).closecol().closeligne();
+$form.=openligne().opencol("align=\"right\"").lang(190)." :".closecol().opencol().e($titrecourt).closecol().closeligne();
 $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-$maitre=chercheinternaute($idcompte,$connexion);
-$form.=openligne().opencol("align=\"right\"").lang(192)." :".closecol().opencol().$maitre->pseudonyme.closecol().closeligne();
-$form.=openligne().opencol("align=\"right\"").lang(198)." :".closecol().opencol()."<INPUT type=\"hidden\" name=\"idgroupe\" value=\"$idgroupe\"><INPUT type=\"hidden\" name=\"idverif\" value=\"$idverif\"><a href=\"$urlsite\" target=\"_blank\">$urlsite</a>".closecol().closeligne();
+$maitre=ChercheInternaute($idcompte,$connexion);
+$pseudoMaitre = is_object($maitre) ? $maitre->pseudonyme : 'Inconnu';
+$form.=openligne().opencol("align=\"right\"").lang(192)." :".closecol().opencol().e($pseudoMaitre).closecol().closeligne();
+$form.=openligne().opencol("align=\"right\"").lang(198)." :".closecol().opencol()."<INPUT type=\"hidden\" name=\"idgroupe\" value=\"$idgroupe\"><INPUT type=\"hidden\" name=\"idverif\" value=\"$idverif\"><a href=\"".e($urlsite)."\" target=\"_blank\">".e($urlsite)."</a>".closecol().closeligne();
 
 $form.=openligne().opencol("colspan=\"2\" align=\"center\" ").
-lang(191)." :<br><br><div class=\"tab1\">".$presentation."</div><br><br>".Html_textezone("commentaireadmin",7,50,"Bonne Chance ! \n\n-Nicolas").
+lang(191)." :<br><br><div class=\"tab1\">".bbtohtml($presentation)."</div><br><br>".Html_textezone("commentaireadmin",7,50,"Bonne Chance ! \n\n-Nicolas").
 "<br><br>".Html_radio("choixadmin","1","Accepter","checked")."&nbsp;&nbsp;&nbsp;".Html_radio("choixadmin","0","Refuser","")."<br><br><br>".Html_bouton("submit","Accepter/Refuser")."</form>"
 ."<br><br>".closecol().closeligne().closetab();
 $form.="<br>";
-
 
 return $form;
 }

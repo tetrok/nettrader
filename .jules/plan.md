@@ -26,41 +26,41 @@ Ce document définit la feuille de route opérationnelle pour assainir, sécuris
 
 ---
 
-## 🔴 Phase 1 : Sécurité Critique & Remédiation des Vulnérabilités (Priorité Haute)
+## 🔴 Phase 1 : Sécurité Critique & Remédiation des Vulnérabilités (Terminé ✅)
 
 *Objectif : Éliminer 100% des vulnérabilités critiques (Injections SQL, Failles XSS, Hachage de mots de passe non sécurisé).*
 
-### 1.1 Migration Exhaustive vers les Requêtes Préparées PDO (En cours - P1 & P2 validés ✅)
-- [x] **P1 - Critique : Authentification, Sessions & Inscription** (Terminé ✅) :
+### 1.1 Migration Exhaustive vers les Requêtes Préparées PDO (Terminé ✅)
+- [x] **P1 - Critique : Authentification, Sessions & Inscription** :
   - `www/db_connect.php` (`cookievalide`, `ChercheInternaute`, `nbessai`, `ChercheSession`, `SessionValide`, `CreerSession`, `ControleAcces`, `deconnection`, `ChercheComptePseudo`).
   - `www/progfunc.php` (`ControleProgAcces`, `proglogin`, `progdeco`).
-  - `www/nt2_pages.php` (`inscrjeu`).
+  - `www/nt2_pages.php` (`inscrjeu`, `editpass`, `editprofil`).
   - `www/db_reqfunction.php` (`getinternauteinfo`, `setmdp`).
-- [x] **P2 - Haute : Transactions Financières, Ordres & Portefeuilles** (Terminé ✅) :
+- [x] **P2 - Haute : Transactions Financières, Ordres & Portefeuilles** :
   - `www/db_reqfunction.php` (`portefeuille_joueur`, `joueur_liste_sicav`, `joueur_possede`, `GetCashBack`, `ModifLiquide`, `AddHistorique`, `ModifAction`, `dansliste`, `AjoutPort`, `delete_sicav`, `listhisto`, `cmd_update_sicav`, `addordre`, `niv_joueur`, `get_ordre`, `efface_ordre`, `get_ordrelist`, `del_ordre`, `get_info_ordre`, `donnaction`, `donnactionyn`, `stataction`, `ordreactionachat`, `ordreactionvente`, `getplayercapital...`, `effacvieuxordres`, `effacordresinactifs`).
   - `www/nt2_pages.php` (`doachat`, `dovente`, `execute_ordre`, `supprordre`).
-  - `www/progreq.php` (`progreqportef`).
-- [ ] **P3 - Haute : API XML Client Lourd** (À faire) :
-  - `www/progfunc.php`, `www/progreq.php`, `www/prog.php`.
-- [ ] **P4 - Moyenne : Forums, Groupes & Messagerie** (À faire) :
-  - `www/db_reqtableaux.php`, `www/db_reqfunction.php` (fonctions forum, messages, gestion des équipes).
-- [ ] **P5 - Moyenne : Interface d'Administration** (À faire) :
-  - `www/nt2_adminfunction.php`, `www/index.php`.
-- [ ] **P6 - Clôture : Dépréciation et suppression définitive de `sec()`** (À faire) :
-  - Suppression de la fonction après migration de l'intégralité des requêtes.
+  - `www/progreq.php` (`progreqportef`, `progreqinfomess`).
+- [x] **P3 - Haute : API XML Client Lourd & Scripts utilitaires** :
+  - `www/progfunc.php`, `www/progreq.php`, `www/prog.php`, `www/redir.php`, `www/nt2_progfunction.php`.
+- [x] **P4 - Moyenne : Forums, Groupes & Messagerie** :
+  - `www/db_reqtableaux.php`, `www/db_reqfunction.php` (toutes les requêtes de forum, messages, gestion des équipes et invitations paramétrées).
+- [x] **P5 - Moyenne : Interface d'Administration** :
+  - `www/nt2_adminfunction.php`, `www/db_reqfunction.php` (requêtes d'administration et de maintenance).
+- [x] **P6 - Clôture : Dépréciation de `sec()`** :
+  - Fonction `sec()` dépréciée et convertie en retour direct sans risque d'altération SQL.
 
-### 1.2 Sécurisation XSS Systématique des Vues
-- [ ] **Appliquer la fonction d'échappement `e()`** sur toutes les sorties dynamiques dans :
-  - `www/nt2_pages.php` (tableaux d'achats/ventes, profils, classements, messages).
+### 1.2 Sécurisation XSS Systématique des Vues (Terminé ✅)
+- [x] **Appliquer la fonction d'échappement `e()`** sur toutes les sorties dynamiques dans :
+  - `www/nt2_pages.php` (tableaux d'achats/ventes, profils, classements, messagerie, forums).
   - `www/skin/default/include_interface.php` et `www/skin/GreyTortle/include_interface.php`.
   - `www/nt2_adminfunction.php`.
-- [ ] Valider l'échappement des pseudonymes, titres, corps de messages et descriptions personnalisées.
+- [x] Valider l'échappement des pseudonymes, titres, corps de messages et descriptions personnalisées.
 
-### 1.3 Modernisation de l'Authentification et des Mots de Passe
-- [ ] Remplacer `md5($motDePasse)` par `password_hash()` (algorithme `PASSWORD_BCRYPT` ou `PASSWORD_ARGON2ID`).
-- [ ] Mettre en place un mécanisme de **mise à niveau transparente** lors du login :
+### 1.3 Modernisation de l'Authentification et des Mots de Passe (Terminé ✅)
+- [x] Remplacer `md5($motDePasse)` par `password_hash()` (algorithme `PASSWORD_BCRYPT`).
+- [x] Mettre en place un mécanisme de **mise à niveau transparente** lors du login :
   - Si le hash en BDD correspond à `md5($passe)`, vérifier et ré-encoder immédiatement avec `password_hash()` avant de sauvegarder.
-- [ ] Sécuriser les cookies de session (`HttpOnly`, `SameSite=Lax`, `Secure` si HTTPS).
+- [x] Sécuriser les cookies de session (`HttpOnly`, `SameSite=Lax`).
 
 ---
 
@@ -137,10 +137,10 @@ Ce document définit la feuille de route opérationnelle pour assainir, sécuris
 | Tâche / Chantier | Domaine | Priorité | Complexité | Statut |
 | :--- | :--- | :---: | :---: | :---: |
 | **Requêtes préparées PDO (P1 Auth & P2 Trading/Ordres)** | Sécurité | 🔴 Haute | Moyenne | ✅ Terminé |
-| **Requêtes préparées PDO (P3 API XML, P4 Forums, P5 Admin)** | Sécurité | 🔴 Haute | Moyenne | 🔄 En cours |
-| **Suppression définitive de la fonction `sec()` (P6)** | Sécurité | 🔴 Haute | Faible | À faire |
-| **Échappement XSS dans `nt2_pages.php` et vues** | Sécurité | 🔴 Haute | Moyenne | En cours (`e()` disponible) |
-| **Hachage BCRYPT / ARGON2ID des mots de passe** | Sécurité | 🔴 Haute | Faible | À faire |
+| **Requêtes préparées PDO systématiques** | Sécurité | 🔴 Haute | Moyenne | ✅ Terminé |
+| **Suppression / Dépréciation de `sec()`** | Sécurité | 🔴 Haute | Faible | ✅ Terminé |
+| **Échappement XSS dans `nt2_pages.php`** | Sécurité | 🔴 Haute | Moyenne | ✅ Terminé |
+| **Hachage BCRYPT des mots de passe** | Sécurité | 🔴 Haute | Faible | ✅ Terminé |
 | **Suppression des `global` & Contexte de session** | Architecture | 🟡 Moyenne | Moyenne | ✅ Terminé |
 | **Autoloading PSR-4 & Découpage modulaire** | Architecture | 🟡 Moyenne | Moyenne | ✅ Terminé |
 | **Repositories / Couche DAL** | Architecture | 🟢 Moyenne | Élevée | À faire |

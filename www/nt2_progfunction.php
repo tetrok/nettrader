@@ -18,18 +18,15 @@
 */
 function get_ordrelistprog()
 {
-global $internaute;
-$letimestamp=get_refresh();
-$datesql=$letimestamp->datesql;
-$datedown=$letimestamp->datedown;
-	$query = " SELECT cacval.nom as Nom,FROM_UNIXTIME(datecreation,'%d/%c/%Y %H:%I:%S' ) as 'Date de cr�ation',sens,nbr as 'quantit�e',pourc as 'pourcentage',coursmin as 'Cours mini',coursmax as 'Cours max',valeur 
+    global $internaute;
+    if (!is_object($internaute) || !isset($internaute->idcompte)) return false;
+    $idcompte = $internaute->idcompte;
+    $query = "SELECT cacval.nom as Nom, FROM_UNIXTIME(datecreation, '%d/%c/%Y %H:%I:%S') as 'Date de création', sens, nbr as 'quantitée', pourc as 'pourcentage', coursmin as 'Cours mini', coursmax as 'Cours max', valeur 
 FROM ordre
 INNER JOIN cacval ON ordre.codesico = cacval.codesico
-WHERE idcompte=$internaute->idcompte ORDER BY datecreation DESC";
-	//echo $query;
-	$connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-	$run_query =  ExecRequete ($query, $connexion);	
- return $run_query;
+WHERE idcompte = ? ORDER BY datecreation DESC";
+    $connexion = Connexion(NOM, PASSE, BASE, SERVEUR);
+    return ExecRequete($query, $connexion, [$idcompte]);	
 }
 
 /**
