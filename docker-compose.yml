@@ -21,14 +21,18 @@ services:
     build: .
     ports:
       - "8080:80"
+    volumes:
+      - ./www:/var/www/html
     environment:
       DB_HOST: db
       DB_NAME: nettrader
       DB_USER: nettrader_user
       DB_PASSWORD: nettrader_password
     depends_on:
-      - db
-      - mailpit
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
     restart: unless-stopped
     
   python-fetcher:
@@ -62,8 +66,10 @@ services:
       MAIL_PORT: "1025"
       SENDMAIL_FOR_REAL: "1"
     depends_on:
-      - db
-      - mailpit
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
     restart: unless-stopped
 
   phpmyadmin:
@@ -75,7 +81,8 @@ services:
       PMA_USER: root
       PMA_PASSWORD: rootpassword
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
     
   mailpit:
@@ -85,3 +92,13 @@ services:
     ports:
       - "8025:8025" # Interface Web pour lire les e-mails
       - "1025:1025" # Port SMTP interne utilisé par msmtp
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
+    restart: unless-stopped
