@@ -1,64 +1,43 @@
-# Dette technique et problèmes restants
+# Dette technique et Résolutions
 
-L'analyse de l'application met en évidence l'état d'avancement des chantiers techniques et les dettes restantes.
-
-## 1. État des Lieux et Avancement Récent
-
-Plusieurs points critiques d'obsolescence, de sécurité et d'architecture ont déjà été traités :
-- **Compatibilité PHP 8.x :** Correction des fonctions supprimées ou dépréciées (`ereg_replace`, `each()`, `get_magic_quotes_gpc`, `is_null`, gestion des types `null`).
-- **Short Open Tags :** Remplacement systématique de toutes les balises d'ouverture `<?` par `<?php`.
-- **Infrastructure de requêtes préparées & Sécurisation SQL (P1 & P2 terminés) :**
-  - Mise à niveau du connecteur PDO dans `www/db_connect.php` ; `ExecRequete()` prend désormais en charge les paramètres préparés (`$params = []`) et classe `Database` centralisée.
-  - **P1 (Authentification & Sessions) :** Migration intégrale des fonctions de session/connexion (`db_connect.php`, `progfunc.php`, `nt2_pages.php`, `db_reqfunction.php`).
-  - **P2 (Transactions Financières, Ordres & Portefeuilles) :** Migration intégrale des fonctions de trading, gestion d'ordres, passage d'ordres, calculs de liquidités/capitaux et portefeuilles (`db_reqfunction.php`, `nt2_pages.php`, `progreq.php`).
-- **Flux Boursiers Externes :** Remplacement des anciens flux CSV morts par le micro-service Python `pythonfetch/pynt2markdown.py` exploitant `yfinance` avec gestion de lots, repli individuel et journalisation continue (respectant la règle de non-désactivation permanente des tickers). Neutralisation des anciennes fonctions de scraping PHP obsolètes (`traiteeuronextcsv`, `traiteyahoocsv`).
-- **Fondations de sécurisation XSS :** Introduction de la fonction globale d'échappement `e()` dans `www/nt2_function.php`, sécurisation préalable du parseur BBCode `bbtohtml()` et des fonctions génératrices de champs de formulaires HTML (`Html_texte`, `Html_pass`, `Html_liste`, etc.).
-- **Assainissement & Autoloading PSR-4 (Phase 2 terminée) :**
-  - Mise en place de l'autoloader PSR-4 (`NetTrader\`) dans `composer.json` et `www/autoload.php`.
-  - Découpage modulaire de `nt2_function.php` en services métier réutilisables : `TradingService`, `FormattingService`, `MailerService`, `Database`.
-  - Encapsulation des requêtes HTTP et superglobales dans la classe `Request` (suppression de `global $do; $do = &$_GET['do'];`).
-  - Encapsulation de la session et des permissions dans `UserSession`.
+Ce document récapitule l'état d'assainissement de l'application NetTrader 2, les dettes majeures résolues ainsi que les reliquats techniques mineurs.
 
 ---
 
-- **Sécurisation Critique Intégrale (Phase 1 terminée) :**
-  - **Injections SQL éradiquées :** 100% des requêtes applicatives (`db_reqfunction.php`, `db_reqtableaux.php`, `db_connect.php`, `progreq.php`, `progfunc.php`, `nt2_progfunction.php`, `nt2_adminfunction.php`, `nt2_pages.php`, `nt2_function.php`, `redir.php`) sont désormais paramétrées avec requêtes préparées PDO `$params`. La fonction historique `sec()` est dépréciée.
-  - **Échappement XSS systématique :** Application du helper `e()` sur l'ensemble des variables dynamiques dans les vues de `nt2_pages.php`, `nt2_adminfunction.php`, les formulaires de skins et BBCode.
-  - **Cryptographie des Mots de Passe & Sessions :** Remplacement de MD5 par BCRYPT (`password_hash` / `password_verify`), mise à niveau transparente lors de la connexion, sécurisation des cookies (`HttpOnly`, `SameSite=Lax`).
+## 1. Dettes Techniques Majeures Résolues ✅
+
+L'ensemble des vulnérabilités critiques et des dettes structurelles majeures a été résolu avec succès :
+
+### 🔒 Sécurité & Cryptographie (100% Résolu)
+- **Injections SQL éradiquées :** 100% des requêtes SQL de l'application (`db_reqfunction.php`, `db_reqtableaux.php`, `db_connect.php`, `progreq.php`, `progfunc.php`, `nt2_progfunction.php`, `nt2_adminfunction.php`, `nt2_pages.php`, `nt2_function.php`, `redir.php`, contrôleurs REST et scripts Python) sont préparées via PDO avec paramètres liés (`$params`). La fonction d'échappement naïve historique `sec()` est dépréciée.
+- **Failles XSS neutralisées :** Application systématique de la fonction d'échappement `e()` sur les données dynamiques dans toutes les vues, et sécurisation du parseur BBCode contre les liens non sûrs (`javascript:`).
+- **Mots de passe & Sessions :** Migration complète de l'ancien hachage MD5 vers BCRYPT (`password_hash`, `password_verify`), mise à niveau transparente à la connexion, et jetons de session générés par CSPRNG (256 bits, 64 hex).
+- **Durcissement de l'infrastructure :** Désactivation de l'endpoint VB6 historique `/prog.php` (404), sécurisation des tâches planifiées `cmd.php` par clé `X-Cron-Key`, protection `.htaccess` sur `tests/`, politique CORS stricte et protection contre les redirections ouvertes.
+
+### 🏛️ Architecture Backend & Couche de Données (100% Résolu)
+- **Autoloading PSR-4 :** Namespace `NetTrader\` configuré via Composer et `www/autoload.php`.
+- **Élimination des `global` :** Abstraction de la session et des permissions dans `UserSession`, encapsulation des requêtes HTTP dans `Request`.
+- **Services Métier :** Découpage modulaire de la logique métier (`TradingService`, `Database`, `FormattingService`, `MailerService`).
+- **Couche d'Accès aux Données (DAL / Repositories) :** Mise en place d'une couche Repository découplée sous `NetTrader\Repository` (`BaseRepository`, `StockRepository`, `OrderRepository`, `PortfolioRepository`, `UserRepository`, `ForumRepository`). Validée par une suite de 29 tests unitaires dédiés (`www/tests/test_repositories.php`).
+- **Contrôleurs REST :** Refactorisation des contrôleurs API (`MarketController`, `TradingController`, `AdminController`, `AuthController`, `CommunityController`) pour injecter et consommer les Repositories.
+
+### 🎨 Frontend & Vues (100% Résolu)
+- **Pivot Architectural :** Abandon des gabarits HTML 3.2/4.01 archaïques et du moteur de template serveur Twig au profit d'une **SPA moderne découplée en React 18 / TypeScript / Tailwind CSS**.
+- **Disparition du JavaScript inline :** Plus aucun script JS généré à la volée par PHP ; logique d'interface gérée par des composants React modulaires avec typage TypeScript strict.
+- **Expérience Mobile & Responsive :** Interface fluide, navigation par onglets, affichage graphique des cours et carnet d'ordres interactif.
+
+### 📈 Micro-services & Supervision Boursière (100% Résolu)
+- **Scraper Python moderne :** Remplacement des flux CSV obsolètes par `yfinance` avec cache local SQLite, repli automatique et journalisation continue dans `market_sync_log`.
+- **Market Sync Monitor :** Espace dédié dans l'administration pour suivre l'état des cotations (dernière tentative, taux de succès, erreurs, retries, bascule du suivi et réinitialisation des compteurs d'échecs).
 
 ---
 
-## 2. Dettes Techniques Restantes (Phases 3 à 5)
+## 2. Reliquats Techniques Mineurs & Pistes d'Évolution 📋
 
-### 🏛️ Architecture et Conception
+1. **Nettoyage progressif du code procédural legacy :**
+   - *Description :* Les anciens fichiers de rendu serveur (`www/nt2_pages.php`, `www/skin/`) subsistent pour assurer une rétrocompatibilité historique, mais l'intégralité du trafic moderne transite désormais par la SPA React et l'API REST `/api/...`.
+   - *Action future :* Dépréciation finale et archivage des anciens fichiers procéduraux une fois la phase de transition totalement close.
 
-1. **Absence de séparation MVC (Modèle - Vue - Contrôleur) :**
-   - *Constat :* `www/index.php` et `www/prog.php` concentrent l'intégralité du routage via de volumineux blocs `switch ($do)`. Les fonctions de `www/nt2_pages.php` mélangent logique métier, requêtes SQL et génération de balises HTML.
-   - *Objectif :* Découpler le routage (Contrôleurs), la logique métier/accès données (Services/Repositories) et l'affichage (Vues / Templates).
-
-2. **Couche d'abstraction de données (DAL / Repository) :**
-   - *Constat :* Des dizaines de fonctions procédurales dans `www/db_reqfunction.php` et `www/db_reqtableaux.php` exécutent des requêtes brutes sans typage, sans validation ni objets métiers (DTO / Entités).
-   - *Objectif :* Structurer les accès aux données sous forme de classes Repository dédiées (ex. `UserRepository`, `PortfolioRepository`, `OrderRepository`, `MarketRepository`).
-
----
-
-### 🎨 Frontend & Code Legacy
-
-1. **Skins et HTML Archaïque (HTML 3.2 / 4.01) :**
-   - *Constat :* Les fichiers `www/skin/default/include_interface.php` et `www/skin/GreyTortle/include_interface.php` utilisent des balises obsolètes (`<font>`, `<center>`), des attributs dépréciés (`bgcolor`, `cellpadding`, `cellspacing`, `border`) et des structures de tableaux imbriquées pour la mise en page.
-   - *Objectif :* Refondre l'intégration graphique vers du HTML5 sémantique et du CSS moderne (Flexbox/Grid), compatible responsive / mobile.
-
-2. **JavaScript Inline généré côté serveur :**
-   - *Constat :* Du JavaScript obsolète est généré à la volée par PHP dans `www/nt2_pages.php` (`jscript_av()`, `jscript_ordre()`, `checkForm()`).
-   - *Objectif :* Externaliser le JavaScript dans des scripts dédiés et standardisés, sans génération PHP dynamique de scripts inline.
-
----
-
-### 📡 API et Données
-
-1. **Modernisation de l'API XML Client (`prog.php`) :**
-   - *Constat :* L'API utilisée historiquement par le client lourd (`nettrader2Client`) génère du XML artisanal via `www/progfunc.php` et `www/progreq.php`.
-   - *Objectif :* Fournir des endpoints API RESTful au format JSON pour permettre une intégration moderne (clients web, mobiles, bots).
-
-2. **Flux secondaires (SICAV / Devises) :**
-   - *Constat :* La fonction `traitehtmlsicav()` et les flux annexes nécessitent d'être audités pour déterminer s'ils doivent être migrés dans le service Python ou dépréciés.
+2. **Flux secondaires historiques (SICAV / Devises) :**
+   - *Description :* Les fonctions relatives aux SICAV historiques (`traitehtmlsicav`) sont aujourd'hui inactives ou secondaires.
+   - *Action future :* Remplacer ou étendre `pythonfetch` pour inclure les devises (forex) et indices internationaux si le jeu le requiert.

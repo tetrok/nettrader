@@ -45,10 +45,15 @@ def getRowDict(cursor):
         for i in range(0,len(rowData)):
             dicodata[desc[i][0]]=rowData[i]
     return dicodata
-def ExecSql(db,sql):
-    cursor=db.cursor()
-    cursor.execute(sql)
-    db.commit()    
+def ExecSql(db, sql, params=None):
+    cursor = db.cursor()
+    if params is not None:
+        cursor.execute(sql, params)
+    else:
+        cursor.execute(sql)
+    db.commit()
+    cursor.close()
+
 def RunSelect(db,sql):
         res=[]
         cursor=db.cursor()
@@ -62,11 +67,12 @@ def RunSelect(db,sql):
 def GetActionName(ligne):
     return ligne[1:ligne[1:].find("\"")+1]
 def DisableAction(db,actionname):
-    ExecSql(db,"UPDATE cacval SET down='0' WHERE yahooname='%s'" %(actionname))
+    ExecSql(db,"UPDATE cacval SET down='0' WHERE yahooname=%s", (actionname,))
 
 def DownloadParisMarkedData(db):
     mail_error_text=""
-    dictdown=RunSelect(db,"SELECT codesico,yahooname,lasttime,valeur FROM cacval WHERE down='1' ORDER BY codesico ASC")
+    start_time = time.time()
+    dictdown=RunSelect(db,"SELECT codesico,yahooname,lasttime,valeur,fail_count,total_fails FROM cacval WHERE down='1' ORDER BY codesico ASC")
     action_list=[]
     action_dict={}
     for action in dictdown:
@@ -78,6 +84,9 @@ def DownloadParisMarkedData(db):
         return
         
     print("[%s] [INFO] Début du téléchargement pour %d actions (taille de batch: %d)..." % (time.strftime("%d/%m/%Y %H:%M:%S"), len(action_list), SICAV_COUNT_PER_DOWNLOAD))
+    
+    total_download_success = 0
+    total_download_error = 0
         
     for r in range(0,len(action_list),SICAV_COUNT_PER_DOWNLOAD):
         batch = action_list[r:SICAV_COUNT_PER_DOWNLOAD+r]
@@ -94,26 +103,26 @@ def DownloadParisMarkedData(db):
             if yf_output:
                 print("[%s] [DEBUG] Sortie yfinance: %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), yf_output))
 
-            success_count = 0
-            error_count = 0
+            batch_success_count = 0
+            batch_error_count = 0
             
             for yname in batch:
+                retried = 0
+                cours = None
+                now_attempt = int(time.time())
                 try:
                     if data is None or data.empty:
-                        print("[%s] [ERREUR] %s: Aucune donnée trouvée (DataFrame vide)." % (time.strftime("%d/%m/%Y %H:%M:%S"), yname))
-                        error_count += 1
-                        continue
+                        raise ValueError("Aucune donnée trouvée (DataFrame vide)")
                         
                     if 'Close' not in data:
-                        print("[%s] [ERREUR] %s: Colonne 'Close' manquante dans les données. Colonnes disponibles: %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), yname, list(data.columns)))
-                        error_count += 1
-                        continue
+                        raise ValueError("Colonne 'Close' manquante dans les données")
                         
                     close_data = data['Close']
                     
                     if isinstance(close_data, pd.DataFrame):
                         if yname not in close_data.columns or pd.isna(close_data[yname].iloc[-1]):
-                            # Tentative de repli (fallback) : téléchargement individuel du ticker si NaN ou absent
+                            # Tentative de repli (fallback retry) : téléchargement individuel du ticker si NaN ou absent
+                            retried = 1
                             try:
                                 f_single = io.StringIO()
                                 with contextlib.redirect_stdout(f_single), contextlib.redirect_stderr(f_single):
@@ -127,62 +136,116 @@ def DownloadParisMarkedData(db):
                                     if not pd.isna(single_val):
                                         cours = single_val
                                     else:
-                                        raise ValueError("Valeur Close est NaN pour %s" % yname)
+                                        raise ValueError("Valeur Close est NaN après repli individuel")
                                 else:
-                                    raise ValueError("Données vides ou absentes pour %s" % yname)
+                                    raise ValueError("Données vides ou absentes au repli individuel")
                             except Exception as ex_single:
-                                if yname not in close_data.columns:
-                                    print("[%s] [ERREUR] %s: Ticker absent des colonnes Close. Colonnes Close: %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), yname, list(close_data.columns)))
-                                else:
-                                    print("[%s] [ERREUR] %s: Valeur Close est NaN (même après repli individuel)" % (time.strftime("%d/%m/%Y %H:%M:%S"), yname))
-                                error_count += 1
-                                continue
+                                raise ValueError(str(ex_single))
                         else:
                             cours = close_data[yname].iloc[-1]
+                            if pd.isna(cours):
+                                retried = 1
+                                f_single = io.StringIO()
+                                with contextlib.redirect_stdout(f_single), contextlib.redirect_stderr(f_single):
+                                    data_single = yf.download(yname, period="1d", threads=False, progress=False)
+                                if data_single is not None and not data_single.empty and 'Close' in data_single:
+                                    single_close = data_single['Close']
+                                    if isinstance(single_close, pd.DataFrame):
+                                        single_val = single_close.iloc[-1, 0] if not single_close.empty else float('nan')
+                                    else:
+                                        single_val = single_close.iloc[-1] if not single_close.empty else float('nan')
+                                    if not pd.isna(single_val):
+                                        cours = single_val
+                                    else:
+                                        raise ValueError("Valeur Close est NaN après repli individuel")
+                                else:
+                                    raise ValueError("Données vides au repli individuel")
                     else:
                         if pd.isna(close_data.iloc[-1]):
-                            raise ValueError("Valeur Close est NaN pour %s" % yname)
+                            retried = 1
+                            raise ValueError("Valeur Close est NaN")
                         cours = close_data.iloc[-1]
 
+                    if cours is None or pd.isna(cours):
+                        raise ValueError("Cours introuvable ou NaN")
+
                     fval = float(cours)
+                    batch_success_count += 1
+                    total_download_success += 1
+                    print("[%s] [SUCCÈS] %s: Données récupérées (valeur = %.4f, retry=%d)" % (time.strftime("%d/%m/%Y %H:%M:%S"), yname, fval, retried))
 
-                    print("[%s] [SUCCÈS] %s: Données récupérées avec succès (valeur = %.4f)" % (time.strftime("%d/%m/%Y %H:%M:%S"), yname, fval))
-                    success_count += 1
-
-                    aujourdhui = time.time()
+                    ansval = float(action_dict[yname]["valeur"]) if yname in action_dict and action_dict[yname]["valeur"] is not None else 0.0
                     
-                    if yname in action_dict:
-                        ansval = float(action_dict[yname]["valeur"])
-                        act_date = time.time()
-                        
-                        req = "UPDATE cacval SET valeur='%s', lasttime='%i', lasttimedown='%i' WHERE yahooname='%s'" % (fval, act_date, aujourdhui, yname)
-                        ExecSql(db, req)
-                        
-                        if fval == 0 or (ansval != 0 and abs(ansval - fval) / (ansval) >= 0.25):
-                            msg_alerte = "ATTENTION: L'action %s a une valeur de 0 ou a changé de plus de 25%% entre deux maj. Ancienne valeur: %.4f, Nouvelle: %.4f." % (yname, ansval, fval)
-                            print("[%s] [ALERTE] %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), msg_alerte))
-                            mail_error_text += msg_alerte + "\n"
+                    ExecSql(db, """
+                        UPDATE cacval 
+                        SET valeur=%s, lasttime=%s, lasttimedown=%s, last_attempt=%s, 
+                            last_status='success', fail_count=0, retry_count=%s, last_error=NULL 
+                        WHERE yahooname=%s
+                    """, (fval, now_attempt, now_attempt, now_attempt, retried, yname))
+
+                    if yname in action_dict and action_dict[yname].get("codesico") is not None:
+                        ExecSql(db, "INSERT INTO stock_history (codesico, temps, valeur) VALUES (%s, %s, %s)",
+                                (action_dict[yname]["codesico"], now_attempt, fval))
+
+                    
+                    if fval == 0 or (ansval != 0 and abs(ansval - fval) / (ansval) >= 0.25):
+                        msg_alerte = "ATTENTION: L'action %s a une valeur de 0 ou a changé de plus de 25%% entre deux maj. Ancienne valeur: %.4f, Nouvelle: %.4f." % (yname, ansval, fval)
+                        print("[%s] [ALERTE] %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), msg_alerte))
+                        mail_error_text += msg_alerte + "\n"
+
                 except Exception as e:
-                    error_count += 1
-                    err_msg = "Erreur de traitement pour %s: %s" % (yname, str(e))
-                    print("[%s] [ERREUR] %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), err_msg))
-                    traceback.print_exc()
-                    mail_error_text += err_msg + "\n"
-            print("[%s] [INFO] Batch terminé : %s succès, %s échecs." % (time.strftime("%d/%m/%Y %H:%M:%S"), success_count, error_count))
+                    batch_error_count += 1
+                    total_download_error += 1
+                    err_msg = str(e)[:250]
+                    print("[%s] [ERREUR] %s: %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), yname, err_msg))
+                    mail_error_text += ("%s: %s\n" % (yname, err_msg))
+                    
+                    ExecSql(db, """
+                        UPDATE cacval 
+                        SET last_attempt=%s, last_status='failed', 
+                            fail_count=fail_count+1, total_fails=total_fails+1, 
+                            retry_count=%s, last_error=%s 
+                        WHERE yahooname=%s
+                    """, (now_attempt, retried, err_msg, yname))
+
+            print("[%s] [INFO] Batch terminé : %d succès, %d échecs." % (time.strftime("%d/%m/%Y %H:%M:%S"), batch_success_count, batch_error_count))
+
         except Exception as e:
             err_batch = "Erreur de téléchargement du batch %s: %s" % (tickers, str(e))
             print("[%s] [ERREUR] %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), err_batch))
             traceback.print_exc()
             mail_error_text += err_batch + "\n"
+            now_attempt = int(time.time())
+            for yname in batch:
+                total_download_error += 1
+                ExecSql(db, """
+                    UPDATE cacval 
+                    SET last_attempt=%s, last_status='failed', 
+                        fail_count=fail_count+1, total_fails=total_fails+1, 
+                        retry_count=0, last_error=%s 
+                    WHERE yahooname=%s
+                """, (now_attempt, str(e)[:250], yname))
             
+    duration = time.time() - start_time
+    total_stocks = len(action_list)
+    print("[%s] [INFO] Fin du cycle de synchronisation : %d actions, %d succès, %d échecs en %.2fs." % 
+          (time.strftime("%d/%m/%Y %H:%M:%S"), total_stocks, total_download_success, total_download_error, duration))
+
+    try:
+        ExecSql(db, """
+            INSERT INTO market_sync_log (sync_time, total_stocks, success_count, error_count, duration_seconds, details)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (int(time.time()), total_stocks, total_download_success, total_download_error, round(duration, 2),
+              ("Batch: %d, Succès: %d, Échecs: %d" % (SICAV_COUNT_PER_DOWNLOAD, total_download_success, total_download_error))))
+    except Exception as ex_log:
+        print("[%s] [ERREUR] Impossible d'insérer dans market_sync_log: %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), str(ex_log)))
+
     if len(mail_error_text)>0:
         print("[%s] [INFO] Insertion d'un rapport d'erreur/alerte dans la table mail_tosend..." % time.strftime("%d/%m/%Y %H:%M:%S"))
         ExecSql(db,"""
-        INSERT INTO `mail_tosend` ( `idmail` , `dateenvoi` , `from_mail` , `from_pseudo` , `to_mail` , `to_pseudo` , `titre` , `corps` , `etat` ) 
-        VALUES (
-        NULL , UNIX_TIMESTAMP( ) , 'nettrader2009@nettrader.fr', 'Admin', 'nettrader2009@nettrader.fr', 'Admin', 'Rapport de telechargement', '%s', 'attente'
-        );
-        """% (mail_error_text.replace("'","\\'")))
+            INSERT INTO mail_tosend (dateenvoi, from_mail, from_pseudo, to_mail, to_pseudo, titre, corps, etat) 
+            VALUES (UNIX_TIMESTAMP(), 'nettrader2009@nettrader.fr', 'Admin', 'nettrader2009@nettrader.fr', 'Admin', 'Rapport de telechargement', %s, 'attente')
+        """, (mail_error_text,))
 
 firstloop=True
 while 1:
@@ -204,11 +267,13 @@ while 1:
             continue
 
         begindown=time.time()
+        cron_secret = os.environ.get("CRON_SECRET", "nettrader_cron_secure_token_secret")
         
         print("[%s] [INFO] Appel de la page PHP checkscore..." % time.strftime("%d/%m/%Y %H:%M:%S"))
         try:
-            url_checkscore = URLINDEX.rstrip("/") + "/cmd.php?do=checkscore"
-            response = urllib.urlopen(url_checkscore)
+            url_checkscore = URLINDEX.rstrip("/") + "/cmd.php?do=checkscore&key=" + cron_secret
+            req_checkscore = urllib.Request(url_checkscore, headers={"X-Cron-Key": cron_secret})
+            response = urllib.urlopen(req_checkscore)
             print("[%s] [INFO] Appel checkscore réussi (Code HTTP: %s)" % (time.strftime("%d/%m/%Y %H:%M:%S"), getattr(response, 'status', 'N/A')))
         except Exception as e:
             print("[%s] [ERREUR] Erreur appel de page php checkscore (%s): %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), url_checkscore, str(e)))
@@ -223,8 +288,9 @@ while 1:
 
         print("[%s] [INFO] Appel de la page PHP executeorder..." % time.strftime("%d/%m/%Y %H:%M:%S"))
         try:
-            url_executeorder = URLINDEX.rstrip("/") + "/cmd.php?do=executeorder"
-            response = urllib.urlopen(url_executeorder)
+            url_executeorder = URLINDEX.rstrip("/") + "/cmd.php?do=executeorder&key=" + cron_secret
+            req_executeorder = urllib.Request(url_executeorder, headers={"X-Cron-Key": cron_secret})
+            response = urllib.urlopen(req_executeorder)
             print("[%s] [INFO] Appel executeorder réussi (Code HTTP: %s)" % (time.strftime("%d/%m/%Y %H:%M:%S"), getattr(response, 'status', 'N/A')))
         except Exception as e:
             print("[%s] [ERREUR] Erreur appel de page php executeorder (%s): %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), url_executeorder, str(e)))

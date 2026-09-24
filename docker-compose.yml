@@ -28,6 +28,7 @@ services:
       DB_NAME: nettrader
       DB_USER: nettrader_user
       DB_PASSWORD: nettrader_password
+      CRON_SECRET: "nettrader_cron_secure_token_secret"
     depends_on:
       db:
         condition: service_healthy
@@ -38,6 +39,8 @@ services:
   python-fetcher:
     build: ./pythonfetch
     command: python3 pynt2markdown.py
+    volumes:
+      - ./pythonfetch:/app
     environment:
       DB_HOST: db
       DB_NAME: nettrader
@@ -45,6 +48,7 @@ services:
       DB_PASSWORD: nettrader_password
       CAPDEB: "10000"
       URLINDEX: "http://app/"
+      CRON_SECRET: "nettrader_cron_secure_token_secret"
     depends_on:
       db:
         condition: service_healthy
@@ -55,6 +59,8 @@ services:
   python-mailer:
     build: ./pythonfetch
     command: python3 pymailing.py
+    volumes:
+      - ./pythonfetch:/app
     environment:
       DB_HOST: db
       DB_NAME: nettrader

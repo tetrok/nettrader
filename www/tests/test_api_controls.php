@@ -65,6 +65,36 @@ function apiRequest($method, $path, $token = null, $data = null)
     ];
 }
 
+function rawRequest($method, $url, $headers = [], $data = null, $followLocation = false)
+{
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, $followLocation);
+    curl_setopt($ch, CURLOPT_HEADER, true);
+
+    if ($data !== null) {
+        curl_setopt($ch, CURLOPT_POSTFIELDS, is_array($data) ? json_encode($data) : $data);
+    }
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    $redirectUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+    curl_close($ch);
+
+    $headerStr = substr((string)$response, 0, $headerSize);
+    $bodyStr = substr((string)$response, $headerSize);
+
+    return [
+        'code' => $httpCode,
+        'headers' => $headerStr,
+        'redirect' => $redirectUrl,
+        'body' => $bodyStr,
+    ];
+}
+
 echo "\n=== DEMARRAGE DES TESTS DES CONTROLES API REST ===\n\n";
 
 $userId = 2;
@@ -574,6 +604,327 @@ assertTest(
 
 // Nettoyer la session admin de test
 ExecRequete("DELETE FROM session WHERE idSession = ?", $conn, [$adminToken]);
+
+
+// -------------------------------------------------------------
+// SECTION 9 : Tests de Sécurité et Durcissement (Remédiation)
+// -------------------------------------------------------------
+echo "\n9. Tests de Sécurité et Durcissement (Remédiation) :\n";
+
+// Test 9.1 : Suppression de l'accès client VB6
+$resVb6 = rawRequest('GET', 'http://localhost/prog.php');
+assertTest(
+    "Suppression accès VB6 : /prog.php renvoie HTTP 404",
+    $resVb6['code'] === 404,
+    "Code: {$resVb6['code']}"
+);
+
+// Test 9.2 : Rejet de cmd.php sans clé secrète
+$resCmdNoKey = rawRequest('GET', 'http://localhost/cmd.php?do=checkscore');
+assertTest(
+    "cmd.php : Rejet HTTP 403 en l'absence de clé secrète CRON_SECRET",
+    $resCmdNoKey['code'] === 403 && strpos($resCmdNoKey['body'], 'Accès refusé') !== false,
+    "Code: {$resCmdNoKey['code']}, Reponse: {$resCmdNoKey['body']}"
+);
+
+// Test 9.3 : Acceptation de cmd.php avec en-tête X-Cron-Key
+$resCmdWithKey = rawRequest('GET', 'http://localhost/cmd.php?do=checkscore', [
+    'X-Cron-Key: nettrader_cron_secure_token_secret'
+]);
+assertTest(
+    "cmd.php : Exécution autorisée avec clé valide dans l'en-tête X-Cron-Key",
+    $resCmdWithKey['code'] === 200,
+    "Code: {$resCmdWithKey['code']}"
+);
+
+// Test 9.4 : Protection du dossier tests/ contre l'accès HTTP public
+$resTestsDir = rawRequest('GET', 'http://localhost/tests/test_api_controls.php');
+assertTest(
+    "tests/ : Accès web direct interdit (HTTP 403) via .htaccess",
+    $resTestsDir['code'] === 403,
+    "Code: {$resTestsDir['code']}"
+);
+
+// Test 9.5 : Génération sécurisée de session CSPRNG (64 caractères hexadécimaux)
+$resLoginSec = apiRequest('POST', '/auth/login', null, [
+    'login' => 'TraderTest',
+    'password' => 'TempPass123!',
+]);
+$secToken = $resLoginSec['json']['data']['token'] ?? '';
+assertTest(
+    "Session : Jeton généré avec CSPRNG (64 caractères hexadécimaux / 256 bits)",
+    strlen($secToken) === 64 && ctype_xdigit($secToken),
+    "Longueur: " . strlen($secToken) . ", Token: $secToken"
+);
+
+// Test 9.6 : Vérification de la conversion de toutes les tables vers InnoDB
+$checkEngine = $conn->query("SELECT COUNT(*) as c FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'nettrader' AND ENGINE != 'InnoDB'");
+$nonInnodb = (int)$checkEngine->fetch(PDO::FETCH_OBJ)->c;
+assertTest(
+    "Base de données : 100% des tables sont migrées sous le moteur InnoDB",
+    $nonInnodb === 0,
+    "Nombre de tables non-InnoDB: $nonInnodb"
+);
+
+// Test 9.7 : Restreinte de la politique CORS contre les origines non autorisées
+$resCorsEvil = rawRequest('OPTIONS', 'http://localhost/api/auth/me', [
+    'Origin: https://evil-attacker-site.com',
+    'Access-Control-Request-Method: GET',
+]);
+$headersEvil = $resCorsEvil['headers'];
+$corsReflectedEvil = (strpos($headersEvil, 'Access-Control-Allow-Origin: https://evil-attacker-site.com') !== false);
+assertTest(
+    "CORS : Rejet de la réflexion arbitraire d'origines tierces non autorisées",
+    !$corsReflectedEvil,
+    "Headers: " . trim($headersEvil)
+);
+
+// Test 9.8 : Protection contre l'Open Redirect dans redir.php (domaines externes et nettrader.fr interdit)
+$resRedir = rawRequest('GET', 'http://localhost/redir.php?url=https://malicious-phishing.com');
+$resRedirNettrader = rawRequest('GET', 'http://localhost/redir.php?url=https://nettrader.fr');
+$isRedirectToIndex = (strpos($resRedir['headers'], 'Location: index.php') !== false)
+    && (strpos($resRedirNettrader['headers'], 'Location: index.php') !== false);
+assertTest(
+    "Open Redirect : Redirection vers index.php pour les domaines non autorisés (y compris nettrader.fr)",
+    $isRedirectToIndex,
+    "Headers: " . trim($resRedir['headers']) . " | NetTrader: " . trim($resRedirNettrader['headers'])
+);
+
+// -------------------------------------------------------------
+// SECTION 10 : Tests du module Admin Suivi des Cotations (Market Sync)
+// -------------------------------------------------------------
+echo "\n10. Tests Suivi des Cotations & Mises à Jour (/api/admin/market-sync/...) :\n";
+
+// 10.1 : Rejet pour non-admin
+$resNonAdminMarket = apiRequest('GET', '/admin/market-sync/overview', $testToken);
+assertTest(
+    "Market Sync : Rejet HTTP 403 pour utilisateur non-administrateur",
+    $resNonAdminMarket['code'] === 403,
+    "Code: {$resNonAdminMarket['code']}"
+);
+
+// Créer un token admin de test lié au compte admin #1
+$adminToken2 = bin2hex(random_bytes(32));
+ExecRequete("DELETE FROM session WHERE idSession = ?", $conn, [$adminToken2]);
+ExecRequete("INSERT INTO session (idSession, idcompte, tempsLimite, tempsconnect) VALUES (?, 1, ?, ?)", $conn, [
+    $adminToken2, time() + 86400, time()
+]);
+
+// 10.2 : Consultation de l'overview
+$resOverview = apiRequest('GET', '/admin/market-sync/overview', $adminToken2);
+$overviewData = $resOverview['json']['data']['overview'] ?? [];
+assertTest(
+    "Market Sync : Consultation vue d'ensemble (totalStocks, successRate, lastSyncTime)",
+    $resOverview['code'] === 200 && isset($overviewData['totalStocks'], $overviewData['totalTracked'], $overviewData['successRate']),
+    "Code: {$resOverview['code']}, Total: " . ($overviewData['totalStocks'] ?? 'N/A') . ", Rate: " . ($overviewData['successRate'] ?? 'N/A') . "%"
+);
+
+// 10.3 : Listing des valeurs avec filtre
+$resStocks = apiRequest('GET', '/admin/market-sync/stocks?status=all&limit=10', $adminToken2);
+$stocksData = $resStocks['json']['data']['items'] ?? [];
+assertTest(
+    "Market Sync : Listing paginé des valeurs boursières avec indicateurs de statut",
+    $resStocks['code'] === 200 && count($stocksData) > 0 && isset($stocksData[0]['ticker'], $stocksData[0]['lastStatus']),
+    "Code: {$resStocks['code']}, Count: " . count($stocksData)
+);
+
+// 10.4 : Filtrage des valeurs en échec
+$resFailedStocks = apiRequest('GET', '/admin/market-sync/stocks?status=failed', $adminToken2);
+$failedItems = $resFailedStocks['json']['data']['items'] ?? [];
+assertTest(
+    "Market Sync : Filtrage des valeurs en échec (status=failed)",
+    $resFailedStocks['code'] === 200 && is_array($failedItems),
+    "Code: {$resFailedStocks['code']}, Nb échecs: " . count($failedItems)
+);
+
+// 10.5 : Réinitialisation des erreurs d'une valeur
+$targetStockCode = 12156; // CU.PA
+$resResetOne = apiRequest('POST', "/admin/market-sync/stocks/$targetStockCode/reset-errors", $adminToken2);
+assertTest(
+    "Market Sync : Réinitialisation des compteurs d'échecs d'un titre spécifique",
+    $resResetOne['code'] === 200,
+    "Code: {$resResetOne['code']}"
+);
+
+// 10.6 : Basculement du statut de suivi (toggle-track)
+$resToggle = apiRequest('POST', "/admin/market-sync/stocks/$targetStockCode/toggle-track", $adminToken2);
+$isNowTracked = $resToggle['json']['data']['isTracked'] ?? null;
+// Rétablir le statut initial
+apiRequest('POST', "/admin/market-sync/stocks/$targetStockCode/toggle-track", $adminToken2);
+assertTest(
+    "Market Sync : Basculement du statut de suivi d'un titre (toggle-track)",
+    $resToggle['code'] === 200 && $isNowTracked !== null,
+    "Code: {$resToggle['code']}, isTracked: " . var_export($isNowTracked, true)
+);
+
+// 10.7 : Réinitialisation globale de tous les compteurs d'échecs
+$resResetAll = apiRequest('POST', '/admin/market-sync/reset-all-errors', $adminToken2);
+assertTest(
+    "Market Sync : Réinitialisation globale de tous les compteurs d'échecs",
+    $resResetAll['code'] === 200,
+    "Code: {$resResetAll['code']}"
+);
+
+// -------------------------------------------------------------
+// SECTION 11 : Tests Gestion & Catalogue des Actions (/api/admin/stocks/...)
+// -------------------------------------------------------------
+echo "\n11. Tests Gestion & Catalogue des Actions (/api/admin/stocks/...) :\n";
+
+// 11.1 : Rejet pour non-admin
+$resStockForbidden = apiRequest('GET', '/admin/stocks', $testToken);
+assertTest(
+    "Catalogue Actions : Rejet HTTP 403 pour utilisateur non-administrateur",
+    $resStockForbidden['code'] === 403,
+    "Code: {$resStockForbidden['code']}"
+);
+
+// 11.2 : Consultation des métadonnées (secteurs & marchés)
+$resMeta = apiRequest('GET', '/admin/stocks/metadata', $adminToken2);
+$sectors = $resMeta['json']['data']['sectors'] ?? [];
+$markets = $resMeta['json']['data']['markets'] ?? [];
+assertTest(
+    "Catalogue Actions : Récupération des secteurs et marchés (/admin/stocks/metadata)",
+    $resMeta['code'] === 200 && count($sectors) > 0 && count($markets) > 0,
+    "Code: {$resMeta['code']}, Secteurs: " . count($sectors) . ", Marchés: " . count($markets)
+);
+
+// 11.3 : Listing et recherche d'actions
+$resSearch = apiRequest('GET', '/admin/stocks?search=Air', $adminToken2);
+$searchItems = $resSearch['json']['data']['items'] ?? [];
+assertTest(
+    "Catalogue Actions : Recherche textuelle d'une action (/admin/stocks?search=Air)",
+    $resSearch['code'] === 200 && count($searchItems) > 0 && isset($searchItems[0]['ticker']),
+    "Code: {$resSearch['code']}, Résultats: " . count($searchItems)
+);
+
+// 11.4 : Création d'une action de test
+$testStockCode = 99991;
+$resCreate = apiRequest('POST', '/admin/stocks', $adminToken2, [
+    'codesico' => $testStockCode,
+    'yahooname' => 'TESTNT.PA',
+    'nom' => 'Test NetTrader Corp',
+    'valeur' => 50.0,
+    'authachat' => '1',
+    'down' => '1',
+    'idsecteur' => 1,
+    'idmarket' => 1,
+]);
+assertTest(
+    "Catalogue Actions : Création d'une nouvelle action boursière (POST /admin/stocks)",
+    $resCreate['code'] === 201 && ($resCreate['json']['data']['codesico'] ?? 0) === $testStockCode,
+    "Code: {$resCreate['code']}, Reponse: {$resCreate['body']}"
+);
+
+// 11.5 : Mise à jour des informations de l'action
+$resUpdate = apiRequest('PUT', "/admin/stocks/$testStockCode", $adminToken2, [
+    'nom' => 'Test NetTrader Corp (Updated)',
+    'valeur' => 55.5,
+]);
+$updatedStock = apiRequest('GET', "/market/stocks/$testStockCode");
+assertTest(
+    "Catalogue Actions : Mise à jour des propriétés (PUT /admin/stocks/{code})",
+    $resUpdate['code'] === 200 && ($updatedStock['json']['data']['price'] ?? 0) == 55.5,
+    "Code: {$resUpdate['code']}, Prix: " . ($updatedStock['json']['data']['price'] ?? 'N/A')
+);
+
+// 11.6 : Bascule de l'autorisation d'achat (toggle-buy)
+$resToggleBuy = apiRequest('POST', "/admin/stocks/$testStockCode/toggle-buy", $adminToken2);
+$isAuthBuy = $resToggleBuy['json']['data']['authBuy'] ?? null;
+assertTest(
+    "Catalogue Actions : Bascule d'autorisation d'achat (/admin/stocks/{code}/toggle-buy)",
+    $resToggleBuy['code'] === 200 && $isAuthBuy === false,
+    "Code: {$resToggleBuy['code']}, authBuy: " . var_export($isAuthBuy, true)
+);
+
+// 11.7 : Opération sur titre (Split 2 pour 1)
+$resSplit = apiRequest('POST', '/admin/stocks/split', $adminToken2, [
+    'codesico' => $testStockCode,
+    'type' => 'multiplier',
+    'factor' => 2.0,
+]);
+$stockAfterSplit = apiRequest('GET', "/market/stocks/$testStockCode");
+$expectedPrice = round(55.5 / 2.0, 2);
+assertTest(
+    "Catalogue Actions : Opération de fractionnement / split (POST /admin/stocks/split)",
+    $resSplit['code'] === 200 && abs(($stockAfterSplit['json']['data']['price'] ?? 0) - $expectedPrice) < 0.1,
+    "Code: {$resSplit['code']}, Nouveau prix: " . ($stockAfterSplit['json']['data']['price'] ?? 'N/A')
+);
+
+// 11.8 : Archivage de l'action (POST /admin/stocks/{code}/archive)
+$resArchive = apiRequest('POST', "/admin/stocks/$testStockCode/archive", $adminToken2);
+$checkActiveAfterArchive = apiRequest('GET', "/admin/stocks?search=TESTNT&isArchived=0", $adminToken2);
+$activeItemsAfter = $checkActiveAfterArchive['json']['data']['items'] ?? [];
+$checkArchivedList = apiRequest('GET', "/admin/stocks?search=TESTNT&isArchived=1", $adminToken2);
+$archivedItems = $checkArchivedList['json']['data']['items'] ?? [];
+
+assertTest(
+    "Catalogue Actions : Archivage de l'action et disparition de la liste active (POST /admin/stocks/{code}/archive)",
+    $resArchive['code'] === 200 && ($resArchive['json']['success'] ?? false) === true && count($activeItemsAfter) === 0 && count($archivedItems) === 1,
+    "Code: {$resArchive['code']}, ActiveCount: " . count($activeItemsAfter) . ", ArchivedCount: " . count($archivedItems) . ", Rep: {$resArchive['body']}"
+);
+
+// 11.9 : Désarchivage de l'action (POST /admin/stocks/{code}/unarchive)
+$resUnarchive = apiRequest('POST', "/admin/stocks/$testStockCode/unarchive", $adminToken2);
+$checkActiveAfterUnarchive = apiRequest('GET', "/admin/stocks?search=TESTNT&isArchived=0", $adminToken2);
+$activeItemsRestored = $checkActiveAfterUnarchive['json']['data']['items'] ?? [];
+
+assertTest(
+    "Catalogue Actions : Désarchivage de l'action et réapparition dans la liste active (POST /admin/stocks/{code}/unarchive)",
+    $resUnarchive['code'] === 200 && ($resUnarchive['json']['success'] ?? false) === true && count($activeItemsRestored) === 1,
+    "Code: {$resUnarchive['code']}, RestoredCount: " . count($activeItemsRestored)
+);
+
+// 11.10 : Suppression de l'action de test
+$resDelete = apiRequest('DELETE', "/admin/stocks/$testStockCode", $adminToken2);
+$checkDeleted = apiRequest('GET', "/market/stocks/$testStockCode");
+assertTest(
+    "Catalogue Actions : Suppression de l'action de test (DELETE /admin/stocks/{code})",
+    $resDelete['code'] === 200 && $checkDeleted['code'] === 404,
+    "Code: {$resDelete['code']}, CheckDeleted: {$checkDeleted['code']}"
+);
+
+// 12. Tests Historique Boursier & Sélecteur de Périodes (/api/market/stocks/...)
+echo "\n12. Tests Historique des Cotations & Périodes (/api/market/stocks/...) :\n";
+
+// 12.1 : Consultation de l'action avec période par défaut (1m)
+$resStockDefault = apiRequest('GET', '/market/stocks/12040');
+$dataDefault = $resStockDefault['json']['data'] ?? [];
+assertTest(
+    "Historique : /market/stocks/{code} inclut l'historique et la période par défaut",
+    $resStockDefault['code'] === 200 && ($dataDefault['period'] ?? '') === '1m' && is_array($dataDefault['history'] ?? null) && count($dataDefault['history']) > 2,
+    "Code: {$resStockDefault['code']}, Points: " . count($dataDefault['history'] ?? [])
+);
+
+// 12.2 : Consultation avec période 1d (Jour)
+$resStock1d = apiRequest('GET', '/market/stocks/12040?period=1d');
+$data1d = $resStock1d['json']['data'] ?? [];
+assertTest(
+    "Historique : /market/stocks/{code}?period=1d retourne les cotations intraday",
+    $resStock1d['code'] === 200 && ($data1d['period'] ?? '') === '1d' && count($data1d['history'] ?? []) > 0,
+    "Code: {$resStock1d['code']}, Points 1d: " . count($data1d['history'] ?? [])
+);
+
+// 12.3 : Consultation de l'endpoint dédié /history avec période 1w (Semaine)
+$resHistory1w = apiRequest('GET', '/market/stocks/12040/history?period=1w');
+$dataHistory1w = $resHistory1w['json']['data'] ?? [];
+assertTest(
+    "Historique : GET /market/stocks/{code}/history?period=1w retourne les points",
+    $resHistory1w['code'] === 200 && ($dataHistory1w['period'] ?? '') === '1w' && is_array($dataHistory1w['history'] ?? null) && count($dataHistory1w['history']) > 0,
+    "Code: {$resHistory1w['code']}, Points 1w: " . count($dataHistory1w['history'] ?? [])
+);
+
+// 12.4 : Consultation de l'endpoint dédié /history avec période 1y (Année)
+$resHistory1y = apiRequest('GET', '/market/stocks/12040/history?period=1y');
+$dataHistory1y = $resHistory1y['json']['data'] ?? [];
+assertTest(
+    "Historique : GET /market/stocks/{code}/history?period=1y retourne les points annuels ordonnés",
+    $resHistory1y['code'] === 200 && ($dataHistory1y['period'] ?? '') === '1y' && count($dataHistory1y['history'] ?? []) > 20,
+    "Code: {$resHistory1y['code']}, Points 1y: " . count($dataHistory1y['history'] ?? [])
+);
+
+// Nettoyage session admin
+ExecRequete("DELETE FROM session WHERE idSession = ?", $conn, [$adminToken2]);
+
 
 echo "\n=== BILAN DES TESTS ===\n";
 echo "Total : " . ($passed + $failed) . " tests\n";

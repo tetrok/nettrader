@@ -276,64 +276,90 @@ function formlistaction($liste)
  */
 function dovente($idcompte,$sicav,$nombre,$dernvaleur)
 {
+    $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
     $nombre = intval($nombre);
-    $possede = joueur_possede($sicav,$idcompte);
-    $nivjoueur = niv_joueur($idcompte);
-    $vad_autorise = (is_object($nivjoueur) && isset($nivjoueur->vad) && $nivjoueur->vad);
-    $nombsicav = is_object($possede) ? intval($possede->nombsicav) : 0;
-
-    if(!($nombsicav > 0) && !$vad_autorise)
-    {
-        return lang(3);
+    if ($nombre <= 0) {
+        return lang(1) . "0" . lang(2);
     }
 
-    if(!$vad_autorise)
-    {
-        if($nombsicav < intval($nombre) || $nombre <= 0)
+    $inTransaction = false;
+    if (!$connexion->inTransaction()) {
+        $connexion->beginTransaction();
+        $inTransaction = true;
+    }
+
+    try {
+        // Verrouiller la position de portefeuille pour éviter toute double-vente simultanée
+        $stmtPort = ExecRequete("SELECT quant AS nombsicav, ansvaleur FROM portef WHERE idcompte = ? AND codesico = ? FOR UPDATE", $connexion, [$idcompte, $sicav]);
+        $possede = LigneSuivante($stmtPort);
+        $nivjoueur = niv_joueur($idcompte);
+        $vad_autorise = (is_object($nivjoueur) && isset($nivjoueur->vad) && $nivjoueur->vad);
+        $nombsicav = is_object($possede) ? intval($possede->nombsicav) : 0;
+
+        if(!($nombsicav > 0) && !$vad_autorise)
         {
-            return lang(1).$nombsicav.lang(2);
+            if ($inTransaction) $connexion->rollBack();
+            return lang(3);
         }
-    } else {
-        $quantpos = $nombsicav;
-        if($quantpos < 0)
-            $quantpos = 0;
-        $nbactionsmax = getnbactionmax(getmontantvadpossible($idcompte),$dernvaleur) + $quantpos;
-        if(intval($nbactionsmax) < intval($nombre) || $nombre <= 0)
+
+        if(!$vad_autorise)
         {
-            return lang(1).intval($nbactionsmax).lang(2);
-        }
-    }
-
-    $NvQuant = $nombsicav - $nombre;
-    if(is_object($possede) && $possede->nombsicav)
-    {
-        ModifAction($idcompte,$sicav,$NvQuant,$dernvaleur);
-    } else {
-        AjoutPort($idcompte,$sicav,$NvQuant,$dernvaleur);
-    }
-
-    $acrediter = $nombre * $dernvaleur;
-    $taxe = gettaxe($dernvaleur,$nombre);
-    $acrediter = $acrediter - $taxe;
-    ModifLiquide($idcompte,$acrediter);
-
-    if($nombsicav > $nombre)
-    {
-        $quantvendu = $nombre;
-    } else {
-        if($nombsicav > 0)
-        {
-            $quantvendu = $nombsicav;
+            if($nombsicav < $nombre)
+            {
+                if ($inTransaction) $connexion->rollBack();
+                return lang(1).$nombsicav.lang(2);
+            }
         } else {
-            $quantvendu = 0;
+            $quantpos = $nombsicav;
+            if($quantpos < 0)
+                $quantpos = 0;
+            $nbactionsmax = getnbactionmax(getmontantvadpossible($idcompte),$dernvaleur) + $quantpos;
+            if(intval($nbactionsmax) < $nombre)
+            {
+                if ($inTransaction) $connexion->rollBack();
+                return lang(1).intval($nbactionsmax).lang(2);
+            }
         }
-    }
-    $ansvaleur = (is_object($possede) && isset($possede->ansvaleur)) ? $possede->ansvaleur : $dernvaleur;
-    $tottaxes = $taxe + gettaxe($ansvaleur, $nombre);
-    $profit = ($dernvaleur - $ansvaleur) * $quantvendu - $tottaxes;
-    AddHistorique($idcompte,"Vente",$sicav,$nombre,$dernvaleur, -$taxe,$profit);
 
-    return "OK";
+        $NvQuant = $nombsicav - $nombre;
+        if(is_object($possede) && $possede->nombsicav)
+        {
+            ModifAction($idcompte,$sicav,$NvQuant,$dernvaleur);
+        } else {
+            AjoutPort($idcompte,$sicav,$NvQuant,$dernvaleur);
+        }
+
+        $acrediter = $nombre * $dernvaleur;
+        $taxe = gettaxe($dernvaleur,$nombre);
+        $acrediter = $acrediter - $taxe;
+        ModifLiquide($idcompte,$acrediter);
+
+        if($nombsicav > $nombre)
+        {
+            $quantvendu = $nombre;
+        } else {
+            if($nombsicav > 0)
+            {
+                $quantvendu = $nombsicav;
+            } else {
+                $quantvendu = 0;
+            }
+        }
+        $ansvaleur = (is_object($possede) && isset($possede->ansvaleur)) ? $possede->ansvaleur : $dernvaleur;
+        $tottaxes = $taxe + gettaxe($ansvaleur, $nombre);
+        $profit = ($dernvaleur - $ansvaleur) * $quantvendu - $tottaxes;
+        AddHistorique($idcompte,"Vente",$sicav,$nombre,$dernvaleur, -$taxe,$profit);
+
+        if ($inTransaction) {
+            $connexion->commit();
+        }
+        return "OK";
+    } catch (\Throwable $e) {
+        if ($inTransaction) {
+            $connexion->rollBack();
+        }
+        throw $e;
+    }
 }
 
 /**
@@ -387,8 +413,8 @@ function inscrjeu($pseudo, $nom, $prenom, $adresse, $cp, $ville, $tel, $mail, $e
         return lang(170);
     }
 
-    $passe = substr(md5(getmicrotime()), 0, 5);
-    $cryptpasse = md5($passe);
+    $passe = bin2hex(random_bytes(6));
+    $cryptpasse = password_hash($passe, PASSWORD_BCRYPT);
     $maintenant = date("U");
     $capdeb = defined('CAPDEB') ? CAPDEB : '10000';
 
@@ -528,8 +554,10 @@ function jscript_av($nombre)
 function doachat($idcompte,$sicav,$nombre,$dernvaleur)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $joueur = ChercheInternaute ($idcompte, $connexion);
     $nombre = intval($nombre);
+    if ($nombre <= 0) {
+        return lang(1) . "0" . lang(2);
+    }
 
     $bddsico = dansliste($sicav);
     if(empty($bddsico))
@@ -537,50 +565,74 @@ function doachat($idcompte,$sicav,$nombre,$dernvaleur)
         return lang(10);
     }
 
-    $cashback = is_object($joueur) ? $joueur->cashback : 0;
-    $max = getnbactionmax($cashback, $dernvaleur);
-
-    if($max < intval($nombre) || $nombre <= 0)
-    {
-        return lang(1).$max.lang(2);
+    $inTransaction = false;
+    if (!$connexion->inTransaction()) {
+        $connexion->beginTransaction();
+        $inTransaction = true;
     }
 
-    $taxe = gettaxe($dernvaleur,$nombre);
-    $cout = $nombre * $dernvaleur + $taxe;
+    try {
+        // Verrouiller la ligne compte pour éviter tout dépassement simultané de liquidités
+        $stmtUser = ExecRequete("SELECT cashback FROM compte WHERE idcompte = ? FOR UPDATE", $connexion, [$idcompte]);
+        $joueur = LigneSuivante($stmtUser);
+        $cashback = is_object($joueur) ? (float)$joueur->cashback : 0.0;
+        $max = getnbactionmax($cashback, $dernvaleur);
 
-    if($cout > $cashback)
-    {
-        return lang(11).$max.lang(2);
-    }
-
-    ModifLiquide($idcompte,-$cout);
-    $possede = joueur_possede($sicav,$idcompte);
-
-    if(empty($possede))
-    {
-        AjoutPort($idcompte,$sicav,$nombre,$dernvaleur);
-    } else {
-        $NvQuant = $possede->nombsicav + $nombre;
-        ModifAction($idcompte,$sicav,$NvQuant,$dernvaleur);
-    }
-
-    $nombsicav = is_object($possede) ? $possede->nombsicav : 0;
-    if($nombsicav >= 0)
-    {
-        $quantachat = 0;
-    } else {
-        if(abs($nombsicav) >= $nombre)
+        if($max < $nombre)
         {
-            $quantachat = $nombre;
-        } else {
-            $quantachat = abs($nombsicav);
+            if ($inTransaction) $connexion->rollBack();
+            return lang(1).$max.lang(2);
         }
-    }
-    $ansvaleur = (is_object($possede) && isset($possede->ansvaleur)) ? $possede->ansvaleur : $dernvaleur;
-    $profit = -($dernvaleur - $ansvaleur) * $quantachat;
-    AddHistorique($idcompte,"Achat",$sicav,$nombre,$dernvaleur, $taxe,$profit);
 
-    return "OK";
+        $taxe = gettaxe($dernvaleur,$nombre);
+        $cout = $nombre * $dernvaleur + $taxe;
+
+        if($cout > $cashback)
+        {
+            if ($inTransaction) $connexion->rollBack();
+            return lang(11).$max.lang(2);
+        }
+
+        ModifLiquide($idcompte,-$cout);
+        
+        // Verrouiller la ligne de portefeuille si existante
+        $stmtPort = ExecRequete("SELECT quant AS nombsicav, ansvaleur FROM portef WHERE idcompte = ? AND codesico = ? FOR UPDATE", $connexion, [$idcompte, $sicav]);
+        $possede = LigneSuivante($stmtPort);
+
+        if(empty($possede))
+        {
+            AjoutPort($idcompte,$sicav,$nombre,$dernvaleur);
+        } else {
+            $NvQuant = $possede->nombsicav + $nombre;
+            ModifAction($idcompte,$sicav,$NvQuant,$dernvaleur);
+        }
+
+        $nombsicav = is_object($possede) ? $possede->nombsicav : 0;
+        if($nombsicav >= 0)
+        {
+            $quantachat = 0;
+        } else {
+            if(abs($nombsicav) >= $nombre)
+            {
+                $quantachat = $nombre;
+            } else {
+                $quantachat = abs($nombsicav);
+            }
+        }
+        $ansvaleur = (is_object($possede) && isset($possede->ansvaleur)) ? $possede->ansvaleur : $dernvaleur;
+        $profit = -($dernvaleur - $ansvaleur) * $quantachat;
+        AddHistorique($idcompte,"Achat",$sicav,$nombre,$dernvaleur, $taxe,$profit);
+
+        if ($inTransaction) {
+            $connexion->commit();
+        }
+        return "OK";
+    } catch (\Throwable $e) {
+        if ($inTransaction) {
+            $connexion->rollBack();
+        }
+        throw $e;
+    }
 }
 
 /**
@@ -2348,7 +2400,7 @@ function dosendpass($pseudo,$md5mdp)
     $player = getinternauteinfo($pseudo);
     if(is_object($player) && $md5mdp == md5($player->idcompte.$player->email.$player->passe))
     {
-        $nouvmdp = substr(md5(getmicrotime()), 0, 5);
+        $nouvmdp = bin2hex(random_bytes(6));
         setmdp($player->idcompte,$nouvmdp);
         $corps = "Message généré automatiquement \nCONSERVEZ CE MESSAGE !!!\n  :\n\n Voici vos informations :\n \n Email:$player->email \n Mot de passe:$nouvmdp";
         $titre = "Votre mot nouveau mot de passe";

@@ -6,11 +6,19 @@
  */
 
 // 1. Initialisation Session & En-têtes CORS
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
-header("Access-Control-Allow-Origin: $origin");
+$allowedOrigins = array_filter([
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    getenv('FRONTEND_URL') ?: null,
+]);
+$incomingOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$corsOrigin = in_array($incomingOrigin, $allowedOrigins, true) ? $incomingOrigin : 'http://localhost:3000';
+
+header("Access-Control-Allow-Origin: $corsOrigin");
 header("Access-Control-Allow-Credentials: true");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Vary: Origin");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -36,8 +44,6 @@ require_once __DIR__ . '/../db_reqfunction.php';
 require_once __DIR__ . '/../nt2_function.php';
 require_once __DIR__ . '/../nt2_pages.php';
 require_once __DIR__ . '/../nt2_adminfunction.php';
-require_once __DIR__ . '/../progfunc.php';
-require_once __DIR__ . '/../progreq.php';
 
 use NetTrader\Http\Request;
 use NetTrader\Auth\UserSession;
@@ -115,6 +121,8 @@ try {
         (new MarketController())->getSummary($request);
     } elseif ($path === 'market/stocks' && $method === 'GET') {
         (new MarketController())->getStocks($request);
+    } elseif ($segments[0] === 'market' && ($segments[1] ?? '') === 'stocks' && isset($segments[2]) && ($segments[3] ?? '') === 'history' && $method === 'GET') {
+        (new MarketController())->getStockHistory($request, (int)$segments[2]);
     } elseif ($segments[0] === 'market' && ($segments[1] ?? '') === 'stocks' && isset($segments[2]) && $method === 'GET') {
         (new MarketController())->getStock($request, (int)$segments[2]);
     }
@@ -188,7 +196,75 @@ try {
         (new AdminController())->executeOrdersJob($request);
     }
 
+    // Administration - Suivi des Cotations & Mises à Jour
+    elseif ($path === 'admin/market-sync/overview' && $method === 'GET') {
+        (new AdminController())->getMarketSyncOverview($request);
+    } elseif ($path === 'admin/market-sync/stocks' && $method === 'GET') {
+        (new AdminController())->getMarketSyncStocks($request);
+    } elseif (isset($segments[0], $segments[1], $segments[2], $segments[3], $segments[4]) &&
+              $segments[0] === 'admin' && $segments[1] === 'market-sync' && $segments[2] === 'stocks' &&
+              is_numeric($segments[3]) && $segments[4] === 'toggle-track' && $method === 'POST') {
+        (new AdminController())->toggleStockTracking($request, (int)$segments[3]);
+    } elseif (isset($segments[0], $segments[1], $segments[2], $segments[3], $segments[4]) &&
+              $segments[0] === 'admin' && $segments[1] === 'market-sync' && $segments[2] === 'stocks' &&
+              is_numeric($segments[3]) && $segments[4] === 'reset-errors' && $method === 'POST') {
+        (new AdminController())->resetStockErrors($request, (int)$segments[3]);
+    } elseif ($path === 'admin/market-sync/reset-all-errors' && $method === 'POST') {
+        (new AdminController())->resetAllStockErrors($request);
+    }
+
+    // Administration - Catalogue & Gestion des Actions
+    elseif ($path === 'admin/stocks' && $method === 'GET') {
+        (new AdminController())->getStocks($request);
+    } elseif ($path === 'admin/stocks' && $method === 'POST') {
+        (new AdminController())->createStock($request);
+    } elseif ($path === 'admin/stocks/metadata' && $method === 'GET') {
+        (new AdminController())->getStockMetadata($request);
+    } elseif ($path === 'admin/stocks/split' && $method === 'POST') {
+        (new AdminController())->splitStock($request);
+    } elseif (isset($segments[0], $segments[1], $segments[2], $segments[3]) &&
+              $segments[0] === 'admin' && $segments[1] === 'stocks' &&
+              is_numeric($segments[2]) && $segments[3] === 'toggle-buy' && $method === 'POST') {
+        (new AdminController())->toggleStockAuthBuy($request, (int)$segments[2]);
+    } elseif (isset($segments[0], $segments[1], $segments[2], $segments[3]) &&
+              $segments[0] === 'admin' && $segments[1] === 'stocks' &&
+              is_numeric($segments[2]) && $segments[3] === 'archive' && $method === 'POST') {
+        (new AdminController())->archiveStock($request, (int)$segments[2]);
+    } elseif (isset($segments[0], $segments[1], $segments[2], $segments[3]) &&
+              $segments[0] === 'admin' && $segments[1] === 'stocks' &&
+              is_numeric($segments[2]) && $segments[3] === 'unarchive' && $method === 'POST') {
+        (new AdminController())->unarchiveStock($request, (int)$segments[2]);
+    } elseif ($path === 'admin/stocks/archive-bulk' && $method === 'POST') {
+        (new AdminController())->archiveBulkStocks($request);
+    } elseif (isset($segments[0], $segments[1], $segments[2]) &&
+              !isset($segments[3]) &&
+              $segments[0] === 'admin' && $segments[1] === 'stocks' &&
+              is_numeric($segments[2]) && ($method === 'PUT' || $method === 'POST')) {
+        (new AdminController())->updateStock($request, (int)$segments[2]);
+    } elseif (isset($segments[0], $segments[1], $segments[2]) &&
+              !isset($segments[3]) &&
+              $segments[0] === 'admin' && $segments[1] === 'stocks' &&
+              is_numeric($segments[2]) && $method === 'DELETE') {
+        (new AdminController())->deleteStock($request, (int)$segments[2]);
+    }
+
+    // Administration - Découverte & Indices Yahoo Finance
+    elseif ($path === 'admin/yahoo/discover' && $method === 'GET') {
+        (new AdminController())->discoverYahooMarket($request);
+    } elseif (isset($segments[0], $segments[1], $segments[2]) &&
+              $segments[0] === 'admin' && $segments[1] === 'yahoo' && $segments[2] === 'index' &&
+              isset($segments[3]) && $method === 'GET') {
+        (new AdminController())->getYahooIndex($request, $segments[3]);
+    } elseif (isset($segments[0], $segments[1], $segments[2]) &&
+              $segments[0] === 'admin' && $segments[1] === 'yahoo' && $segments[2] === 'sync-index' &&
+              isset($segments[3]) && $method === 'POST') {
+        (new AdminController())->syncYahooIndex($request, $segments[3]);
+    } elseif ($path === 'admin/yahoo/import' && $method === 'POST') {
+        (new AdminController())->importYahooStocks($request);
+    }
+
     // Administration - Forum
+
     elseif ($path === 'admin/forum/sections' && $method === 'GET') {
         (new AdminController())->getForumSections($request);
     } elseif ($path === 'admin/forum/sections' && $method === 'POST') {
@@ -237,8 +313,6 @@ try {
     }
 
 } catch (\Throwable $e) {
-    ApiResponse::error("Erreur interne du serveur : " . $e->getMessage(), 500, [
-        'file' => $e->getFile(),
-        'line' => $e->getLine(),
-    ]);
+    error_log("API Error: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+    ApiResponse::error("Erreur interne du serveur.", 500);
 }

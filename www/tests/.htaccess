@@ -1,0 +1,2 @@
+# Bloquer tout accès HTTP direct aux scripts de test
+Require all denied

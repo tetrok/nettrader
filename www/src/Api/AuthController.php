@@ -56,8 +56,8 @@ class AuthController
             ApiResponse::error("Identifiant ou mot de passe incorrect.", 401);
         }
 
-        // Création de la session
-        $sessionId = md5(microtime() . rand(1000, 9999) . $user->idcompte);
+        // Création de la session sécurisée avec CSPRNG
+        $sessionId = bin2hex(random_bytes(32));
         $now = time();
         $limit = $now + (3600 * 24 * 7); // 7 jours
 

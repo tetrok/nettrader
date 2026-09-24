@@ -4,10 +4,35 @@ namespace NetTrader\Api;
 
 use NetTrader\Http\Request;
 use NetTrader\Auth\UserSession;
+use NetTrader\Repository\StockRepository;
+use NetTrader\Repository\UserRepository;
+use NetTrader\Repository\OrderRepository;
+use NetTrader\Repository\ForumRepository;
+use NetTrader\Service\YahooFinanceService;
 use PDO;
 
 class AdminController
 {
+    private StockRepository $stockRepo;
+    private UserRepository $userRepo;
+    private OrderRepository $orderRepo;
+    private ForumRepository $forumRepo;
+    private YahooFinanceService $yahooService;
+
+    public function __construct(
+        ?StockRepository $stockRepo = null,
+        ?UserRepository $userRepo = null,
+        ?OrderRepository $orderRepo = null,
+        ?ForumRepository $forumRepo = null,
+        ?YahooFinanceService $yahooService = null
+    ) {
+        $this->stockRepo = $stockRepo ?? new StockRepository();
+        $this->userRepo = $userRepo ?? new UserRepository();
+        $this->orderRepo = $orderRepo ?? new OrderRepository();
+        $this->forumRepo = $forumRepo ?? new ForumRepository();
+        $this->yahooService = $yahooService ?? new YahooFinanceService();
+    }
+
     private function checkAdmin(UserSession $session): void
     {
         if (!$session->isLoggedIn() || !$session->isAdmin()) {
@@ -25,10 +50,10 @@ class AdminController
 
         $conn = Connexion(NOM, PASSE, BASE, SERVEUR);
 
-        $playersCount = (int)LigneSuivante(ExecRequete("SELECT COUNT(*) as c FROM compte", $conn))->c;
-        $ordersCount = (int)LigneSuivante(ExecRequete("SELECT COUNT(*) as c FROM ordre", $conn))->c;
-        $activeSessions = (int)LigneSuivante(ExecRequete("SELECT COUNT(*) as c FROM session WHERE tempsLimite > UNIX_TIMESTAMP()", $conn))->c;
-        $stocksCount = (int)LigneSuivante(ExecRequete("SELECT COUNT(*) as c FROM cacval", $conn))->c;
+        $playersCount = $this->userRepo->countTotalPlayers();
+        $ordersCount = $this->orderRepo->countPendingOrders();
+        $activeSessions = $this->userRepo->countActiveSessions();
+        $stocksCount = $this->stockRepo->countTotal();
         $pendingTeams = (int)LigneSuivante(ExecRequete("SELECT COUNT(*) as c FROM verifgroupe", $conn))->c;
 
         ApiResponse::success([
@@ -55,21 +80,11 @@ class AdminController
         $limit = min(100, max(5, $request->getInt('limit', 25)));
         $offset = ($page - 1) * $limit;
 
-        $conn = Connexion(NOM, PASSE, BASE, SERVEUR);
-        $params = [];
-        $sql = "SELECT idcompte, pseudonyme, email, cashback, dateinscr, dateactivite, idniveau, authlevel FROM compte WHERE 1=1";
-        if (!empty($search)) {
-            $sql .= " AND (pseudonyme LIKE ? OR email LIKE ?)";
-            $params = ["%$search%", "%$search%"];
-        }
-        $countSql = "SELECT COUNT(*) as total FROM (" . $sql . ") as t";
-        $total = (int)LigneSuivante(ExecRequete($countSql, $conn, $params))->total;
-
-        $sql .= " ORDER BY dateactivite DESC LIMIT $offset, $limit";
-        $stmt = ExecRequete($sql, $conn, $params);
+        $total = $this->userRepo->countPlayers($search);
+        $rows = $this->userRepo->searchPlayers($search, $limit, $offset);
 
         $players = [];
-        while ($p = LigneSuivante($stmt)) {
+        foreach ($rows as $p) {
             $players[] = [
                 'id' => (int)$p->idcompte,
                 'pseudo' => (string)$p->pseudonyme,
@@ -101,6 +116,344 @@ class AdminController
 
         execute_ordre();
         ApiResponse::success(null, "L'algorithme d'exécution des ordres a été exécuté.");
+    }
+
+    /**
+     * Vue d'ensemble du suivi des cotations (KPIs et logs récents).
+     */
+    public function getMarketSyncOverview(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $data = $this->stockRepo->getMarketSyncOverview();
+        ApiResponse::success($data);
+    }
+
+    /**
+     * Liste paginée des valeurs pour le monitoring des cotations.
+     */
+    public function getMarketSyncStocks(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $search = trim($request->getString('search', ''));
+        $status = trim($request->getString('status', 'all'));
+        $page = max(1, $request->getInt('page', 1));
+        $limit = min(200, max(5, $request->getInt('limit', 25)));
+        $offset = ($page - 1) * $limit;
+        $sort = $request->getString('sort', 'last_attempt');
+        $order = strtolower($request->getString('order', 'desc')) === 'asc' ? 'ASC' : 'DESC';
+
+        $filters = ['search' => $search, 'status' => $status];
+        $total = $this->stockRepo->countMarketSyncStocks($filters);
+        $items = $this->stockRepo->getMarketSyncStocks($filters, $limit, $offset, $sort, $order);
+
+        ApiResponse::success([
+            'items' => $items,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'totalPages' => (int)ceil($total / $limit),
+        ]);
+    }
+
+    /**
+     * Activer ou désactiver le suivi d'une valeur (toggle down).
+     */
+    public function toggleStockTracking(Request $request, int $codesico): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $isTracked = $this->stockRepo->toggleTracking($codesico);
+        if ($isTracked === null) {
+            ApiResponse::error("Valeur introuvable.", 404);
+        }
+
+        ApiResponse::success([
+            'codesico' => $codesico,
+            'isTracked' => $isTracked,
+        ], $isTracked ? "Suivi activé pour cette valeur." : "Suivi désactivé pour cette valeur.");
+    }
+
+    /**
+     * Réinitialiser les compteurs d'échecs pour une valeur spécifique.
+     */
+    public function resetStockErrors(Request $request, int $codesico): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $stock = $this->stockRepo->findByCode($codesico);
+        if (!$stock) {
+            ApiResponse::error("Valeur introuvable.", 404);
+        }
+
+        $this->stockRepo->resetFailures($codesico);
+
+        ApiResponse::success([
+            'codesico' => $codesico,
+        ], "Compteurs d'échecs réinitialisés pour cette valeur.");
+    }
+
+    /**
+     * Réinitialiser les compteurs d'échecs pour toutes les valeurs suivies.
+     */
+    public function resetAllStockErrors(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $this->stockRepo->resetFailures(null);
+
+        ApiResponse::success(null, "Tous les compteurs d'échecs ont été réinitialisés.");
+    }
+
+    // -------------------------------------------------------------------------
+    // Catalogue & Gestion des Actions Boursières
+    // -------------------------------------------------------------------------
+
+    /**
+     * Liste paginée et filtrée des actions pour le catalogue d'administration.
+     */
+    public function getStocks(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $search = trim($request->getString('search', ''));
+        $sectorId = $request->getInt('sectorId', 0);
+        $marketId = $request->getInt('marketId', 0);
+        $authBuy = $request->get('authBuy', 'all');
+        $isTracked = $request->get('isTracked', 'all');
+        $isArchived = $request->get('isArchived', '0');
+
+        $page = max(1, $request->getInt('page', 1));
+        $limit = min(200, max(5, $request->getInt('limit', 25)));
+        $offset = ($page - 1) * $limit;
+        $sort = $request->getString('sort', 'nom');
+        $order = strtolower($request->getString('order', 'asc')) === 'desc' ? 'DESC' : 'ASC';
+
+        $filters = [
+            'search' => $search,
+            'sectorId' => $sectorId,
+            'marketId' => $marketId,
+            'authBuy' => $authBuy,
+            'isTracked' => $isTracked,
+            'isArchived' => $isArchived,
+        ];
+
+        $total = $this->stockRepo->countAdminStocks($filters);
+        $items = $this->stockRepo->getAdminStocks($filters, $limit, $offset, $sort, $order);
+
+        ApiResponse::success([
+            'items' => $items,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'totalPages' => (int)ceil($total / $limit),
+        ]);
+    }
+
+    /**
+     * Métadonnées pour les sélecteurs (secteurs et marchés).
+     */
+    public function getStockMetadata(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $metadata = $this->stockRepo->getSectorsAndMarkets();
+        ApiResponse::success($metadata);
+    }
+
+    /**
+     * Création d'une nouvelle action.
+     */
+    public function createStock(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $payload = $request->getJson();
+        $code = (int)($payload['codesico'] ?? 0);
+        $ticker = trim((string)($payload['yahooname'] ?? ''));
+        $name = trim((string)($payload['nom'] ?? ''));
+        $price = (float)($payload['valeur'] ?? 0.0);
+
+        if ($code <= 0) {
+            ApiResponse::error("Le code SICOVAM doit être un entier positif supérieur à zéro.", 400);
+        }
+        if (empty($ticker)) {
+            ApiResponse::error("Le symbole / ticker boursier est obligatoire.", 400);
+        }
+        if (empty($name)) {
+            ApiResponse::error("Le nom de l'action est obligatoire.", 400);
+        }
+        if ($price < 0) {
+            ApiResponse::error("Le cours initial ne peut pas être négatif.", 400);
+        }
+
+        // Vérifier unicité du code
+        if ($this->stockRepo->findByCode($code)) {
+            ApiResponse::error("Une action avec ce code SICOVAM ($code) existe déjà.", 409);
+        }
+
+        // Vérifier unicité du ticker
+        if ($this->stockRepo->findByTicker($ticker)) {
+            ApiResponse::error("Une action avec ce ticker ($ticker) existe déjà.", 409);
+        }
+
+        $ok = $this->stockRepo->createStock($payload);
+        if (!$ok) {
+            ApiResponse::error("Erreur lors de la création de l'action.", 500);
+        }
+
+        ApiResponse::success(['codesico' => $code], "Action créée avec succès.", 201);
+    }
+
+    /**
+     * Mise à jour d'une action existante.
+     */
+    public function updateStock(Request $request, int $code): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $stock = $this->stockRepo->findByCode($code);
+        if (!$stock) {
+            ApiResponse::error("Action introuvable.", 404);
+        }
+
+        $payload = $request->getJson();
+
+        // Si modification du ticker, vérifier qu'il n'est pas déjà pris par une autre action
+        if (!empty($payload['yahooname']) && $payload['yahooname'] !== $stock->yahooname) {
+            $existing = $this->stockRepo->findByTicker(trim($payload['yahooname']));
+            if ($existing && (int)$existing->codesico !== $code) {
+                ApiResponse::error("Le ticker spécifié est déjà utilisé par une autre valeur.", 409);
+            }
+        }
+
+        $this->stockRepo->updateStock($code, $payload);
+        ApiResponse::success(['codesico' => $code], "Action mise à jour avec succès.");
+    }
+
+    /**
+     * Suppression d'une action.
+     */
+    public function deleteStock(Request $request, int $code): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $result = $this->stockRepo->deleteStock($code);
+        if (!$result['success']) {
+            ApiResponse::error($result['error'] ?? "Impossible de supprimer l'action.", 400);
+        }
+
+        ApiResponse::success(null, "Action supprimée du catalogue avec succès.");
+    }
+
+    /**
+     * Archive une action spécifique et clôture les positions ouvertes au dernier cours.
+     */
+    public function archiveStock(Request $request, int $code): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $result = $this->stockRepo->archiveStock($code);
+        if (!$result['success']) {
+            ApiResponse::error($result['error'] ?? "Impossible d'archiver l'action.", 400);
+        }
+
+        ApiResponse::success($result, "Action archivée avec succès. {$result['positionsClosed']} position(s) liquidée(s) au cours de {$result['settlementPrice']} €.");
+    }
+
+    /**
+     * Désarchive une action.
+     */
+    public function unarchiveStock(Request $request, int $code): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $result = $this->stockRepo->unarchiveStock($code);
+        if (!$result['success']) {
+            ApiResponse::error($result['error'] ?? "Impossible de désarchiver l'action.", 400);
+        }
+
+        ApiResponse::success($result, "Action réactivée avec succès.");
+    }
+
+    /**
+     * Archive un lot d'actions (ex: toutes celles en échec).
+     */
+    public function archiveBulkStocks(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $payload = $request->getJson();
+        $codes = $payload['codes'] ?? [];
+
+        if (empty($codes) || !is_array($codes)) {
+            ApiResponse::error("Aucune action spécifiée pour l'archivage.", 400);
+        }
+
+        $result = $this->stockRepo->archiveBulkStocks($codes);
+        ApiResponse::success($result, "{$result['archivedCount']} action(s) archivée(s) avec succès. {$result['totalPositionsClosed']} position(s) liquidée(s).");
+    }
+
+    /**
+     * Bascule d'autorisation d'achat d'un titre.
+     */
+    public function toggleStockAuthBuy(Request $request, int $code): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $newAuth = $this->stockRepo->toggleAuthBuy($code);
+        if ($newAuth === null) {
+            ApiResponse::error("Action introuvable.", 404);
+        }
+
+        ApiResponse::success([
+            'codesico' => $code,
+            'authBuy' => $newAuth,
+        ], $newAuth ? "Achats autorisés pour cette valeur." : "Achats bloqués pour cette valeur.");
+    }
+
+    /**
+     * Opération sur titre : Split (multiplication) ou Reverse-Split (division).
+     */
+    public function splitStock(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $payload = $request->getJson();
+        $code = (int)($payload['codesico'] ?? 0);
+        $type = (string)($payload['type'] ?? 'multiplier');
+        $factor = (float)($payload['factor'] ?? 0.0);
+
+        if ($code <= 0) {
+            ApiResponse::error("Veuillez sélectionner une action valide.", 400);
+        }
+        if ($factor <= 0) {
+            ApiResponse::error("Le facteur de fractionnement/division doit être supérieur à zéro.", 400);
+        }
+
+        $result = $this->stockRepo->splitStock($code, $type, $factor);
+        if (!$result['success']) {
+            ApiResponse::error($result['error'] ?? "Erreur lors de l'opération sur titre.", 400);
+        }
+
+        $label = ($type === 'multiplier' || $type === 'split') ? "Fractionnement (Split)" : "Regroupement (Reverse-split)";
+        ApiResponse::success($result, "$label exécuté avec succès. Nouveau cours : {$result['newPrice']} €.");
     }
 
     /**
@@ -535,4 +888,229 @@ class AdminController
         $this->syncForumInternal($forumId, $conn);
         ApiResponse::success(null, "Message supprimé avec succès.");
     }
+
+    /**
+     * Découverte des actions Euronext Paris via Yahoo Screener.
+     */
+    public function discoverYahooMarket(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $limit = min(max((int)$request->get('limit', 25), 1), 100);
+        $offset = max((int)$request->get('offset', 0), 0);
+        $search = trim((string)$request->get('search', ''));
+
+        $screen = $this->yahooService->screenParisEquities($limit, $offset, $search);
+        if (isset($screen['error']) && empty($screen['items'])) {
+            ApiResponse::error($screen['error'], 502);
+        }
+
+        $items = $screen['items'] ?? [];
+        $symbols = array_map(function ($it) {
+            return $it['symbol'];
+        }, $items);
+
+        $existingMap = $this->stockRepo->findExistingTickersMap($symbols);
+
+        $augmentedItems = [];
+        foreach ($items as $it) {
+            $sym = $it['symbol'];
+            $exists = isset($existingMap[$sym]);
+            $existingRow = $exists ? $existingMap[$sym] : null;
+
+            $augmentedItems[] = array_merge($it, [
+                'inDatabase' => $exists,
+                'codesico' => $existingRow ? (int)$existingRow->codesico : null,
+                'isTracked' => $existingRow ? ($existingRow->down === '1') : false,
+                'isAuthBuy' => $existingRow ? ($existingRow->authachat === '1') : false,
+                'currentDbPrice' => $existingRow ? (float)$existingRow->valeur : null,
+            ]);
+        }
+
+        ApiResponse::success([
+            'total' => (int)($screen['total'] ?? count($augmentedItems)),
+            'limit' => $limit,
+            'offset' => $offset,
+            'items' => $augmentedItems,
+        ]);
+    }
+
+    /**
+     * Récupère le statut des constituants d'un indice de référence (CAC 40 ou SBF 120).
+     */
+    public function getYahooIndex(Request $request, string $indexName): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $indexData = $this->yahooService->getIndexConstituents($indexName);
+        $constituents = $indexData['constituents'] ?? [];
+        if (empty($constituents)) {
+            ApiResponse::error("Indice '$indexName' non reconnu. Indices supportés: cac40, sbf120.", 404);
+        }
+
+        $symbols = array_map(function ($c) {
+            return $c['symbol'];
+        }, $constituents);
+
+        $existingMap = $this->stockRepo->findExistingTickersMap($symbols);
+
+        $augmented = [];
+        $trackedCount = 0;
+        $missingCount = 0;
+
+        foreach ($constituents as $c) {
+            $sym = $c['symbol'];
+            $exists = isset($existingMap[$sym]);
+            $row = $exists ? $existingMap[$sym] : null;
+
+            if ($exists && $row->down === '1') {
+                $trackedCount++;
+            } else {
+                $missingCount++;
+            }
+
+            $augmented[] = [
+                'symbol' => $sym,
+                'name' => $exists ? (string)$row->nom : (string)$c['name'],
+                'inDatabase' => $exists,
+                'codesico' => $row ? (int)$row->codesico : null,
+                'price' => $row ? (float)$row->valeur : 0.0,
+                'isTracked' => $row ? ($row->down === '1') : false,
+                'isAuthBuy' => $row ? ($row->authachat === '1') : false,
+            ];
+        }
+
+        ApiResponse::success([
+            'indexKey' => $indexData['key'],
+            'indexName' => $indexData['name'],
+            'totalConstituents' => count($constituents),
+            'trackedCount' => $trackedCount,
+            'missingCount' => $missingCount,
+            'constituents' => $augmented,
+        ]);
+    }
+
+    /**
+     * Synchronise et active l'ensemble des constituants d'un indice (CAC 40 ou SBF 120).
+     */
+    public function syncYahooIndex(Request $request, string $indexName): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $indexData = $this->yahooService->getIndexConstituents($indexName);
+        $constituents = $indexData['constituents'] ?? [];
+        if (empty($constituents)) {
+            ApiResponse::error("Indice '$indexName' non reconnu. Indices supportés: cac40, sbf120.", 404);
+        }
+
+        $symbols = array_map(function ($c) {
+            return $c['symbol'];
+        }, $constituents);
+
+        $existingMap = $this->stockRepo->findExistingTickersMap($symbols);
+
+        $stocksToImport = [];
+        foreach ($constituents as $c) {
+            $sym = $c['symbol'];
+            $exists = isset($existingMap[$sym]);
+
+            $price = 0.0;
+            $name = $c['name'];
+
+            // Récupérer le cours actuel si nouvelle action ou si cours nul
+            if (!$exists || (float)$existingMap[$sym]->valeur <= 0.0) {
+                $quote = $this->yahooService->getQuote($sym);
+                if ($quote) {
+                    $price = (float)$quote['price'];
+                    if (!empty($quote['name'])) {
+                        $name = $quote['name'];
+                    }
+                }
+            } else {
+                $price = (float)$existingMap[$sym]->valeur;
+            }
+
+            $stocksToImport[] = [
+                'yahooname' => $sym,
+                'nom' => $name,
+                'valeur' => $price,
+                'authachat' => '1',
+                'down' => '1',
+                'idsecteur' => 22,
+                'idmarket' => 1,
+            ];
+        }
+
+        $result = $this->stockRepo->bulkImportStocks($stocksToImport);
+
+        ApiResponse::success($result, "Indice '{$indexData['name']}' synchronisé avec succès ({$result['created']} ajoutées, {$result['updated']} mises à jour).");
+    }
+
+    /**
+     * Importe une sélection d'actions Yahoo dans la base de données avec activation immédiate.
+     */
+    public function importYahooStocks(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $payload = $request->getJson();
+        $items = $payload['items'] ?? [];
+
+        // Support d'un simple tableau de tickers ['MC.PA', 'OR.PA'] ou d'objets complets
+        if (empty($items) && !empty($payload['tickers']) && is_array($payload['tickers'])) {
+            foreach ($payload['tickers'] as $t) {
+                $items[] = ['yahooname' => trim($t)];
+            }
+        }
+
+        if (empty($items) || !is_array($items)) {
+            ApiResponse::error("Aucune action spécifiée pour l'import.", 400);
+        }
+
+        $stocksToImport = [];
+        foreach ($items as $item) {
+            $ticker = trim((string)($item['yahooname'] ?? $item['symbol'] ?? ''));
+            if (empty($ticker)) {
+                continue;
+            }
+
+            $name = trim((string)($item['nom'] ?? $item['name'] ?? ''));
+            $price = (float)($item['valeur'] ?? $item['price'] ?? 0.0);
+
+            // Si le nom ou le cours manquent, interroger Yahoo pour les métadonnées fraîches
+            if (empty($name) || $price <= 0.0) {
+                $quote = $this->yahooService->getQuote($ticker);
+                if ($quote) {
+                    if (empty($name)) {
+                        $name = $quote['name'];
+                    }
+                    if ($price <= 0.0) {
+                        $price = (float)$quote['price'];
+                    }
+                }
+            }
+
+            $stocksToImport[] = [
+                'yahooname' => $ticker,
+                'nom' => $name ?: $ticker,
+                'valeur' => $price,
+                'authachat' => '1',
+                'down' => '1',
+                'idsecteur' => (int)($item['idsecteur'] ?? 22),
+                'idmarket' => (int)($item['idmarket'] ?? 1),
+            ];
+        }
+
+        if (empty($stocksToImport)) {
+            ApiResponse::error("Aucun symbole valide à importer.", 400);
+        }
+
+        $result = $this->stockRepo->bulkImportStocks($stocksToImport);
+        ApiResponse::success($result, "Importation terminée ({$result['created']} ajoutées, {$result['updated']} mises à jour).");
+    }
 }
+

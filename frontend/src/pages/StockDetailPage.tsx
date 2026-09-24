@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { marketApi } from '../api/market';
 import { tradingApi } from '../api/trading';
-import { StockDetail, SimulationResult } from '../types';
+import { StockDetail, SimulationResult, ChartPeriod } from '../types';
 import { StockChart } from '../components/market/StockChart';
 import { OrderModal } from '../components/trading/OrderModal';
 import { Tooltip } from '../components/ui/Tooltip';
@@ -15,6 +15,8 @@ export const StockDetailPage: React.FC = () => {
   const [stock, setStock] = useState<StockDetail | null>(null);
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<ChartPeriod>('1m');
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   // Order modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -24,7 +26,7 @@ export const StockDetailPage: React.FC = () => {
     if (code) {
       const stockCode = parseInt(code, 10);
       marketApi
-        .getStock(stockCode)
+        .getStock(stockCode, period)
         .then(setStock)
         .finally(() => setLoading(false));
 
@@ -36,6 +38,21 @@ export const StockDetailPage: React.FC = () => {
       }
     }
   }, [code, user]);
+
+  const handlePeriodChange = (newPeriod: ChartPeriod) => {
+    if (!code || newPeriod === period) return;
+    setPeriod(newPeriod);
+    setHistoryLoading(true);
+    const stockCode = parseInt(code, 10);
+    marketApi
+      .getStockHistory(stockCode, newPeriod)
+      .then((history) => {
+        setStock((prev) => (prev ? { ...prev, history, period: newPeriod } : null));
+      })
+      .catch(() => {})
+      .finally(() => setHistoryLoading(false));
+  };
+
 
   if (loading) {
     return (
@@ -151,7 +168,13 @@ export const StockDetailPage: React.FC = () => {
       {/* Historical Interactive Chart */}
       <div className="space-y-2">
         <h3 className="text-base font-bold text-white">Historique et Évolution des Cours</h3>
-        <StockChart history={stock.history} currentPrice={stock.price} />
+        <StockChart
+          history={stock.history}
+          currentPrice={stock.price}
+          period={period}
+          onPeriodChange={handlePeriodChange}
+          loading={historyLoading}
+        />
       </div>
 
       {/* Modal */}

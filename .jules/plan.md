@@ -1,4 +1,4 @@
-# Plan d'Action : Résolution des Dettes Techniques Restantes
+# Plan d'Action : Résolution des Dettes Techniques & Modernisation
 
 Ce document définit la feuille de route opérationnelle pour assainir, sécuriser et moderniser l'application NetTrader 2 en s'appuyant sur l'état des dettes documenté dans `.jules/dette.md`.
 
@@ -8,19 +8,19 @@ Ce document définit la feuille de route opérationnelle pour assainir, sécuris
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Phase 1 : Sécurité Critique (Injections SQL, XSS, Hachage Mots de passe)    │
+│ Phase 1 : Sécurité Critique (Injections SQL, XSS, Hachage Mots de passe)    │ ✅ Terminé
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Phase 2 : Assainissement du Code (Autoloading PSR-4, Suppression des globals)│
+│ Phase 2 : Assainissement du Code (Autoloading PSR-4, Services Métier)       │ ✅ Terminé
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Phase 3 : Refonte Architecturale MVC (Repositories, Contrôleurs, Twig)      │
+│ Phase 3 : Refonte Architecturale (DAL/Repositories, Contrôleurs REST)       │ ✅ Terminé
 └──────────────────────────────────────┬──────────────────────────────────────┘
                                        ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Phase 4 : Modernisation Frontend & APIs (HTML5/CSS3, JS moderne, API REST)  │
+│ Phase 4 : Modernisation Frontend & APIs (SPA React, API REST, Market Sync)  │ ✅ Terminé
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -28,7 +28,7 @@ Ce document définit la feuille de route opérationnelle pour assainir, sécuris
 
 ## 🔴 Phase 1 : Sécurité Critique & Remédiation des Vulnérabilités (Terminé ✅)
 
-*Objectif : Éliminer 100% des vulnérabilités critiques (Injections SQL, Failles XSS, Hachage de mots de passe non sécurisé).*
+*Objectif : Éliminer 100% des vulnérabilités critiques (Injections SQL, Failles XSS, Hachage de mots de passe non sécurisé, protection des accès sensibles).*
 
 ### 1.1 Migration Exhaustive vers les Requêtes Préparées PDO (Terminé ✅)
 - [x] **P1 - Critique : Authentification, Sessions & Inscription** :
@@ -43,109 +43,116 @@ Ce document définit la feuille de route opérationnelle pour assainir, sécuris
 - [x] **P3 - Haute : API XML Client Lourd & Scripts utilitaires** :
   - `www/progfunc.php`, `www/progreq.php`, `www/prog.php`, `www/redir.php`, `www/nt2_progfunction.php`.
 - [x] **P4 - Moyenne : Forums, Groupes & Messagerie** :
-  - `www/db_reqtableaux.php`, `www/db_reqfunction.php` (toutes les requêtes de forum, messages, gestion des équipes et invitations paramétrées).
+  - `www/db_reqtableaux.php`, `www/db_reqfunction.php` (requêtes de forum, messages, gestion des équipes et invitations paramétrées).
 - [x] **P5 - Moyenne : Interface d'Administration** :
   - `www/nt2_adminfunction.php`, `www/db_reqfunction.php` (requêtes d'administration et de maintenance).
 - [x] **P6 - Clôture : Dépréciation de `sec()`** :
-  - Fonction `sec()` dépréciée et convertie en retour direct sans risque d'altération SQL.
+  - Fonction `sec()` dépréciée et convertie en retour direct sans altération SQL indésirable.
 
 ### 1.2 Sécurisation XSS Systématique des Vues (Terminé ✅)
 - [x] **Appliquer la fonction d'échappement `e()`** sur toutes les sorties dynamiques dans :
   - `www/nt2_pages.php` (tableaux d'achats/ventes, profils, classements, messagerie, forums).
   - `www/skin/default/include_interface.php` et `www/skin/GreyTortle/include_interface.php`.
   - `www/nt2_adminfunction.php`.
-- [x] Valider l'échappement des pseudonymes, titres, corps de messages et descriptions personnalisées.
+- [x] Neutralisation des injections Javascript dans le parseur BBCode `bbtohtml()`.
 
 ### 1.3 Modernisation de l'Authentification et des Mots de Passe (Terminé ✅)
 - [x] Remplacer `md5($motDePasse)` par `password_hash()` (algorithme `PASSWORD_BCRYPT`).
-- [x] Mettre en place un mécanisme de **mise à niveau transparente** lors du login :
-  - Si le hash en BDD correspond à `md5($passe)`, vérifier et ré-encoder immédiatement avec `password_hash()` avant de sauvegarder.
-- [x] Sécuriser les cookies de session (`HttpOnly`, `SameSite=Lax`).
+- [x] Mise à niveau transparente lors du login : conversion automatique de MD5 vers BCRYPT.
+- [x] Sécurisation des cookies de session (`HttpOnly`, `SameSite=Lax`).
+- [x] Génération de jetons de session cryptographiquement sûrs (CSPRNG 256 bits, 64 caractères hex).
+
+### 1.4 Durcissement de l'Infrastructure & Base de Données (Terminé ✅)
+- [x] Remplacement du moteur de stockage obsolète MyISAM par **InnoDB** avec conformité ACID sur 100% des tables.
+- [x] Suppression de l'accès au client VB6 historique (`/prog.php` renvoie désormais un code HTTP 404).
+- [x] Sécurisation des crons (`cmd.php`) protégés par un jeton secret dans l'en-tête `X-Cron-Key`.
+- [x] Protection des répertoires sensibles (`tests/`) par `.htaccess`.
+- [x] Sécurisation CORS (rejet des origines arbitraires) et protection anti Open-Redirect dans `redir.php`.
 
 ---
 
 ## 🟡 Phase 2 : Assainissement et Refactoring du Code Procédural (Terminé ✅)
 
-*Objectif : Éliminer les dépendances globales, introduire une architecture modulaire et préparer la transition MVC.*
+*Objectif : Éliminer les dépendances globales, introduire une architecture modulaire et préparer la transition MVC/REST.*
 
 ### 2.1 Élimination du mot-clé `global` et des Superglobales
-- [x] Créer un objet de contexte utilisateur / session (`UserSession` ou `AuthContext`) encapsulant l'utilisateur connecté (`$internaute`) et ses droits.
-- [x] Remplacer l'accès direct aux variables superglobales (`global $do; $do = &$_GET['do']`) par une méthode propre de récupération (`filter_input` ou classe Request dédiée).
-- [x] Passer explicitement la connexion PDO et les dépendances aux fonctions/méthodes plutôt que d'utiliser des variables globales.
+- [x] Création de la classe `UserSession` encapsulant l'utilisateur connecté, son état d'authentification et ses permissions.
+- [x] Remplacement de l'accès direct aux superglobales par la classe `Request` dédiée.
+- [x] Passage explicite des connexions PDO et injection de dépendances.
 
 ### 2.2 Structuration du Code et Autoloading PSR-4
-- [x] Configurer `composer.json` pour intégrer un autoloader PSR-4 (`NetTrader\\...` pointant vers `www/src/`).
-- [x] Découper le fichier monolithique `www/nt2_function.php` en services spécialisés :
-  - `TradingService` (calcul de taxes, valorisation portefeuille, passage d'ordres).
-  - `FormattingService` (parseur BBCode, utilitaires d'affichage).
-  - `MailerService` (préparation des alertes et notifications).
-  - `Database` (gestionnaire centralisé des requêtes préparées PDO).
-  - `Request` (abstraction sécurisée des requêtes HTTP).
+- [x] Configuration de l'autoloader PSR-4 (`NetTrader\` pointant vers `www/src/`).
+- [x] Découpage en services spécialisés :
+  - `TradingService` : règles métier, validation financière, calculs de marges et de VAD.
+  - `FormattingService` : parseur BBCode sécurisé et formatage des cours.
+  - `MailerService` : préparation des alertes e-mails et notifications.
+  - `Database` : abstraction centralisée des requêtes préparées PDO.
+  - `Request` & `ApiResponse` : couche HTTP et standardisation des réponses JSON.
 
 ---
 
-## 🟢 Phase 3 : Refonte Architecturale MVC & Couche de Données (Priorité Moyenne)
+## 🟢 Phase 3 : Refonte Architecturale & Couche d'Accès aux Données (Terminé ✅)
 
-*Objectif : Mettre en place une séparation stricte entre données, logique applicative et affichage.*
+*Objectif : Mettre en place une séparation stricte entre données, logique applicative et API.*
 
-### 3.1 Couche d'Accès aux Données (Repositories / Entities)
-- [ ] Créer des classes Repositories dédiées :
-  - `OrderRepository`
-  - `PortfolioRepository`
-  - `MarketRepository` (`cacval`, cours boursiers)
-  - `UserRepository` / `AccountRepository`
-  - `ForumRepository` / `MessageRepository`
-- [ ] Définir des modèles ou Data Objects légers typés pour manipuler des objets plutôt que des tableaux associatifs bruts.
+### 3.1 Couche d'Accès aux Données (Repositories / DAL) (Terminé ✅)
+- [x] `BaseRepository` : classe abstraite centralisant les opérations PDO (`fetchOne`, `fetchAll`, `execute`, `lastInsertId`, gestion des transactions).
+- [x] `StockRepository` : cotations, recherche, variations, KPI et filtres du Market Sync Monitor.
+- [x] `OrderRepository` : gestion du carnet d'ordres, passage, annulation et calculs des volumes engagés.
+- [x] `PortfolioRepository` : positions en portefeuille, calculs de PRU, valorisation globale et historique.
+- [x] `UserRepository` : profil, cashback, hachage des mots de passe, sessions et classements.
+- [x] `ForumRepository` : sections, rubriques, sujets, messages et synchronisation des compteurs.
+- [x] Suite de tests unitaires dédiée : `www/tests/test_repositories.php` (29/29 tests PASS).
 
-### 3.2 Contrôleurs et Routage
-- [ ] Remplacer le `switch ($do)` de `www/index.php` par un routeur léger associant les routes `/action` à des classes de Contrôleurs :
-  - `MarketController` (cotations, graphiques, détails des valeurs).
-  - `TradeController` (passage d'ordres, suivi du portefeuille, historique).
-  - `LeaderboardController` (classements individuels et par équipes).
-  - `ForumController` / `MessageController` (communauté, messagerie interne).
-  - `AdminController` (gestion des joueurs, administration des cours).
+### 3.2 Contrôleurs et Routage RESTful (Terminé ✅)
+- [x] Routeur applicatif `NetTrader\Http\Router` orienté requêtes REST (`GET`, `POST`, `PUT`, `DELETE`).
+- [x] Contrôleurs découplés utilisant les Repositories et Services :
+  - `MarketController` : cotations, top variations, résumé du marché.
+  - `TradingController` : portefeuille, passage/annulation d'ordres, simulations.
+  - `AdminController` : KPIs administration, modération des joueurs, gestion du forum, supervision Market Sync.
+  - `AuthController` : inscription, login, logout, gestion de profil et changement de mot de passe.
+  - `CommunityController` : forums, discussions, messagerie interne et équipes.
 
-### 3.3 Intégration d'un Moteur de Templates (Twig)
-- [ ] Installer Twig via Composer (`twig/twig`).
-- [ ] Remplacer la concaténation de chaînes dans `www/nt2_pages.php` par des fichiers templates `.html.twig`.
-- [ ] Tirer parti de l'**auto-échappement natif de Twig** pour supprimer définitivement le risque de failles XSS à l'affichage.
-
----
-
-## 🔵 Phase 4 : Modernisation Frontend, JavaScript & APIs (Priorité Moyenne-Basse)
-
-*Objectif : Offrir une expérience utilisateur contemporaine (UI responsive, interactions asynchrones, API REST).*
-
-### 4.1 Refonte de l'Interface Graphique (HTML5 / CSS3 Responsive)
-- [ ] Supprimer les balises et attributs HTML obsolètes (`<font>`, `<center>`, `bgcolor`, `cellspacing`).
-- [ ] Éliminer les structures de mise en page basées sur des balises `<table>` au profit d'un layout moderne en CSS Grid / Flexbox.
-- [ ] Rendre l'application pleinement compatible mobile / tablette (Responsive Design).
-
-### 4.2 Modernisation du JavaScript
-- [ ] Supprimer la génération de JavaScript inline depuis PHP (`jscript_av()`, `jscript_ordre()`).
-- [ ] Créer des modules JS externes avec gestion d'événements propre (`addEventListener`).
-- [ ] Implémenter des requêtes asynchrones `fetch()` pour le rafraîchissement des cours et le passage d'ordres sans rechargement complet de la page.
-
-### 4.3 Modernisation des APIs et Services d'Arrière-Plan
-- [ ] Migrer l'API XML historique (`www/prog.php`, `progfunc.php`) vers une API REST JSON standardisée.
-- [ ] Auditer les flux secondaires (`traitehtmlsicav` dans `www/nt2_function.php`) et intégrer si nécessaire leur récupération dans le service `pythonfetch`.
+### 3.3 Pivot Architectural : Remplacement de Twig par la SPA React (Validé & Terminé ✅)
+- [x] **Décision d'architecture validée :** Abandon du moteur de template serveur Twig au profit de l'application monopage (SPA) React 18 / TypeScript découplée, le backend PHP agissant comme un serveur d'API REST robuste et sécurisé.
 
 ---
 
-## Matrice de Suivi et Priorisation
+## 🔵 Phase 4 : Modernisation Frontend, SPA React & Synchronisation Boursière (Terminé ✅)
+
+*Objectif : Offrir une expérience utilisateur contemporaine, fluide et supervisable.*
+
+### 4.1 Application Monopage React 18 & TypeScript (Terminé ✅)
+- [x] Interface moderne sous React 18, Vite, TypeScript et Tailwind CSS.
+- [x] Composants modulaires avec navigation par onglets :
+  - Tableau de bord & Marché (cours en temps réel, graphiques).
+  - Portefeuille & Carnet d'ordres (passage d'ordres interactif, simulateur).
+  - Administration complète (gestion des joueurs, modération du forum, purge des sessions).
+  - **Espace Suivi des Cotations (Market Sync Monitor)** avec filtres de statut, retry count, bascule de suivi et réinitialisation d'erreurs.
+- [x] Gestion d'état fluide avec synchronisation asynchrone via Axios.
+
+### 4.2 Modernisation du Micro-service de Cotations Python (Terminé ✅)
+- [x] Migration de `pythonfetch/pynt2markdown.py` vers `yfinance` avec cache local SQLite.
+- [x] Paramétrage complet des requêtes SQL pour éviter toute injection.
+- [x] Journalisation granulaire dans la table `market_sync_log` et enrichissement de `cacval` (`fail_count`, `retry_count`, `last_status`, `last_error`).
+- [x] Gestion intelligente du repli (fallback individuel) et non-désactivation permanente des tickers.
+
+---
+
+## Matrice de Suivi et Validation Globale
 
 | Tâche / Chantier | Domaine | Priorité | Complexité | Statut |
 | :--- | :--- | :---: | :---: | :---: |
-| **Requêtes préparées PDO (P1 Auth & P2 Trading/Ordres)** | Sécurité | 🔴 Haute | Moyenne | ✅ Terminé |
 | **Requêtes préparées PDO systématiques** | Sécurité | 🔴 Haute | Moyenne | ✅ Terminé |
 | **Suppression / Dépréciation de `sec()`** | Sécurité | 🔴 Haute | Faible | ✅ Terminé |
-| **Échappement XSS dans `nt2_pages.php`** | Sécurité | 🔴 Haute | Moyenne | ✅ Terminé |
+| **Échappement XSS & parseur BBCode** | Sécurité | 🔴 Haute | Moyenne | ✅ Terminé |
 | **Hachage BCRYPT des mots de passe** | Sécurité | 🔴 Haute | Faible | ✅ Terminé |
+| **Migration BDD InnoDB & Clôture VB6** | Infrastructure | 🔴 Haute | Moyenne | ✅ Terminé |
 | **Suppression des `global` & Contexte de session** | Architecture | 🟡 Moyenne | Moyenne | ✅ Terminé |
-| **Autoloading PSR-4 & Découpage modulaire** | Architecture | 🟡 Moyenne | Moyenne | ✅ Terminé |
-| **Repositories / Couche DAL** | Architecture | 🟢 Moyenne | Élevée | À faire |
-| **Routeur et Contrôleurs (MVC)** | Architecture | 🟢 Moyenne | Élevée | À faire |
-| **Moteur de templates Twig** | Vues / Sécurité | 🟢 Moyenne | Élevée | À faire |
-| **UI HTML5 / CSS3 Responsive** | Frontend | 🔵 Basse | Élevée | À faire |
-| **API RESTful JSON (Remplacement XML)** | API | 🔵 Basse | Moyenne | À faire |
-| **Flux secondaires SICAV / Devises en Python** | Données | 🔵 Basse | Faible | À faire |
+| **Autoloading PSR-4 & Services métier** | Architecture | 🟡 Moyenne | Moyenne | ✅ Terminé |
+| **Repositories / Couche DAL (29 tests PASS)** | Architecture | 🟢 Moyenne | Élevée | ✅ Terminé |
+| **Routeur et Contrôleurs RESTful** | Architecture | 🟢 Moyenne | Élevée | ✅ Terminé |
+| **Remplacement Twig -> SPA React 18** | Architecture | 🟢 Moyenne | Élevée | ✅ Terminé |
+| **UI Moderne Responsive Tailwind CSS** | Frontend | 🔵 Basse | Élevée | ✅ Terminé |
+| **API RESTful JSON (53 tests PASS)** | API | 🔵 Basse | Moyenne | ✅ Terminé |
+| **Supervision Market Sync Monitor** | Exploitation | 🟢 Moyenne | Moyenne | ✅ Terminé |

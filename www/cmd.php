@@ -30,6 +30,17 @@ include_once ("lang/lang_fr.php");
 $request = Request::createFromGlobals();
 $action = $request->getAction();
 
+// Contrôle d'accès : CLI ou clé secrète partagée CRON_SECRET obligatoire
+$cronSecret = getenv('CRON_SECRET') ?: 'nettrader_cron_secure_token_secret';
+$isCli = (php_sapi_name() === 'cli');
+$providedKey = $_SERVER['HTTP_X_CRON_KEY'] ?? $request->getString('key', '');
+
+if (!$isCli && (!hash_equals($cronSecret, (string)$providedKey))) {
+    http_response_code(403);
+    echo "Accès refusé. Clé de tâche de fond requise.\n";
+    exit;
+}
+
 global $skinrep;
 $skinrep="skin/default";
 include_once ($skinrep."/include_interface.php");
@@ -41,9 +52,6 @@ if($action == "testscript")
 }
 elseif($action == "executeorder" && date("U")<FINCONC)
 {
- 	global $internaute;
-    $internaute = (object)['idcompte' => 1];
-    UserSession::current()->setUser($internaute);
 	echo "\n".date("j M Y H:i a");
 	if(tempsjeu())
 		execute_ordre(); //on execute les ordres en attente si elles sont executables
@@ -53,18 +61,12 @@ elseif($action == "executeorder" && date("U")<FINCONC)
 }
 elseif($action=="checkscore" && date("U")<FINCONC)
 {
- 	global $internaute;
-    $internaute = (object)['idcompte' => 1];
-    UserSession::current()->setUser($internaute);
 	echo "\n".date("j M Y H:i a");
 	if(tempsjeu())
         checkscore();
 }
 elseif($action=="webupdate" && date("U")<FINCONC)
 {
- 	global $internaute;
-    $internaute = (object)['idcompte' => 1];
-    UserSession::current()->setUser($internaute);
 	echo "\n".date("j M Y H:i a");
 	if(tempsjeu())
 		checkscore();

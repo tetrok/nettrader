@@ -35,8 +35,9 @@
   define ("IDCOMPTEDEMO",781);
   define ("ADSENSEKEYWORD","trading");
   define ("MAXDOWN",190);
-  define ("MAX_MESSAGE_TEMPS","24"); //pour la limite de message envoy�, nombre d'heure o� un message est comptabilis� comme nouveau
-  $do_param = isset($_GET['do']) ? $_GET['do'] : '';
+  define ("MAX_MESSAGE_TEMPS","24"); //pour la limite de message envoy, nombre d'heure o un message est comptabilis comme nouveau
+  $raw_do = isset($_GET['do']) && is_scalar($_GET['do']) ? (string)$_GET['do'] : '';
+  $do_param = htmlspecialchars($raw_do, ENT_QUOTES | ENT_HTML5, 'UTF-8');
   define ("LIGNEPARTENAIRES","<a href=\"http://www.finaperf.com/\" target=\"_blank\">Annuaire finance et bourse</a> | 
   <a href=\"http://www.xiti.com/xiti.asp?s=309232\" title=\"WebAnalytics\">
 <script type=\"text/javascript\">

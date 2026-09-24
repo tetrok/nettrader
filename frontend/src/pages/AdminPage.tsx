@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { adminApi, AdminDashboardData } from '../api/admin';
 import { AdminForumManagement } from '../components/admin/AdminForumManagement';
+import { AdminMarketSync } from '../components/admin/AdminMarketSync';
+import { AdminStockManagement } from '../components/admin/AdminStockManagement';
+import { AdminYahooDiscovery } from '../components/admin/AdminYahooDiscovery';
 import {
   Shield,
   Play,
@@ -13,10 +16,13 @@ import {
   Activity,
   MessageSquare,
   Search,
+  TrendingUp,
+  Layers,
+  Globe,
 } from 'lucide-react';
 
 export const AdminPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'supervision' | 'players' | 'forum'>('supervision');
+  const [activeTab, setActiveTab] = useState<'supervision' | 'stocks' | 'yahoo' | 'marketSync' | 'players' | 'forum'>('supervision');
   const [dashboard, setDashboard] = useState<AdminDashboardData | null>(null);
   const [players, setPlayers] = useState<any[]>([]);
   const [playersTotal, setPlayersTotal] = useState(0);
@@ -114,6 +120,39 @@ export const AdminPage: React.FC = () => {
           <span>Supervision Système</span>
         </button>
         <button
+          onClick={() => setActiveTab('stocks')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+            activeTab === 'stocks'
+              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+              : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Catalogue Actions</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('yahoo')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+            activeTab === 'yahoo'
+              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+              : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Globe className="w-4 h-4" />
+          <span>Découverte Yahoo</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('marketSync')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+            activeTab === 'marketSync'
+              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+              : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          <span>Suivi des Cotations</span>
+        </button>
+        <button
           onClick={() => setActiveTab('players')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
             activeTab === 'players'
@@ -177,7 +216,16 @@ export const AdminPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: PLAYERS */}
+      {/* TAB: CATALOGUE DES ACTIONS */}
+      {activeTab === 'stocks' && <AdminStockManagement />}
+
+      {/* TAB: DECOUVERTE & INDICES YAHOO */}
+      {activeTab === 'yahoo' && <AdminYahooDiscovery />}
+
+      {/* TAB: SUIVI DES COTATIONS */}
+      {activeTab === 'marketSync' && <AdminMarketSync />}
+
+      {/* TAB: PLAYERS */}
       {activeTab === 'players' && (
         <div className="space-y-4">
           <form

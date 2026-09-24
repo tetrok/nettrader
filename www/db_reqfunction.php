@@ -986,9 +986,9 @@ function upd_msgetat($idmessage)
 {
     global $internaute;
     if(!is_object($internaute) || !isset($internaute->idcompte)) return "";
-    $query = "UPDATE `messages` SET etat='lu' WHERE idmsg='$idmessage' and idcompte='$internaute->idcompte'";
+    $query = "UPDATE `messages` SET etat='lu' WHERE idmsg = ? and idcompte = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [(int)$idmessage, (int)$internaute->idcompte]);
     return "";
 }
 
@@ -1000,9 +1000,9 @@ function dodelmessage($idmessage)
 {
     global $internaute;
     if(!is_object($internaute) || !isset($internaute->idcompte)) return "";
-    $query = "DELETE FROM `messages` WHERE idmsg='$idmessage' and (idcompte='$internaute->idcompte' or (idenvoyeur='$internaute->idcompte' and etat='non lu' ))";
+    $query = "DELETE FROM `messages` WHERE idmsg = ? and (idcompte = ? or (idenvoyeur = ? and etat='non lu'))";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [(int)$idmessage, (int)$internaute->idcompte, (int)$internaute->idcompte]);
     return msgtab(lang(177),lang(86));
 }
 
@@ -1171,18 +1171,17 @@ function ordreactionvente($codesico,$tmps,$valaction)
  */
 function exeadminreq($idreq)
 {
-    $idreq=sec($idreq);
-    $query = "SELECT * FROM reqlist WHERE idreq='$idreq'"; 
+    $query = "SELECT * FROM reqlist WHERE idreq = ?"; 
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);    
+    $run_query = ExecRequete ($query, $connexion, [(int)$idreq]);    
     $retour = new stdClass();
     if($run_query)
     {
         $resultat = LigneSuivante($run_query);
         if($resultat) {
             $nouvutil=$resultat->nbutil+1;
-            $query = "UPDATE reqlist SET nbutil='$nouvutil' WHERE idreq='$resultat->idreq'"; 
-            ExecRequete ($query, $connexion);    
+            $query = "UPDATE reqlist SET nbutil = ? WHERE idreq = ?"; 
+            ExecRequete ($query, $connexion, [(int)$nouvutil, (int)$resultat->idreq]);    
             if($resultat->req<>"")
             {
                 $query = stripslashes($resultat->req);
@@ -1550,7 +1549,7 @@ function getinternauteinfo($pseudo)
  */
 function setmdp($idcompte,$mdp)
 {
-    $passe = md5($mdp);
+    $passe = password_hash($mdp, PASSWORD_BCRYPT);
     $query = "UPDATE compte SET passe = ? WHERE idcompte = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
     $run_query = ExecRequete ($query, $connexion, [$passe, $idcompte]);
@@ -1791,14 +1790,14 @@ function delcommentaire($idcomment)
 {
     global $internaute;
     if(!is_object($internaute)) return "";
-    $query = "SELECT * FROM tabaidecomment WHERE idcomment= '$idcomment' ";
+    $query = "SELECT * FROM tabaidecomment WHERE idcomment = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [(int)$idcomment]);
     $lauteur=LigneSuivante($run_query);
     if(is_object($lauteur) && ($lauteur->idcompte==$internaute->idcompte || (isset($internaute->authlevel) && $internaute->authlevel>1)))
     {
-        $query = "DELETE FROM `tabaidecomment` WHERE `idcomment`='$idcomment'";
-        ExecRequete ($query, $connexion);
+        $query = "DELETE FROM `tabaidecomment` WHERE `idcomment` = ?";
+        ExecRequete ($query, $connexion, [(int)$idcomment]);
     }
     return "";
 }
@@ -1811,13 +1810,14 @@ function delcommentaire($idcomment)
 function ajoutcommentairefaq($message,$idaide)
 {
     global $internaute;
-    if($message=="" || !is_object($internaute)) return "";
+    if($message=="" || !is_object($internaute) || !isset($internaute->idcompte)) return "";
+    $maintenant = (int)date("U");
     $query = "INSERT INTO `tabfaqcomment` ( `idcomment` , `idaide` , `idcompte` , `datecomment` , `textecomment` )
     VALUES (
-    '', '$idaide', '$internaute->idcompte', '".date("U")."', '$message'
+    NULL, ?, ?, ?, ?
     )";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [(int)$idaide, (int)$internaute->idcompte, $maintenant, (string)$message]);
     return "";
 }
 
@@ -1829,14 +1829,14 @@ function delcommentairefaq($idcomment)
 {
     global $internaute;
     if(!is_object($internaute)) return "";
-    $query = "SELECT * FROM tabfaqcomment WHERE idcomment= '$idcomment' ";
+    $query = "SELECT * FROM tabfaqcomment WHERE idcomment = ?";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, [(int)$idcomment]);
     $lauteur=LigneSuivante($run_query);
     if(is_object($lauteur) && ($lauteur->idcompte==$internaute->idcompte || (isset($internaute->authlevel) && $internaute->authlevel>1)))
     {
-        $query = "DELETE FROM `tabfaqcomment` WHERE `idcomment`='$idcomment'";
-        ExecRequete ($query, $connexion);
+        $query = "DELETE FROM `tabfaqcomment` WHERE `idcomment` = ?";
+        ExecRequete ($query, $connexion, [(int)$idcomment]);
     }
     return "";
 }
@@ -2095,9 +2095,9 @@ function domodifgroupe($idgroupe,$idcompte,$titregroupe,$diminutif,$url,$descrip
 
     if( is_object($groupe) && $groupe->idgroupe==$idgroupe )
     {
-        $query = "DELETE FROM `verifgroupe` WHERE idgroupe='$idgroupe'";
+        $query = "DELETE FROM `verifgroupe` WHERE idgroupe = ?";
         $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-        ExecRequete ($query, $connexion);
+        ExecRequete ($query, $connexion, [(int)$idgroupe]);
     }
     $query = "INSERT INTO `verifgroupe` ( `idverifgroupe` , `idgroupe` , `idcompte` , `titregroupe` , `initialgroupe` , `urlsite` , `descriptiongroupe` )
     VALUES (
@@ -2116,14 +2116,18 @@ function domodifgroupe($idgroupe,$idcompte,$titregroupe,$diminutif,$url,$descrip
 function getverifgroupe($idgroupe=0,$idcompte=0)
 {
     $where="";
-    if($idgroupe!=0)
-        $where=" WHERE idgroupe='$idgroupe'";
-    if($idcompte!=0)
-        $where=" WHERE idcompte='$idcompte'";
+    $params = [];
+    if($idgroupe!=0) {
+        $where=" WHERE idgroupe = ?";
+        $params[] = (int)$idgroupe;
+    } elseif($idcompte!=0) {
+        $where=" WHERE idcompte = ?";
+        $params[] = (int)$idcompte;
+    }
 
     $query = "SELECT * FROM `verifgroupe` $where ORDER BY idgroupe";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $run_query = ExecRequete ($query, $connexion);
+    $run_query = ExecRequete ($query, $connexion, $params);
     return $run_query;
 }
 
@@ -2133,9 +2137,9 @@ function getverifgroupe($idgroupe=0,$idcompte=0)
  */
 function sauveipadress($ip)
 {
-    $query = "UPDATE conf set valeur='$ip' WHERE libel='envoyeurip'";
+    $query = "UPDATE conf set valeur = ? WHERE libel='envoyeurip'";
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    ExecRequete ($query, $connexion);
+    ExecRequete ($query, $connexion, [(string)$ip]);
 }
 
 /**
@@ -2689,10 +2693,10 @@ function doforum_postmessage($sujet,$corps,$idforum,$idsujet=0,$edit=0,$idmessag
         $query="INSERT INTO `f_corps` ( `idmessage` , `contenu` ) VALUES (?, ?)";
         ExecRequete ($query, $connexion, [(int)$nummess, (string)$corps]);
 
-        $query="UPDATE f_forum ff SET idlastmessage='$nummess'".retiftrue(",`nbsujets`=`nbsujets`+1",$nouvsujet).",`nbmessages`=`nbmessages`+1 WHERE ff.idforum='$idforum'";
-        ExecRequete ($query, $connexion);
-        $query="UPDATE f_sujet fsu SET idlastmessage='$nummess'".retiftrue(",`s_nbmessages`=`s_nbmessages`+1",!$nouvsujet)." WHERE fsu.idsujet='$idsujet'";
-        ExecRequete ($query, $connexion);
+        $query="UPDATE f_forum ff SET idlastmessage = ?".retiftrue(",`nbsujets`=`nbsujets`+1",$nouvsujet).",`nbmessages`=`nbmessages`+1 WHERE ff.idforum = ?";
+        ExecRequete ($query, $connexion, [(int)$nummess, (int)$idforum]);
+        $query="UPDATE f_sujet fsu SET idlastmessage = ?".retiftrue(",`s_nbmessages`=`s_nbmessages`+1",!$nouvsujet)." WHERE fsu.idsujet = ?";
+        ExecRequete ($query, $connexion, [(int)$nummess, (int)$idsujet]);
         updatecptpost();
         forum_inc_joueur_nbposts($internaute->idcompte);
         $corptab=lang(264)."<br><br>".html_lien(lang(265),"do=showlstsujets&idforum=$idforum")."<br><br>".html_lien(lang(266),"do=showlstposts&idsujet=$idsujet&last=1#last");
@@ -2710,9 +2714,10 @@ function forum_giveforumtogroups()
     $run_query = ExecRequete ($query, $connexion);
     while($ligne=LigneSuivante($run_query))
     {
-        $idforum=forum_newgroupeforum(addslashes($ligne->initialgroupe));
-        $query = "UPDATE groupe SET `idforum`='$idforum' WHERE idgroupe='$ligne->idgroupe'";
-        ExecRequete ($query, $connexion);
+        forum_ajoutforum(2,$ligne->titregroupe,"Forum de l'équipe ".e($ligne->titregroupe),"",1,1,1,$ligne->idgroupe);
+        $idforum=$connexion->lastInsertId();
+        $query="UPDATE groupe SET idforum = ? WHERE idgroupe = ?";
+        ExecRequete ($query, $connexion, [(int)$idforum, (int)$ligne->idgroupe]);
     }
 }
 
@@ -2723,10 +2728,10 @@ function forum_giveforumtogroups()
 function incarnerjoueur($idcomptejoueur)
 {
     global $internaute;
-    if(!is_object($internaute)) return;
+    if(!is_object($internaute) || !isset($internaute->idcompte)) return;
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $query="UPDATE `session` SET `idcompte` = '$idcomptejoueur' WHERE `idcompte` = '$internaute->idcompte'";
-    ExecRequete ($query, $connexion);
+    $query = "UPDATE `session` SET `idcompte` = ? WHERE `idcompte` = ?";
+    ExecRequete ($query, $connexion, [(int)$idcomptejoueur, (int)$internaute->idcompte]);
 }
 
 /**
@@ -2736,8 +2741,8 @@ function incarnerjoueur($idcomptejoueur)
 function deactivateweekstats($idjoueur)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $query="UPDATE compte SET `mailweekly` = '0' where idcompte='$idjoueur'";
-    ExecRequete ($query, $connexion);
+    $query = "UPDATE compte SET `mailweekly` = '0' where idcompte = ?";
+    ExecRequete ($query, $connexion, [(int)$idjoueur]);
 }
 
 /**
@@ -2747,7 +2752,7 @@ function deactivateweekstats($idjoueur)
 function deactivatedaystats($idjoueur)
 {
     $connexion = Connexion (NOM, PASSE, BASE, SERVEUR);
-    $query="UPDATE compte SET `maildaily` = '0' where idcompte='$idjoueur'";
-    ExecRequete ($query, $connexion);
+    $query = "UPDATE compte SET `maildaily` = '0' where idcompte = ?";
+    ExecRequete ($query, $connexion, [(int)$idjoueur]);
 }
 ?>

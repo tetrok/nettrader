@@ -4,16 +4,33 @@ namespace NetTrader\Api;
 
 use NetTrader\Http\Request;
 use NetTrader\Auth\UserSession;
+use NetTrader\Repository\OrderRepository;
+use NetTrader\Repository\PortfolioRepository;
+use NetTrader\Repository\StockRepository;
+use NetTrader\Repository\UserRepository;
 use NetTrader\Service\TradingService;
 use PDO;
 
 class TradingController
 {
     private TradingService $tradingService;
+    private OrderRepository $orderRepo;
+    private PortfolioRepository $portfolioRepo;
+    private StockRepository $stockRepo;
+    private UserRepository $userRepo;
 
-    public function __construct()
-    {
-        $this->tradingService = new TradingService();
+    public function __construct(
+        ?TradingService $tradingService = null,
+        ?OrderRepository $orderRepo = null,
+        ?PortfolioRepository $portfolioRepo = null,
+        ?StockRepository $stockRepo = null,
+        ?UserRepository $userRepo = null
+    ) {
+        $this->tradingService = $tradingService ?? new TradingService();
+        $this->orderRepo = $orderRepo ?? new OrderRepository();
+        $this->portfolioRepo = $portfolioRepo ?? new PortfolioRepository();
+        $this->stockRepo = $stockRepo ?? new StockRepository();
+        $this->userRepo = $userRepo ?? new UserRepository();
     }
 
     /**
@@ -30,7 +47,8 @@ class TradingController
         $conn = Connexion(NOM, PASSE, BASE, SERVEUR);
 
         // Recharger le cashback à jour depuis la BDD
-        $cashback = (float)GetCashBack($userId);
+        $user = $this->userRepo->findById($userId);
+        $cashback = $user ? (float)$user->cashback : (float)GetCashBack($userId);
 
         $rawPositions = portefeuille_joueur();
         $positions = [];
@@ -224,11 +242,9 @@ class TradingController
             ApiResponse::error("Identifiant d'ordre manquant", 400);
         }
 
-        $conn = Connexion(NOM, PASSE, BASE, SERVEUR);
-        $checkStmt = ExecRequete("SELECT idordre FROM ordre WHERE idcompte = ? AND datecreation = ?", $conn, [$session->getId(), $id]);
-        $order = LigneSuivante($checkStmt);
+        $order = $this->orderRepo->findActiveByAccountAndIdentifier($session->getId(), $id);
 
-        if (!is_object($order)) {
+        if (!$order) {
             ApiResponse::error("Ordre introuvable ou vous n'êtes pas autorisé à l'annuler.", 404);
         }
 

@@ -3,16 +3,18 @@
 namespace NetTrader\Api;
 
 use NetTrader\Http\Request;
+use NetTrader\Repository\StockRepository;
 use NetTrader\Service\TradingService;
-use PDO;
 
 class MarketController
 {
     private TradingService $tradingService;
+    private StockRepository $stockRepo;
 
-    public function __construct()
+    public function __construct(?StockRepository $stockRepo = null, ?TradingService $tradingService = null)
     {
-        $this->tradingService = new TradingService();
+        $this->stockRepo = $stockRepo ?? new StockRepository();
+        $this->tradingService = $tradingService ?? new TradingService();
     }
 
     /**
@@ -20,7 +22,6 @@ class MarketController
      */
     public function getSummary(Request $request): void
     {
-        $conn = Connexion(NOM, PASSE, BASE, SERVEUR);
         $now = time();
 
         list($thour, $tmin) = explode(" ", date("H i", $now));
@@ -28,19 +29,12 @@ class MarketController
         $dayOfWeek = (int)date('w', $now);
         $isMarketHours = ($decimalHour >= 9.25 && $decimalHour <= 17.917 && $dayOfWeek >= 1 && $dayOfWeek <= 5);
 
-        // Récupérer les actions avec calcul de variation si cacvalmaj existe
-        $query = "SELECT c.codesico, c.yahooname, c.nom, c.valeur, c.authachat, c.lasttime,
-                         COALESCE(m.valeur, c.valeur) as prev_valeur
-                  FROM cacval c
-                  LEFT JOIN cacvalmaj m ON (c.codesico = m.codesico)
-                  WHERE c.down = '1' OR c.valeur > 0
-                  ORDER BY c.nom ASC";
-        $stmt = ExecRequete($query, $conn);
+        // Récupérer les actions avec calcul de variation
+        $rows = $this->stockRepo->getStocksWithVariation(null, true);
         $allStocks = [];
-        $totalStocks = 0;
+        $totalStocks = count($rows);
 
-        while ($row = LigneSuivante($stmt)) {
-            $totalStocks++;
+        foreach ($rows as $row) {
             $current = (float)$row->valeur;
             $prev = (float)$row->prev_valeur;
             $variation = $prev > 0 ? round((($current - $prev) / $prev) * 100, 2) : 0.0;
@@ -98,26 +92,10 @@ class MarketController
     public function getStocks(Request $request): void
     {
         $search = trim($request->getString('search', ''));
-        $conn = Connexion(NOM, PASSE, BASE, SERVEUR);
-
-        $params = [];
-        $sql = "SELECT c.codesico, c.yahooname, c.nom, c.valeur, c.authachat, c.lasttime,
-                       COALESCE(m.valeur, c.valeur) as prev_valeur
-                FROM cacval c
-                LEFT JOIN cacvalmaj m ON (c.codesico = m.codesico)
-                WHERE 1=1";
-
-        if (!empty($search)) {
-            $sql .= " AND (c.nom LIKE ? OR c.yahooname LIKE ? OR c.codesico = ?)";
-            $params = ["%$search%", "%$search%", (int)$search];
-        }
-
-        $sql .= " ORDER BY c.nom ASC";
-
-        $stmt = ExecRequete($sql, $conn, $params);
+        $rows = $this->stockRepo->getStocksWithVariation($search);
         $stocks = [];
 
-        while ($row = LigneSuivante($stmt)) {
+        foreach ($rows as $row) {
             $current = (float)$row->valeur;
             $prev = (float)$row->prev_valeur;
             $variation = $prev > 0 ? round((($current - $prev) / $prev) * 100, 2) : 0.0;
@@ -146,15 +124,9 @@ class MarketController
             ApiResponse::error("Code action invalide", 400);
         }
 
-        $conn = Connexion(NOM, PASSE, BASE, SERVEUR);
-        $stmt = ExecRequete("SELECT c.codesico, c.yahooname, c.nom, c.valeur, c.authachat, c.lasttime,
-                                    COALESCE(m.valeur, c.valeur) as prev_valeur
-                             FROM cacval c
-                             LEFT JOIN cacvalmaj m ON (c.codesico = m.codesico)
-                             WHERE c.codesico = ?", $conn, [$code]);
-        $row = LigneSuivante($stmt);
+        $row = $this->stockRepo->getStockWithVariation($code);
 
-        if (!is_object($row)) {
+        if (!$row) {
             ApiResponse::error("Action introuvable", 404);
         }
 
@@ -162,24 +134,8 @@ class MarketController
         $prev = (float)$row->prev_valeur;
         $variation = $prev > 0 ? round((($current - $prev) / $prev) * 100, 2) : 0.0;
 
-        // Générer des points de données historiques indicatifs basés sur les transactions récentes
-        $historyStmt = ExecRequete("SELECT temps, valeurunique FROM historique WHERE codesico = ? ORDER BY temps DESC LIMIT 20", $conn, [$code]);
-        $chartPoints = [];
-        while ($hRow = LigneSuivante($historyStmt)) {
-            $chartPoints[] = [
-                'time' => (int)$hRow->temps,
-                'price' => (float)$hRow->valeurunique,
-            ];
-        }
-        $chartPoints = array_reverse($chartPoints);
-
-        // Si aucun historique de transaction, créer un point avec la valeur actuelle et précédente
-        if (empty($chartPoints)) {
-            $chartPoints = [
-                ['time' => time() - 3600, 'price' => $prev],
-                ['time' => time(), 'price' => $current],
-            ];
-        }
+        $period = $request->getString('period', '1m');
+        $chartPoints = $this->stockRepo->getStockHistory($code, $period);
 
         ApiResponse::success([
             'code' => (int)$row->codesico,
@@ -190,6 +146,31 @@ class MarketController
             'variation' => $variation,
             'authBuy' => ($row->authachat === '1'),
             'lastTime' => (int)$row->lasttime,
+            'period' => $period,
+            'history' => $chartPoints,
+        ]);
+    }
+
+    /**
+     * Récupère uniquement l'historique d'une valeur pour une période donnée.
+     */
+    public function getStockHistory(Request $request, int $code): void
+    {
+        if ($code <= 0) {
+            ApiResponse::error("Code action invalide", 400);
+        }
+
+        $row = $this->stockRepo->getStockWithVariation($code);
+        if (!$row) {
+            ApiResponse::error("Action introuvable", 404);
+        }
+
+        $period = $request->getString('period', '1m');
+        $chartPoints = $this->stockRepo->getStockHistory($code, $period);
+
+        ApiResponse::success([
+            'code' => $code,
+            'period' => $period,
             'history' => $chartPoints,
         ]);
     }

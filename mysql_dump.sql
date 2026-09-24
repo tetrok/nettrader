@@ -34,11 +34,40 @@ CREATE TABLE `cacval` (
   `valeur` double NOT NULL DEFAULT 0 COMMENT 'Dernier cours de bourse enregistré',
   `lasttime` decimal(10,0) NOT NULL DEFAULT 0 COMMENT 'Timestamp UNIX de la dernière cotation/mise à jour du cours',
   `lasttimedown` decimal(10,0) NOT NULL DEFAULT 0 COMMENT 'Timestamp UNIX de la dernière tentative ou réussite de téléchargement',
+  `last_attempt` decimal(10,0) NOT NULL DEFAULT 0 COMMENT 'Timestamp UNIX de la dernière tentative de fetch',
+  `last_status` enum('success','failed','pending') NOT NULL DEFAULT 'pending' COMMENT 'Statut du dernier fetch',
+  `fail_count` int(10) unsigned NOT NULL DEFAULT 0 COMMENT 'Nombre d echecs consecutifs',
+  `total_fails` int(10) unsigned NOT NULL DEFAULT 0 COMMENT 'Nombre total d echecs',
+  `retry_count` int(10) unsigned NOT NULL DEFAULT 0 COMMENT 'Nombre de retries lors du dernier cycle',
+  `last_error` varchar(255) DEFAULT NULL COMMENT 'Dernier message d erreur rencontree',
   `authachat` enum('1','0') NOT NULL DEFAULT '1' COMMENT 'Flag d''autorisation d''achat (1=achetable par l''algo, 0=bloqué)',
   `down` enum('1','0') NOT NULL DEFAULT '1' COMMENT 'Activer le fetch du cours dans le script (1=télécharger, 0=ignorer)',
   `idsecteur` smallint(5) UNSIGNED NOT NULL DEFAULT 22 COMMENT 'Identifiant du secteur d''activité (clé étrangère vers table secteurs)',
   `idmarket` smallint(5) UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Identifiant de la place boursière (clé étrangère vers table marchés, ex: Euronext Paris)'
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+CREATE TABLE IF NOT EXISTS `market_sync_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sync_time` decimal(10,0) NOT NULL,
+  `total_stocks` int(11) NOT NULL,
+  `success_count` int(11) NOT NULL,
+  `error_count` int(11) NOT NULL,
+  `duration_seconds` float NOT NULL,
+  `details` text DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `sync_time` (`sync_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `stock_history` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `codesico` mediumint(8) unsigned NOT NULL,
+  `temps` int(10) unsigned NOT NULL,
+  `valeur` double NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_stock_history_code_time` (`codesico`, `temps`),
+  KEY `idx_stock_history_time` (`temps`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 --
 -- Déchargement des données de la table `cacval`
@@ -364,7 +393,7 @@ CREATE TABLE `cacvalmaj` (
   `authachat` enum('1','0') NOT NULL DEFAULT '1',
   `down` enum('1','0') NOT NULL DEFAULT '1',
   `idsecteur` smallint(5) UNSIGNED NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `cacvalmaj`
@@ -608,7 +637,7 @@ INSERT INTO `cacvalmaj` (`codesico`, `yahooname`, `nom`, `valeur`, `lasttime`, `
 CREATE TABLE `chapaide` (
   `idchapaide` smallint(6) NOT NULL,
   `titrechap` varchar(250) NOT NULL DEFAULT ''
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `chapaide`
@@ -669,7 +698,7 @@ INSERT INTO `compte` (`idcompte`, `pseudonyme`, `nom`, `prenom`, `passe`, `datei
 CREATE TABLE `conf` (
   `libel` varchar(50) NOT NULL DEFAULT '',
   `valeur` text NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `conf`
@@ -693,7 +722,7 @@ CREATE TABLE `dailystatclassement` (
   `capital` double(23,2) DEFAULT NULL,
   `prog` double(23,2) DEFAULT NULL,
   `idcompte` mediumint(8) UNSIGNED NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `dailystatclassement`
@@ -709,7 +738,7 @@ CREATE TABLE `dailystatclassement` (
 CREATE TABLE `f_corps` (
   `idmessage` mediumint(8) UNSIGNED NOT NULL,
   `contenu` text NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `f_corps`
@@ -2032,7 +2061,7 @@ CREATE TABLE `f_forum` (
   `idlastmessage` mediumint(8) UNSIGNED NOT NULL,
   `authread` enum('ouvert','admin','groupe','identifie') NOT NULL DEFAULT 'ouvert',
   `authwrite` enum('identifie','admin','groupe') NOT NULL DEFAULT 'identifie'
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `f_forum`
@@ -2347,7 +2376,7 @@ CREATE TABLE `f_message` (
   `idsujet` mediumint(8) UNSIGNED NOT NULL,
   `datepost` decimal(10,0) NOT NULL,
   `idcompte` smallint(5) UNSIGNED NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `f_message`
@@ -3652,7 +3681,7 @@ INSERT INTO `f_message` (`idmessage`, `idsujet`, `datepost`, `idcompte`) VALUES
 CREATE TABLE `f_readforum` (
   `idforum` smallint(5) UNSIGNED NOT NULL,
   `idcompte` mediumint(8) UNSIGNED NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `f_readforum`
@@ -3668,7 +3697,7 @@ CREATE TABLE `f_readforum` (
 CREATE TABLE `f_readsujet` (
   `idsujet` mediumint(8) UNSIGNED NOT NULL,
   `idcompte` mediumint(8) UNSIGNED NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `f_readsujet`
@@ -3684,7 +3713,7 @@ CREATE TABLE `f_readsujet` (
 CREATE TABLE `f_section` (
   `idsection` smallint(5) UNSIGNED NOT NULL,
   `libellesection` varchar(255) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `f_section`
@@ -3710,7 +3739,7 @@ CREATE TABLE `f_sujet` (
   `txtsujet` char(80) NOT NULL,
   `nblectures` smallint(5) UNSIGNED NOT NULL,
   `idlastmessage` mediumint(8) UNSIGNED NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `f_sujet`
@@ -4094,7 +4123,7 @@ CREATE TABLE `groupe` (
   `medbronze` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
   `datecreation` decimal(10,0) UNSIGNED NOT NULL DEFAULT 0,
   `idforum` smallint(5) UNSIGNED NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `groupe`
@@ -4117,7 +4146,7 @@ CREATE TABLE `historique` (
   `valeurunique` double UNSIGNED NOT NULL DEFAULT 0,
   `taxe` double NOT NULL DEFAULT 0,
   `profit` float(10,2) NOT NULL DEFAULT 0.00
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `historique`
@@ -4133,7 +4162,7 @@ CREATE TABLE `historique` (
 CREATE TABLE `invitegroupe` (
   `idgroupe` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
   `idcompte` smallint(5) UNSIGNED NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `invitegroupe`
@@ -4148,7 +4177,7 @@ CREATE TABLE `invitegroupe` (
 
 CREATE TABLE `listmoisclass` (
   `datescore` date NOT NULL DEFAULT '0000-00-00'
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `listmoisclass`
@@ -4171,7 +4200,7 @@ CREATE TABLE `mail_tosend` (
   `titre` varchar(255) NOT NULL DEFAULT '',
   `corps` text NOT NULL,
   `etat` enum('attente','traitement','traite','erreur') NOT NULL DEFAULT 'attente'
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
 
@@ -4188,7 +4217,7 @@ CREATE TABLE `market` (
   `openminute` smallint(5) UNSIGNED NOT NULL DEFAULT 1,
   `closehour` smallint(5) UNSIGNED NOT NULL DEFAULT 23,
   `closeminute` smallint(5) UNSIGNED NOT NULL DEFAULT 59
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `market`
@@ -4210,7 +4239,7 @@ CREATE TABLE `membregroupe` (
   `idgroupe` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
   `datejoint` decimal(10,0) UNSIGNED NOT NULL DEFAULT 0,
   `capitalinscr` float(10,2) NOT NULL DEFAULT 0.00
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `membregroupe`
@@ -4232,7 +4261,7 @@ CREATE TABLE `menu` (
   `alldo` text NOT NULL,
   `authlevel` int(1) NOT NULL DEFAULT 0,
   `visiteurseulement` int(1) NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `menu`
@@ -4261,7 +4290,7 @@ CREATE TABLE `messages` (
   `titre` varchar(255) NOT NULL DEFAULT '',
   `corps` text NOT NULL,
   `etat` enum('non lu','lu') NOT NULL DEFAULT 'non lu'
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `messages`
@@ -4368,7 +4397,7 @@ CREATE TABLE `niveau` (
   `seuil` smallint(6) NOT NULL DEFAULT 0,
   `vad` enum('0','1') NOT NULL DEFAULT '0',
   `plage` enum('0','1') NOT NULL DEFAULT '0'
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `niveau`
@@ -4398,7 +4427,7 @@ CREATE TABLE `ordre` (
   `coursmin` double NOT NULL DEFAULT 0,
   `coursmax` double NOT NULL DEFAULT 0,
   `etat` enum('1','0') NOT NULL DEFAULT '1'
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `ordre`
@@ -4416,7 +4445,7 @@ CREATE TABLE `portef` (
   `codesico` mediumint(8) UNSIGNED NOT NULL DEFAULT 0,
   `quant` bigint(20) NOT NULL DEFAULT 0,
   `ansvaleur` float NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `portef`
@@ -4434,7 +4463,7 @@ CREATE TABLE `progmess` (
   `progmess` mediumtext NOT NULL,
   `addrclic` varchar(255) NOT NULL DEFAULT '',
   `addrpopup` varchar(255) NOT NULL DEFAULT ''
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `progmess`
@@ -4455,7 +4484,7 @@ CREATE TABLE `reqlist` (
   `libelreq` varchar(255) NOT NULL DEFAULT '',
   `req` text NOT NULL,
   `nbutil` smallint(6) NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `reqlist`
@@ -4504,7 +4533,7 @@ CREATE TABLE `reqlistpublic` (
   `idreq` smallint(6) NOT NULL,
   `libelreq` varchar(255) NOT NULL DEFAULT '',
   `req` text NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci PACK_KEYS=0;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci PACK_KEYS=0;
 
 --
 -- Déchargement des données de la table `reqlistpublic`
@@ -4528,7 +4557,7 @@ CREATE TABLE `scores` (
   `idcompte` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
   `datescore` date NOT NULL DEFAULT '0000-00-00',
   `capitalscores` float(20,2) UNSIGNED NOT NULL DEFAULT 0.00
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `scores`
@@ -4547,7 +4576,7 @@ CREATE TABLE `scoresgroupes` (
   `capitaldeb` float(12,2) NOT NULL DEFAULT 0.00,
   `capitalfin` float(12,2) NOT NULL DEFAULT 0.00,
   `nbmembres` tinyint(3) UNSIGNED NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `scoresgroupes`
@@ -4563,7 +4592,7 @@ CREATE TABLE `scoresgroupes` (
 CREATE TABLE `secteurent` (
   `idsecteur` smallint(6) UNSIGNED NOT NULL,
   `libellesecteur` varchar(100) NOT NULL DEFAULT ''
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `secteurent`
@@ -4602,11 +4631,11 @@ INSERT INTO `secteurent` (`idsecteur`, `libellesecteur`) VALUES
 --
 
 CREATE TABLE `session` (
-  `idSession` char(40) NOT NULL DEFAULT '',
+  `idSession` varchar(64) NOT NULL DEFAULT '',
   `idcompte` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
   `tempsLimite` decimal(10,0) NOT NULL DEFAULT 0,
   `tempsconnect` decimal(10,0) NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `session`
@@ -4624,7 +4653,7 @@ CREATE TABLE `skin` (
   `nomskin` varchar(25) NOT NULL DEFAULT '',
   `repskin` varchar(25) NOT NULL DEFAULT '',
   `descriptionskin` varchar(255) NOT NULL DEFAULT ''
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `skin`
@@ -4647,7 +4676,7 @@ CREATE TABLE `statmaj` (
   `lasttimedown_ans` decimal(10,0) NOT NULL DEFAULT 0,
   `lasttime_nouv` decimal(10,0) NOT NULL DEFAULT 0,
   `lasttimedown_nouv` decimal(10,0) NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
 
@@ -4660,7 +4689,7 @@ CREATE TABLE `statout` (
   `tmps` decimal(10,0) NOT NULL,
   `ip` varchar(20) NOT NULL,
   `url` varchar(250) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `statout`
@@ -4690,7 +4719,7 @@ CREATE TABLE `statsclassement` (
   `capital` double(23,2) DEFAULT NULL,
   `prog` double(23,2) DEFAULT NULL,
   `idcompte` smallint(5) UNSIGNED NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `statsclassement`
@@ -4709,7 +4738,7 @@ CREATE TABLE `tabaide` (
   `txtaide` text NOT NULL,
   `idchapaide` smallint(6) NOT NULL DEFAULT 0,
   `lnkaide` varchar(250) NOT NULL DEFAULT ''
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `tabaide`
@@ -4736,7 +4765,7 @@ CREATE TABLE `tabaidecomment` (
   `idcompte` smallint(6) NOT NULL DEFAULT 0,
   `datecomment` decimal(10,0) NOT NULL DEFAULT 0,
   `textecomment` text NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `tabaidecomment`
@@ -4753,7 +4782,7 @@ CREATE TABLE `tabfaq` (
   `idaide` smallint(6) NOT NULL,
   `titreaide` varchar(255) NOT NULL DEFAULT '',
   `txtaide` text NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `tabfaq`
@@ -4779,7 +4808,7 @@ CREATE TABLE `tabfaqcomment` (
   `idcompte` smallint(6) NOT NULL DEFAULT 0,
   `datecomment` decimal(10,0) NOT NULL DEFAULT 0,
   `textecomment` text NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `tabfaqcomment`
@@ -4796,7 +4825,7 @@ CREATE TABLE `tabforcing` (
   `idforcing` smallint(5) UNSIGNED NOT NULL,
   `idcompte` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
   `dateforcing` decimal(10,0) NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
 
@@ -4807,7 +4836,7 @@ CREATE TABLE `tabforcing` (
 CREATE TABLE `test` (
   `d` int(11) NOT NULL DEFAULT 0,
   `dd` int(11) NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
 
@@ -4823,7 +4852,7 @@ CREATE TABLE `verifgroupe` (
   `initialgroupe` varchar(5) NOT NULL DEFAULT '',
   `urlsite` varchar(250) NOT NULL DEFAULT '',
   `descriptiongroupe` text NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
 
@@ -4835,7 +4864,7 @@ CREATE TABLE `warn_old_sicav` (
   `idcompte` mediumint(9) NOT NULL,
   `codesico` mediumint(9) NOT NULL,
   `link` varchar(255) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
 
@@ -4848,7 +4877,7 @@ CREATE TABLE `weeklystatclassement` (
   `capital` double(23,2) DEFAULT NULL,
   `prog` double(23,2) DEFAULT NULL,
   `idcompte` mediumint(8) UNSIGNED NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `weeklystatclassement`
@@ -4863,7 +4892,7 @@ CREATE TABLE `weeklystatclassement` (
 
 CREATE TABLE `_dummy` (
   `num` int(11) NOT NULL DEFAULT 0
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
 -- Déchargement des données de la table `_dummy`
