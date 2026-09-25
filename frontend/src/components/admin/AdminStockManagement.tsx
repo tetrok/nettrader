@@ -30,6 +30,7 @@ import {
   AlertOctagon,
   CheckSquare,
   Square,
+  Lock,
 } from 'lucide-react';
 
 export const AdminStockManagement: React.FC = () => {
@@ -61,6 +62,13 @@ export const AdminStockManagement: React.FC = () => {
   const [archiveBulkCandidate, setArchiveBulkCandidate] = useState<{ codes: number[]; names: string[] } | null>(null);
   const [archiveResultModal, setArchiveResultModal] = useState<ArchiveStockResult | null>(null);
   const [isProcessingArchive, setIsProcessingArchive] = useState(false);
+
+  // Bulk delete modal states
+  const [deleteBulkCandidate, setDeleteBulkCandidate] = useState<{ codes: number[]; names: string[] } | null>(null);
+  const [deleteBulkPassword, setDeleteBulkPassword] = useState('');
+  const [deleteBulkError, setDeleteBulkError] = useState<string | null>(null);
+  const [isProcessingDeleteBulk, setIsProcessingDeleteBulk] = useState(false);
+  const [deleteBulkResultModal, setDeleteBulkResultModal] = useState<import('../../types').DeleteBulkStocksResult | null>(null);
 
   // Form states
   const [createForm, setCreateForm] = useState<CreateStockPayload>({
@@ -235,6 +243,35 @@ export const AdminStockManagement: React.FC = () => {
       setArchiveBulkCandidate(null);
     } finally {
       setIsProcessingArchive(false);
+    }
+  };
+
+  const handleDeleteBulkConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deleteBulkCandidate || deleteBulkCandidate.codes.length === 0) return;
+    if (!deleteBulkPassword.trim()) {
+      setDeleteBulkError('Le mot de passe administrateur est obligatoire pour valider cette opération.');
+      return;
+    }
+
+    setIsProcessingDeleteBulk(true);
+    setDeleteBulkError(null);
+    try {
+      const res = await adminApi.deleteBulkStocks(deleteBulkCandidate.codes, deleteBulkPassword);
+      setDeleteBulkCandidate(null);
+      setDeleteBulkPassword('');
+      setSelectedCodes([]);
+      setDeleteBulkResultModal(res);
+      setFeedback({
+        type: 'success',
+        message: `${res.deletedCount} action(s) supprimée(s) définitivement du catalogue.`,
+      });
+      loadStocks();
+      setTimeout(() => setFeedback(null), 5000);
+    } catch (err: any) {
+      setDeleteBulkError(err.message || 'Erreur lors de la suppression en masse.');
+    } finally {
+      setIsProcessingDeleteBulk(false);
     }
   };
 
@@ -509,10 +546,26 @@ export const AdminStockManagement: React.FC = () => {
                     names: selectedStocks.map((s) => s.name),
                   });
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg text-xs transition shadow-md shadow-rose-500/20"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs transition shadow-md shadow-amber-600/20"
               >
                 <Archive className="w-3.5 h-3.5" />
                 Archiver la sélection ({selectedCodes.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const selectedStocks = stocks.filter((s) => selectedCodes.includes(s.codesico));
+                  setDeleteBulkCandidate({
+                    codes: selectedCodes,
+                    names: selectedStocks.map((s) => s.name),
+                  });
+                  setDeleteBulkPassword('');
+                  setDeleteBulkError(null);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs transition shadow-md shadow-rose-600/20"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Supprimer la sélection ({selectedCodes.length})
               </button>
             </div>
           )}
@@ -1367,6 +1420,175 @@ export const AdminStockManagement: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setArchiveResultModal(null)}
+                className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl transition text-xs"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL : Confirmation Suppression en Masse avec Mot de Passe Admin */}
+      {deleteBulkCandidate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-rose-500/30 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl shadow-rose-950/50">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-bold text-rose-400 flex items-center gap-2">
+                <AlertOctagon className="w-5 h-5 text-rose-500" />
+                Suppression en masse ({deleteBulkCandidate.codes.length} actions)
+              </h3>
+              <button
+                disabled={isProcessingDeleteBulk}
+                onClick={() => {
+                  setDeleteBulkCandidate(null);
+                  setDeleteBulkPassword('');
+                  setDeleteBulkError(null);
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleDeleteBulkConfirm} className="space-y-4">
+              <div className="space-y-3 text-xs text-slate-300">
+                <p>
+                  Vous avez sélectionné <strong className="text-white font-semibold">{deleteBulkCandidate.codes.length} action(s)</strong> pour une{' '}
+                  <span className="text-rose-400 font-bold underline">suppression définitive</span> du catalogue NetTrader :
+                </p>
+
+                <div className="max-h-24 overflow-y-auto bg-slate-950/70 border border-slate-800/80 rounded-xl p-2.5 space-y-1 font-mono text-[11px] text-slate-400">
+                  {deleteBulkCandidate.names.map((name, i) => (
+                    <div key={i} className="truncate">
+                      • {name} <span className="text-slate-600">(#{deleteBulkCandidate.codes[i]})</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-rose-500/10 border border-rose-500/25 p-3.5 rounded-xl space-y-2 text-rose-200/90">
+                  <div className="font-semibold text-rose-300 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400" />
+                    Opération irréversible et contrôles de sécurité :
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 text-[11px] leading-relaxed">
+                    <li>
+                      Les entrées du catalogue <code className="text-rose-300 bg-rose-950/60 px-1 py-0.5 rounded">cacval</code> et des mises à jour <code className="text-rose-300 bg-rose-950/60 px-1 py-0.5 rounded">cacvalmaj</code> seront <strong>définitivement supprimées</strong>.
+                    </li>
+                    <li>
+                      <strong>Protection portefeuilles & ordres :</strong> Si une action est actuellement détenue dans un portefeuille ou associée à un ordre actif, elle sera <strong>automatiquement rejetée et protégée</strong>.
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Saisie obligatoire du mot de passe administrateur */}
+                <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-4 space-y-2.5">
+                  <label className="block text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    Mot de passe administrateur requis pour validation :
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    autoFocus
+                    value={deleteBulkPassword}
+                    onChange={(e) => {
+                      setDeleteBulkPassword(e.target.value);
+                      if (deleteBulkError) setDeleteBulkError(null);
+                    }}
+                    placeholder="Saisissez votre mot de passe admin..."
+                    className="w-full bg-slate-900 border border-slate-700 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 rounded-xl px-3.5 py-2.5 text-white text-xs placeholder:text-slate-500 outline-none transition"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    Cette authentification confirme votre autorité pour exécuter cette opération critique.
+                  </p>
+                </div>
+
+                {deleteBulkError && (
+                  <div className="bg-rose-500/20 border border-rose-500/40 p-3 rounded-xl text-rose-300 text-xs font-medium flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span>{deleteBulkError}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                <button
+                  type="button"
+                  disabled={isProcessingDeleteBulk}
+                  onClick={() => {
+                    setDeleteBulkCandidate(null);
+                    setDeleteBulkPassword('');
+                    setDeleteBulkError(null);
+                  }}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition text-xs"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={isProcessingDeleteBulk || !deleteBulkPassword.trim()}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold rounded-xl transition text-xs flex items-center gap-1.5 shadow-lg shadow-rose-900/30"
+                >
+                  {isProcessingDeleteBulk ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Suppression en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Confirmer la suppression en masse
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL : Bilan après suppression en masse */}
+      {deleteBulkResultModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                Suppression terminée
+              </h3>
+              <button onClick={() => setDeleteBulkResultModal(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <p className="text-slate-300">
+                L'opération a supprimé avec succès{' '}
+                <strong className="text-white font-semibold">{deleteBulkResultModal.deletedCount} action(s)</strong> du catalogue.
+              </p>
+
+              {deleteBulkResultModal.errors && deleteBulkResultModal.errors.length > 0 && (
+                <div className="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl text-amber-300 text-[11px] space-y-1">
+                  <div className="font-semibold text-amber-400 flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Actions non supprimées ({deleteBulkResultModal.errors.length}) :
+                  </div>
+                  <div className="max-h-32 overflow-y-auto space-y-1 pt-1">
+                    {deleteBulkResultModal.errors.map((err, i) => (
+                      <div key={i} className="text-amber-200/90 leading-tight">
+                        • {err}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeleteBulkResultModal(null)}
                 className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl transition text-xs"
               >
                 Fermer

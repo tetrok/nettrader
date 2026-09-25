@@ -20,6 +20,9 @@ from pyconst import *
 
 DOWNLOAD_INTERVAL=120 #s
 SICAV_COUNT_PER_DOWNLOAD=50
+
+MAX_FAILURES_BLOCK_BUY = int(os.environ.get("MAX_FAILURES_BLOCK_BUY", "3"))
+MAX_FAILURES_DISABLE_SYNC = int(os.environ.get("MAX_FAILURES_DISABLE_SYNC", "15"))
 # http://download.finance.yahoo.com/d/quotes.csv?s=ALU.PA&f=sl1d1t1c1ohgv&e=.csv
 # re.match("\"([^\"]*)\",([^,]*),\"([0-9]{1,2})/([0-9]{1,2})/([0-9]{4})\",\"([0-9]{1,2}):([0-9]{1,2})([a-z]{2})\",([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)",ligne).groups()
 #http://fr.old.finance.yahoo.com/d/quotes.csv?s=ALU.PA&f=snl1d1t1c1ohgv&e=.csv
@@ -72,7 +75,7 @@ def DisableAction(db,actionname):
 def DownloadParisMarkedData(db):
     mail_error_text=""
     start_time = time.time()
-    dictdown=RunSelect(db,"SELECT codesico,yahooname,lasttime,valeur,fail_count,total_fails FROM cacval WHERE down='1' ORDER BY codesico ASC")
+    dictdown=RunSelect(db,"SELECT codesico,yahooname,lasttime,valeur,fail_count,total_fails,authachat,down,is_archived FROM cacval WHERE down='1' ORDER BY codesico ASC")
     action_list=[]
     action_dict={}
     for action in dictdown:
@@ -179,7 +182,8 @@ def DownloadParisMarkedData(db):
                     ExecSql(db, """
                         UPDATE cacval 
                         SET valeur=%s, lasttime=%s, lasttimedown=%s, last_attempt=%s, 
-                            last_status='success', fail_count=0, retry_count=%s, last_error=NULL 
+                            last_status='success', fail_count=0, retry_count=%s, last_error=NULL,
+                            authachat=IF(is_archived='0', '1', '0')
                         WHERE yahooname=%s
                     """, (fval, now_attempt, now_attempt, now_attempt, retried, yname))
 
@@ -200,13 +204,27 @@ def DownloadParisMarkedData(db):
                     print("[%s] [ERREUR] %s: %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), yname, err_msg))
                     mail_error_text += ("%s: %s\n" % (yname, err_msg))
                     
+                    prev_fails = int(action_dict.get(yname, {}).get("fail_count") or 0)
+                    new_fail_count = prev_fails + 1
+                    should_block_buy = (MAX_FAILURES_BLOCK_BUY > 0 and new_fail_count >= MAX_FAILURES_BLOCK_BUY)
+                    should_disable_sync = (MAX_FAILURES_DISABLE_SYNC > 0 and new_fail_count >= MAX_FAILURES_DISABLE_SYNC)
+
+                    if should_block_buy:
+                        print("[%s] [PROTECTION] %s: %d échecs consécutifs >= seuil achat (%d) -> authachat='0'" % 
+                              (time.strftime("%d/%m/%Y %H:%M:%S"), yname, new_fail_count, MAX_FAILURES_BLOCK_BUY))
+                    if should_disable_sync:
+                        print("[%s] [PROTECTION] %s: %d échecs consécutifs >= seuil synchro (%d) -> down='0' (inactivée)" % 
+                              (time.strftime("%d/%m/%Y %H:%M:%S"), yname, new_fail_count, MAX_FAILURES_DISABLE_SYNC))
+
                     ExecSql(db, """
                         UPDATE cacval 
                         SET last_attempt=%s, last_status='failed', 
-                            fail_count=fail_count+1, total_fails=total_fails+1, 
-                            retry_count=%s, last_error=%s 
+                            fail_count=%s, total_fails=total_fails+1, 
+                            retry_count=%s, last_error=%s,
+                            authachat=IF(%s, '0', authachat),
+                            down=IF(%s, '0', down)
                         WHERE yahooname=%s
-                    """, (now_attempt, retried, err_msg, yname))
+                    """, (now_attempt, new_fail_count, retried, err_msg, 1 if should_block_buy else 0, 1 if should_disable_sync else 0, yname))
 
             print("[%s] [INFO] Batch terminé : %d succès, %d échecs." % (time.strftime("%d/%m/%Y %H:%M:%S"), batch_success_count, batch_error_count))
 
@@ -218,13 +236,27 @@ def DownloadParisMarkedData(db):
             now_attempt = int(time.time())
             for yname in batch:
                 total_download_error += 1
+                prev_fails = int(action_dict.get(yname, {}).get("fail_count") or 0)
+                new_fail_count = prev_fails + 1
+                should_block_buy = (MAX_FAILURES_BLOCK_BUY > 0 and new_fail_count >= MAX_FAILURES_BLOCK_BUY)
+                should_disable_sync = (MAX_FAILURES_DISABLE_SYNC > 0 and new_fail_count >= MAX_FAILURES_DISABLE_SYNC)
+
+                if should_block_buy:
+                    print("[%s] [PROTECTION] %s: %d échecs consécutifs >= seuil achat (%d) -> authachat='0'" % 
+                          (time.strftime("%d/%m/%Y %H:%M:%S"), yname, new_fail_count, MAX_FAILURES_BLOCK_BUY))
+                if should_disable_sync:
+                    print("[%s] [PROTECTION] %s: %d échecs consécutifs >= seuil synchro (%d) -> down='0' (inactivée)" % 
+                          (time.strftime("%d/%m/%Y %H:%M:%S"), yname, new_fail_count, MAX_FAILURES_DISABLE_SYNC))
+
                 ExecSql(db, """
                     UPDATE cacval 
                     SET last_attempt=%s, last_status='failed', 
-                        fail_count=fail_count+1, total_fails=total_fails+1, 
-                        retry_count=0, last_error=%s 
+                        fail_count=%s, total_fails=total_fails+1, 
+                        retry_count=0, last_error=%s,
+                        authachat=IF(%s, '0', authachat),
+                        down=IF(%s, '0', down)
                     WHERE yahooname=%s
-                """, (now_attempt, str(e)[:250], yname))
+                """, (now_attempt, new_fail_count, str(e)[:250], 1 if should_block_buy else 0, 1 if should_disable_sync else 0, yname))
             
     duration = time.time() - start_time
     total_stocks = len(action_list)
@@ -247,64 +279,78 @@ def DownloadParisMarkedData(db):
             VALUES (UNIX_TIMESTAMP(), 'nettrader2009@nettrader.fr', 'Admin', 'nettrader2009@nettrader.fr', 'Admin', 'Rapport de telechargement', %s, 'attente')
         """, (mail_error_text,))
 
-firstloop=True
-while 1:
-    timtup=time.struct_time(time.localtime(time.time()))
-    if firstloop or (timtup.tm_wday<5 and timtup.tm_hour>=9 and timtup.tm_hour<18):
-        if firstloop:
-            print("[%s] [INFO] Démarrage de la boucle principale du script (premier tour)." % time.strftime("%d/%m/%Y %H:%M:%S"))
+def main():
+    firstloop = True
+    cron_secret = os.environ.get("CRON_SECRET", "nettrader_cron_secure_token_secret")
+    ignore_hours = os.environ.get("IGNORE_MARKET_HOURS", "0") in ("1", "true", "True", "yes")
+
+    while 1:
+        timtup = time.localtime()
+        is_weekday = timtup.tm_wday < 5
+        # Heures Euronext Paris : 09:00 à 17:35
+        is_open_time = (timtup.tm_hour > 9 or (timtup.tm_hour == 9 and timtup.tm_min >= 0)) and \
+                       (timtup.tm_hour < 17 or (timtup.tm_hour == 17 and timtup.tm_min <= 35))
+        is_market_open = is_weekday and is_open_time
+
+        should_run = firstloop or ignore_hours or is_market_open
+
+        if should_run:
+            if firstloop:
+                print("[%s] [INFO] Démarrage de la boucle principale du script (premier tour)." % time.strftime("%d/%m/%Y %H:%M:%S"))
+            elif ignore_hours:
+                print("[%s] [INFO] Mode IGNORE_MARKET_HOURS actif. Lancement du cycle de mise à jour." % time.strftime("%d/%m/%Y %H:%M:%S"))
+            else:
+                print("[%s] [INFO] Heure de marché active (Jour: %d, Heure: %d:%02d). Lancement du cycle de mise à jour." % (time.strftime("%d/%m/%Y %H:%M:%S"), timtup.tm_wday, timtup.tm_hour, timtup.tm_min))
+
+            firstloop = False
+            try:
+                db = pymysql.connect(host=C_HOST, user=C_USER, passwd=C_PWD, db=C_DBNAME)
+                print("[%s] [INFO] Connexion à la base de données MySQL établie avec succès." % time.strftime("%d/%m/%Y %H:%M:%S"))
+            except Exception as e:
+                print("[%s] [ERREUR] Échec de la connexion à la base de données MySQL: %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), str(e)))
+                traceback.print_exc()
+                time.sleep(60)
+                continue
+
+            begindown = time.time()
+
+            print("[%s] [INFO] Appel de la page PHP checkscore..." % time.strftime("%d/%m/%Y %H:%M:%S"))
+            try:
+                url_checkscore = URLINDEX.rstrip("/") + "/cmd.php?do=checkscore&key=" + cron_secret
+                req_checkscore = urllib.Request(url_checkscore, headers={"X-Cron-Key": cron_secret})
+                response = urllib.urlopen(req_checkscore)
+                print("[%s] [INFO] Appel checkscore réussi (Code HTTP: %s)" % (time.strftime("%d/%m/%Y %H:%M:%S"), getattr(response, 'status', 'N/A')))
+            except Exception as e:
+                print("[%s] [ERREUR] Erreur appel de page php checkscore (%s): %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), url_checkscore, str(e)))
+
+            try:
+                DownloadParisMarkedData(db)
+            except Exception as e:
+                print("[%s] [ERREUR] Erreur générale de téléchargement du marché: %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), str(e)))
+                exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+                traceback.print_exception(exceptionType, exceptionValue, exceptionTraceback, limit=20, file=sys.stdout)
+
+            print("[%s] [INFO] Appel de la page PHP executeorder..." % time.strftime("%d/%m/%Y %H:%M:%S"))
+            try:
+                url_executeorder = URLINDEX.rstrip("/") + "/cmd.php?do=executeorder&key=" + cron_secret
+                req_executeorder = urllib.Request(url_executeorder, headers={"X-Cron-Key": cron_secret})
+                response = urllib.urlopen(req_executeorder)
+                print("[%s] [INFO] Appel executeorder réussi (Code HTTP: %s)" % (time.strftime("%d/%m/%Y %H:%M:%S"), getattr(response, 'status', 'N/A')))
+            except Exception as e:
+                print("[%s] [ERREUR] Erreur appel de page php executeorder (%s): %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), url_executeorder, str(e)))
+
+            db.close()
+            print("[%s] [INFO] Connexion à la base de données fermée." % time.strftime("%d/%m/%Y %H:%M:%S"))
+
+            duration = time.time() - begindown
+            nextdown = DOWNLOAD_INTERVAL - duration
+            print("[%s] [INFO] Cycle terminé en %.2f secondes. Prochain téléchargement dans %.2f secondes." % (time.strftime("%d/%m/%Y %H:%M:%S"), duration, nextdown))
+
+            if nextdown > 0.:
+                time.sleep(nextdown)
         else:
-            print("[%s] [INFO] Heure de marché active (Jour: %d, Heure: %d h). Lancement du cycle de mise à jour." % (time.strftime("%d/%m/%Y %H:%M:%S"), timtup.tm_wday, timtup.tm_hour))
-        
-        firstloop=False
-        try:
-            db = pymysql.connect(host=C_HOST, user=C_USER, passwd=C_PWD, db=C_DBNAME)
-            print("[%s] [INFO] Connexion à la base de données MySQL établie avec succès." % time.strftime("%d/%m/%Y %H:%M:%S"))
-        except Exception as e:
-            print("[%s] [ERREUR] Échec de la connexion à la base de données MySQL: %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), str(e)))
-            traceback.print_exc()
+            print("[%s] [INFO] Hors horaires de marché (Jour: %d, Heure: %d:%02d). Mise en veille pour 60 secondes." % (time.strftime("%d/%m/%Y %H:%M:%S"), timtup.tm_wday, timtup.tm_hour, timtup.tm_min))
             time.sleep(60)
-            continue
 
-        begindown=time.time()
-        cron_secret = os.environ.get("CRON_SECRET", "nettrader_cron_secure_token_secret")
-        
-        print("[%s] [INFO] Appel de la page PHP checkscore..." % time.strftime("%d/%m/%Y %H:%M:%S"))
-        try:
-            url_checkscore = URLINDEX.rstrip("/") + "/cmd.php?do=checkscore&key=" + cron_secret
-            req_checkscore = urllib.Request(url_checkscore, headers={"X-Cron-Key": cron_secret})
-            response = urllib.urlopen(req_checkscore)
-            print("[%s] [INFO] Appel checkscore réussi (Code HTTP: %s)" % (time.strftime("%d/%m/%Y %H:%M:%S"), getattr(response, 'status', 'N/A')))
-        except Exception as e:
-            print("[%s] [ERREUR] Erreur appel de page php checkscore (%s): %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), url_checkscore, str(e)))
-            print(sys.exc_info())
-
-        try:
-            DownloadParisMarkedData(db)
-        except Exception as e:
-            print("[%s] [ERREUR] Erreur générale de téléchargement du marché: %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), str(e)))
-            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-            traceback.print_exception(exceptionType, exceptionValue, exceptionTraceback, limit=20, file=sys.stdout)
-
-        print("[%s] [INFO] Appel de la page PHP executeorder..." % time.strftime("%d/%m/%Y %H:%M:%S"))
-        try:
-            url_executeorder = URLINDEX.rstrip("/") + "/cmd.php?do=executeorder&key=" + cron_secret
-            req_executeorder = urllib.Request(url_executeorder, headers={"X-Cron-Key": cron_secret})
-            response = urllib.urlopen(req_executeorder)
-            print("[%s] [INFO] Appel executeorder réussi (Code HTTP: %s)" % (time.strftime("%d/%m/%Y %H:%M:%S"), getattr(response, 'status', 'N/A')))
-        except Exception as e:
-            print("[%s] [ERREUR] Erreur appel de page php executeorder (%s): %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), url_executeorder, str(e)))
-            print(sys.exc_info())
-
-        db.close()
-        print("[%s] [INFO] Connexion à la base de données fermée." % time.strftime("%d/%m/%Y %H:%M:%S"))
-
-        duration = time.time() - begindown
-        nextdown = DOWNLOAD_INTERVAL - duration
-        print("[%s] [INFO] Cycle terminé en %.2f secondes. Prochain téléchargement dans %.2f secondes." % (time.strftime("%d/%m/%Y %H:%M:%S"), duration, nextdown))
-        
-        if nextdown>0.:
-            time.sleep(nextdown)
-    else:
-        print("[%s] [INFO] Hors horaires de marché (Jour: %d, Heure: %d h). Mise en veille pour 60 secondes." % (time.strftime("%d/%m/%Y %H:%M:%S"), timtup.tm_wday, timtup.tm_hour))
-        time.sleep(60)
+if __name__ == '__main__':
+    main()

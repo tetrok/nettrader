@@ -115,7 +115,7 @@ ExecRequete("INSERT INTO session (idSession, idcompte, tempsLimite, tempsconnect
 // Nettoyer l'état des ordres et du portefeuille de test
 ExecRequete("DELETE FROM ordre WHERE idcompte = ?", $conn, [$userId]);
 ExecRequete("DELETE FROM portef WHERE idcompte = ? AND codesico IN (167, 5229)", $conn, [$userId]);
-
+ExecRequete("UPDATE cacval SET authachat = '1', down = '1', is_archived = '0' WHERE codesico = 167", $conn);
 
 // -------------------------------------------------------------
 // SECTION 1 : Tests Unitaires Métier (TradingService)
@@ -765,6 +765,33 @@ assertTest(
     "Code: {$resResetAll['code']}"
 );
 
+// 10.8 : Rejet HTTP 403 sur force-sync pour non-administrateur
+$resNonAdminForce = apiRequest('POST', '/admin/market-sync/force-sync', $testToken);
+assertTest(
+    "Market Sync : Rejet HTTP 403 sur actualisation forcée pour non-administrateur",
+    $resNonAdminForce['code'] === 403,
+    "Code: {$resNonAdminForce['code']}"
+);
+
+// 10.9 : Actualisation forcée unitaire d'un titre actif
+$activeStockRes = apiRequest('GET', '/admin/market-sync/stocks?status=success&limit=1', $adminToken2);
+$activeStockCode = $activeStockRes['json']['data']['items'][0]['codesico'] ?? 12101;
+$resForceOne = apiRequest('POST', "/admin/market-sync/stocks/$activeStockCode/force-sync", $adminToken2);
+assertTest(
+    "Market Sync : Actualisation forcée de la cotation d'un titre unitaire (POST .../force-sync)",
+    $resForceOne['code'] === 200 && ($resForceOne['json']['data']['totalStocks'] ?? 0) === 1,
+    "Code: {$resForceOne['code']}, Succès: " . ($resForceOne['json']['data']['successCount'] ?? 0)
+);
+
+// 10.10 : Actualisation forcée globale des cotations
+$resForceAll = apiRequest('POST', '/admin/market-sync/force-sync', $adminToken2);
+$forceAllData = $resForceAll['json']['data'] ?? [];
+assertTest(
+    "Market Sync : Actualisation forcée globale des cotations (POST /admin/market-sync/force-sync)",
+    $resForceAll['code'] === 200 && ($forceAllData['totalStocks'] ?? 0) > 0 && ($forceAllData['successCount'] ?? 0) > 0,
+    "Code: {$resForceAll['code']}, Total: " . ($forceAllData['totalStocks'] ?? 0) . ", Succès: " . ($forceAllData['successCount'] ?? 0) . ", Durée: " . ($forceAllData['durationSeconds'] ?? 0) . "s"
+);
+
 // -------------------------------------------------------------
 // SECTION 11 : Tests Gestion & Catalogue des Actions (/api/admin/stocks/...)
 // -------------------------------------------------------------
@@ -881,6 +908,63 @@ assertTest(
     "Catalogue Actions : Suppression de l'action de test (DELETE /admin/stocks/{code})",
     $resDelete['code'] === 200 && $checkDeleted['code'] === 404,
     "Code: {$resDelete['code']}, CheckDeleted: {$checkDeleted['code']}"
+);
+
+// 11.11 : Suppression en masse - Rejet si mot de passe admin absent ou incorrect
+$bulkTestStock1 = 99992;
+$bulkTestStock2 = 99993;
+apiRequest('POST', '/admin/stocks', $adminToken2, [
+    'codesico' => $bulkTestStock1,
+    'yahooname' => 'BULK1.PA',
+    'nom' => 'Bulk Test Stock 1',
+    'valeur' => 25.0,
+    'authachat' => '0',
+    'down' => '0',
+    'idsecteur' => 1,
+    'idmarket' => 1,
+]);
+apiRequest('POST', '/admin/stocks', $adminToken2, [
+    'codesico' => $bulkTestStock2,
+    'yahooname' => 'BULK2.PA',
+    'nom' => 'Bulk Test Stock 2',
+    'valeur' => 30.0,
+    'authachat' => '0',
+    'down' => '0',
+    'idsecteur' => 1,
+    'idmarket' => 1,
+]);
+
+$resBulkNoPass = apiRequest('POST', '/admin/stocks/delete-bulk', $adminToken2, [
+    'codes' => [$bulkTestStock1, $bulkTestStock2],
+    'adminPassword' => '',
+]);
+assertTest(
+    "Catalogue Actions : Rejet HTTP 400 sur suppression en masse sans mot de passe admin",
+    $resBulkNoPass['code'] === 400,
+    "Code: {$resBulkNoPass['code']}, Rep: {$resBulkNoPass['body']}"
+);
+
+$resBulkWrongPass = apiRequest('POST', '/admin/stocks/delete-bulk', $adminToken2, [
+    'codes' => [$bulkTestStock1, $bulkTestStock2],
+    'adminPassword' => 'mauvaismotdepasse123',
+]);
+assertTest(
+    "Catalogue Actions : Rejet HTTP 403 sur suppression en masse avec mot de passe admin erroné",
+    $resBulkWrongPass['code'] === 403,
+    "Code: {$resBulkWrongPass['code']}, Rep: {$resBulkWrongPass['body']}"
+);
+
+// 11.12 : Suppression en masse - Validation réussie avec mot de passe admin valide
+$resBulkSuccess = apiRequest('POST', '/admin/stocks/delete-bulk', $adminToken2, [
+    'codes' => [$bulkTestStock1, $bulkTestStock2],
+    'adminPassword' => 'demo',
+]);
+$checkBulk1 = apiRequest('GET', "/market/stocks/$bulkTestStock1");
+$checkBulk2 = apiRequest('GET', "/market/stocks/$bulkTestStock2");
+assertTest(
+    "Catalogue Actions : Succès HTTP 200 sur suppression en masse validée par mot de passe admin",
+    $resBulkSuccess['code'] === 200 && ($resBulkSuccess['json']['data']['deletedCount'] ?? 0) === 2 && $checkBulk1['code'] === 404 && $checkBulk2['code'] === 404,
+    "Code: {$resBulkSuccess['code']}, DeletedCount: " . ($resBulkSuccess['json']['data']['deletedCount'] ?? 0) . ", Check1: {$checkBulk1['code']}, Check2: {$checkBulk2['code']}"
 );
 
 // 12. Tests Historique Boursier & Sélecteur de Périodes (/api/market/stocks/...)

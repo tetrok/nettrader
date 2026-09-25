@@ -21,6 +21,7 @@ import {
   Filter,
   CheckSquare,
   Square,
+  MinusSquare,
   TrendingUp,
 } from 'lucide-react';
 
@@ -135,16 +136,34 @@ export const AdminYahooDiscovery: React.FC = () => {
     });
   };
 
-  const handleSelectAllOnPage = () => {
-    const unadded = screenerStocks.filter((s) => !s.inDatabase || !s.isTracked);
-    const allSelected = unadded.length > 0 && unadded.every((s) => selectedTickers.has(s.symbol));
+  // Sélectionner / désélectionner TOUTES les actions affichées sur la page courante
+  const handleToggleSelectAllOnPage = () => {
+    if (screenerStocks.length === 0) return;
+    const allSelected = screenerStocks.every((s) => selectedTickers.has(s.symbol));
 
     setSelectedTickers((prev) => {
       const next = new Set(prev);
       if (allSelected) {
-        unadded.forEach((s) => next.delete(s.symbol));
+        screenerStocks.forEach((s) => next.delete(s.symbol));
       } else {
-        unadded.forEach((s) => next.add(s.symbol));
+        screenerStocks.forEach((s) => next.add(s.symbol));
+      }
+      return next;
+    });
+  };
+
+  // Sélectionner spécifiquement les actions non suivies / non importées sur la page courante
+  const handleSelectUnaddedOnPage = () => {
+    const unadded = screenerStocks.filter((s) => !s.inDatabase || !s.isTracked);
+    const targetPool = unadded.length > 0 ? unadded : screenerStocks;
+    const allTargetSelected = targetPool.every((s) => selectedTickers.has(s.symbol));
+
+    setSelectedTickers((prev) => {
+      const next = new Set(prev);
+      if (allTargetSelected) {
+        targetPool.forEach((s) => next.delete(s.symbol));
+      } else {
+        targetPool.forEach((s) => next.add(s.symbol));
       }
       return next;
     });
@@ -206,6 +225,12 @@ export const AdminYahooDiscovery: React.FC = () => {
   });
 
   const screenerTotalPages = Math.ceil(screenerTotal / screenerLimit) || 1;
+
+  // Calculs pour l'état de sélection sur la page courante
+  const pageTickersCount = screenerStocks.length;
+  const selectedOnPageCount = screenerStocks.filter((s) => selectedTickers.has(s.symbol)).length;
+  const isAllPageSelected = pageTickersCount > 0 && selectedOnPageCount === pageTickersCount;
+  const isPartiallyPageSelected = selectedOnPageCount > 0 && selectedOnPageCount < pageTickersCount;
 
   return (
     <div className="space-y-6">
@@ -487,10 +512,27 @@ export const AdminYahooDiscovery: React.FC = () => {
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={handleSelectAllOnPage}
+                onClick={handleToggleSelectAllOnPage}
                 className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
+                title="Cocher ou décocher toutes les actions affichées"
               >
-                <CheckSquare className="w-4 h-4" />
+                {isAllPageSelected ? (
+                  <CheckSquare className="w-4 h-4 text-emerald-400" />
+                ) : isPartiallyPageSelected ? (
+                  <MinusSquare className="w-4 h-4 text-emerald-400" />
+                ) : (
+                  <Square className="w-4 h-4 text-slate-400" />
+                )}
+                <span>{isAllPageSelected ? 'Tout décocher' : 'Tout cocher'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSelectUnaddedOnPage}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-2 transition"
+                title="Cocher uniquement les actions non suivies ou absentes de la base"
+              >
+                <CheckSquare className="w-4 h-4 text-slate-400" />
                 <span>Cocher non suivies</span>
               </button>
 
@@ -530,11 +572,17 @@ export const AdminYahooDiscovery: React.FC = () => {
                       <th className="py-3 px-4 w-10 text-center">
                         <button
                           type="button"
-                          onClick={handleSelectAllOnPage}
-                          className="text-slate-400 hover:text-white"
-                          title="Sélectionner tout sur cette page"
+                          onClick={handleToggleSelectAllOnPage}
+                          className="text-slate-400 hover:text-white transition flex items-center justify-center mx-auto"
+                          title={isAllPageSelected ? 'Tout décocher sur cette page' : 'Tout cocher sur cette page'}
                         >
-                          <CheckSquare className="w-4 h-4" />
+                          {isAllPageSelected ? (
+                            <CheckSquare className="w-4 h-4 text-emerald-400" />
+                          ) : isPartiallyPageSelected ? (
+                            <MinusSquare className="w-4 h-4 text-emerald-400" />
+                          ) : (
+                            <Square className="w-4 h-4" />
+                          )}
                         </button>
                       </th>
                       <th className="py-3 px-4">Ticker</th>

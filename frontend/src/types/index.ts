@@ -280,6 +280,13 @@ export interface MarketSyncLogItem {
   details: string;
 }
 
+export interface MarketSyncRunResult {
+  totalStocks: number;
+  successCount: number;
+  errorCount: number;
+  durationSeconds: number;
+}
+
 export interface MarketSyncStockItem {
   codesico: number;
   ticker: string;
@@ -324,6 +331,12 @@ export interface ArchiveStockResult {
   totalCashCredited?: number;
   archivedCount?: number;
   totalPositionsClosed?: number;
+  errors?: string[];
+}
+
+export interface DeleteBulkStocksResult {
+  success: boolean;
+  deletedCount: number;
   errors?: string[];
 }
 

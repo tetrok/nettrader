@@ -21,6 +21,7 @@ import {
   TrendingUp,
   History,
   ShieldAlert,
+  Zap,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -40,6 +41,8 @@ export const AdminMarketSync: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [syncingAll, setSyncingAll] = useState(false);
+  const [syncingStockCode, setSyncingStockCode] = useState<number | null>(null);
   const [showLogs, setShowLogs] = useState(false);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -72,7 +75,7 @@ export const AdminMarketSync: React.FC = () => {
     }
   };
 
-  const refreshAll = async () => {
+  const reloadView = async () => {
     setRefreshing(true);
     setActionFeedback(null);
     setActionError(null);
@@ -80,6 +83,44 @@ export const AdminMarketSync: React.FC = () => {
       await Promise.all([loadOverviewAndLogs(), loadStocks(page)]);
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const handleForceMarketSync = async () => {
+    setSyncingAll(true);
+    setActionFeedback(null);
+    setActionError(null);
+    try {
+      const res = await adminApi.forceMarketSync();
+      setActionFeedback(
+        `Actualisation forcée réussie : ${res.successCount}/${res.totalStocks} valeurs synchronisées depuis Yahoo Finance en ${res.durationSeconds}s.`
+      );
+      await Promise.all([loadOverviewAndLogs(), loadStocks(page)]);
+      setTimeout(() => setActionFeedback(null), 6000);
+    } catch (err: any) {
+      setActionError(err.message || 'Erreur lors de l’actualisation forcée des cotations.');
+      setTimeout(() => setActionError(null), 6000);
+    } finally {
+      setSyncingAll(false);
+    }
+  };
+
+  const handleForceStockSync = async (codesico: number, ticker: string) => {
+    setSyncingStockCode(codesico);
+    try {
+      const res = await adminApi.forceStockSync(codesico);
+      if (res.successCount > 0) {
+        setActionFeedback(`Cotation actualisée avec succès pour ${ticker} (${res.durationSeconds}s).`);
+      } else {
+        setActionError(`Impossible de récupérer la cotation pour ${ticker}.`);
+      }
+      await Promise.all([loadOverviewAndLogs(), loadStocks(page)]);
+      setTimeout(() => setActionFeedback(null), 4000);
+    } catch (err: any) {
+      setActionError(err.message || `Erreur lors de l’actualisation de ${ticker}.`);
+      setTimeout(() => setActionError(null), 5000);
+    } finally {
+      setSyncingStockCode(null);
     }
   };
 
@@ -190,7 +231,7 @@ export const AdminMarketSync: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleResetAllErrors}
             className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 hover:text-amber-300 font-semibold text-xs flex items-center gap-1.5 transition"
@@ -200,12 +241,22 @@ export const AdminMarketSync: React.FC = () => {
             <span>Réinitialiser Erreurs</span>
           </button>
           <button
-            onClick={refreshAll}
-            disabled={refreshing}
-            className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50"
+            onClick={reloadView}
+            disabled={refreshing || syncingAll}
+            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-semibold text-xs flex items-center gap-1.5 transition disabled:opacity-50"
+            title="Recharger l'affichage depuis la base de données locale"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>Actualiser</span>
+            <span>Recharger la vue</span>
+          </button>
+          <button
+            onClick={handleForceMarketSync}
+            disabled={syncingAll || refreshing}
+            className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition disabled:opacity-50 shadow-md shadow-emerald-500/20"
+            title="Interroger immédiatement Yahoo Finance et actualiser les cotations de tous les titres suivis"
+          >
+            <Zap className={`w-3.5 h-3.5 ${syncingAll ? 'animate-spin' : ''}`} />
+            <span>{syncingAll ? 'Actualisation en cours...' : 'Actualiser (Forcer)'}</span>
           </button>
         </div>
       </div>
@@ -609,6 +660,14 @@ export const AdminMarketSync: React.FC = () => {
                       {/* Actions */}
                       <td className="px-5 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleForceStockSync(s.codesico, s.ticker)}
+                            disabled={syncingStockCode === s.codesico || syncingAll}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 transition disabled:opacity-50"
+                            title={`Forcer l'actualisation de la cotation Yahoo pour ${s.ticker}`}
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${syncingStockCode === s.codesico ? 'animate-spin' : ''}`} />
+                          </button>
                           {s.failCount > 0 && (
                             <button
                               onClick={() => handleResetStockErrors(s.codesico, s.ticker)}

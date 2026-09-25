@@ -211,6 +211,12 @@ try {
         (new AdminController())->resetStockErrors($request, (int)$segments[3]);
     } elseif ($path === 'admin/market-sync/reset-all-errors' && $method === 'POST') {
         (new AdminController())->resetAllStockErrors($request);
+    } elseif ($path === 'admin/market-sync/force-sync' && $method === 'POST') {
+        (new AdminController())->forceMarketSync($request);
+    } elseif (isset($segments[0], $segments[1], $segments[2], $segments[3], $segments[4]) &&
+              $segments[0] === 'admin' && $segments[1] === 'market-sync' && $segments[2] === 'stocks' &&
+              is_numeric($segments[3]) && $segments[4] === 'force-sync' && $method === 'POST') {
+        (new AdminController())->forceStockSync($request, (int)$segments[3]);
     }
 
     // Administration - Catalogue & Gestion des Actions
@@ -236,6 +242,8 @@ try {
         (new AdminController())->unarchiveStock($request, (int)$segments[2]);
     } elseif ($path === 'admin/stocks/archive-bulk' && $method === 'POST') {
         (new AdminController())->archiveBulkStocks($request);
+    } elseif ($path === 'admin/stocks/delete-bulk' && $method === 'POST') {
+        (new AdminController())->deleteBulkStocks($request);
     } elseif (isset($segments[0], $segments[1], $segments[2]) &&
               !isset($segments[3]) &&
               $segments[0] === 'admin' && $segments[1] === 'stocks' &&

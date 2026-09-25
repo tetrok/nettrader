@@ -81,6 +81,30 @@ class UserRepository extends BaseRepository
     }
 
     /**
+     * Vérifie si un mot de passe en clair correspond au compte (supporte Bcrypt et md5 legacy).
+     */
+    public function verifyPassword(int $id, string $plainPassword): bool
+    {
+        if (empty($plainPassword)) {
+            return false;
+        }
+        $user = $this->findById($id);
+        if (!$user || !isset($user->passe)) {
+            return false;
+        }
+        if (password_verify($plainPassword, (string)$user->passe)) {
+            return true;
+        }
+        if ((string)$user->passe === md5($plainPassword)) {
+            // Mise à niveau transparente vers Bcrypt
+            $newHash = password_hash($plainPassword, PASSWORD_BCRYPT);
+            $this->updatePassword($id, $newHash);
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Met à jour les champs du profil d'un joueur.
      */
     public function updateProfile(int $id, array $data): bool

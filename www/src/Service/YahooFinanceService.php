@@ -215,6 +215,93 @@ class YahooFinanceService
     }
 
     /**
+     * Récupère en lot (batch) les cotations pour une liste de symboles via l'API quote de Yahoo Finance.
+     * En cas de symbole manquant ou non renvoyé en lot, bascule automatiquement sur un repli unitaire (fallback).
+     *
+     * @param string[] $tickers Liste des symboles (ex: ['MC.PA', 'AI.PA'])
+     * @return array<string, array{symbol: string, name: string, price: float, currency: string, time: int, retried: bool}>
+     */
+    public function getQuotes(array $tickers): array
+    {
+        $cleanTickers = [];
+        foreach ($tickers as $t) {
+            $trimmed = trim((string)$t);
+            if (!empty($trimmed)) {
+                $cleanTickers[] = $trimmed;
+            }
+        }
+        $cleanTickers = array_values(array_unique($cleanTickers));
+        if (empty($cleanTickers)) {
+            return [];
+        }
+
+        $session = $this->getSessionCookieAndCrumb();
+        $quotes = [];
+
+        // Traitement par lots de 50 symboles pour optimiser et éviter toute troncature d'URL
+        $chunks = array_chunk($cleanTickers, 50);
+
+        foreach ($chunks as $chunk) {
+            $batchSymbols = implode(',', $chunk);
+            $url = "https://query1.finance.yahoo.com/v7/finance/quote?symbols=" . urlencode($batchSymbols);
+            if ($session && !empty($session['crumb'])) {
+                $url .= "&crumb=" . urlencode($session['crumb']);
+            }
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
+            if ($session && !empty($session['cookie'])) {
+                curl_setopt($ch, CURLOPT_COOKIE, $session['cookie']);
+            }
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            $res = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200 && $res) {
+                $data = json_decode($res, true);
+                $results = $data['quoteResponse']['result'] ?? [];
+                foreach ($results as $item) {
+                    $sym = (string)($item['symbol'] ?? '');
+                    $price = (float)($item['regularMarketPrice'] ?? 0.0);
+                    $time = (int)($item['regularMarketTime'] ?? time());
+                    $name = !empty($item['shortName']) ? (string)$item['shortName'] : (!empty($item['longName']) ? (string)$item['longName'] : $sym);
+                    if ($sym !== '' && $price > 0) {
+                        $quotes[$sym] = [
+                            'symbol' => $sym,
+                            'name' => $name,
+                            'price' => $price,
+                            'currency' => (string)($item['currency'] ?? 'EUR'),
+                            'time' => $time,
+                            'retried' => false,
+                        ];
+                    }
+                }
+            }
+
+            // Pour chaque ticker du lot qui n'a pas été renvoyé, tentative de repli (retry unitaire via chart API)
+            foreach ($chunk as $t) {
+                if (!isset($quotes[$t])) {
+                    $single = $this->getQuote($t);
+                    if ($single && ($single['price'] ?? 0) > 0) {
+                        $quotes[$t] = [
+                            'symbol' => $t,
+                            'name' => (string)($single['name'] ?? $t),
+                            'price' => (float)$single['price'],
+                            'currency' => (string)($single['currency'] ?? 'EUR'),
+                            'time' => time(),
+                            'retried' => true,
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $quotes;
+    }
+
+    /**
      * Recherche de symboles via l'API Search Yahoo.
      */
     public function search(string $query, int $limit = 15): array

@@ -3,6 +3,7 @@
 namespace NetTrader\Repository;
 
 use PDO;
+use NetTrader\Service\YahooFinanceService;
 
 /**
  * Repository pour les cotations et actions boursières (table cacval et market_sync_log).
@@ -248,7 +249,14 @@ class StockRepository extends BaseRepository
             ];
         }
 
-        $successRate = ($totalTracked > 0) ? round(($totalSuccess / $totalTracked) * 100, 1) : 0;
+        $completedCount = $totalSuccess + $totalFailed;
+        if ($completedCount > 0) {
+            $successRate = round(($totalSuccess / $completedCount) * 100, 1);
+        } elseif ($lastLog && (int)$lastLog->total_stocks > 0) {
+            $successRate = round(((int)$lastLog->success_count / (int)$lastLog->total_stocks) * 100, 1);
+        } else {
+            $successRate = ($totalTracked > 0) ? round(($totalSuccess / $totalTracked) * 100, 1) : 0;
+        }
 
         return [
             'overview' => [
@@ -385,7 +393,7 @@ class StockRepository extends BaseRepository
             );
         } else {
             return $this->execute(
-                "UPDATE cacval SET fail_count = 0, retry_count = 0, last_error = NULL, last_status = 'pending' WHERE down = '1'"
+                "UPDATE cacval SET fail_count = 0, retry_count = 0, last_error = NULL, last_status = 'pending' WHERE down = '1' AND (last_status = 'failed' OR fail_count > 0)"
             );
         }
     }
@@ -399,6 +407,144 @@ class StockRepository extends BaseRepository
             "UPDATE cacval SET valeur = ?, lasttime = ?, lasttimedown = ? WHERE yahooname = ?",
             [$price, $timestamp, $timestamp, $ticker]
         );
+    }
+
+    /**
+     * Force la synchronisation des cotations depuis Yahoo Finance pour tous les titres suivis (ou un titre spécifique).
+     * Met à jour les cours, horodatages, historiques, compteurs d'échecs et journalise le cycle dans market_sync_log.
+     * Exécute également les ordres boursiers en attente si applicable.
+     *
+     * @param int|null $targetCodeSico Code Sicovam d'un titre unique ou null pour tous les titres suivis
+     * @param YahooFinanceService|null $yahooService
+     * @return array{totalStocks: int, successCount: int, errorCount: int, durationSeconds: float}
+     */
+    public function syncQuotes(?int $targetCodeSico = null, ?YahooFinanceService $yahooService = null): array
+    {
+        $yahooService = $yahooService ?? new YahooFinanceService();
+        $startTime = microtime(true);
+        $now = time();
+
+        if ($targetCodeSico !== null) {
+            $sql = "SELECT codesico, yahooname, nom, valeur, lasttime, fail_count, total_fails, authachat, down, is_archived 
+                    FROM cacval 
+                    WHERE codesico = ?";
+            $stocks = $this->fetchAll($sql, [$targetCodeSico]);
+        } else {
+            $sql = "SELECT codesico, yahooname, nom, valeur, lasttime, fail_count, total_fails, authachat, down, is_archived 
+                    FROM cacval 
+                    WHERE down = '1' AND is_archived = '0' 
+                    ORDER BY codesico ASC";
+            $stocks = $this->fetchAll($sql);
+        }
+
+        if (empty($stocks)) {
+            return [
+                'totalStocks' => 0,
+                'successCount' => 0,
+                'errorCount' => 0,
+                'durationSeconds' => 0.0,
+            ];
+        }
+
+        $tickers = [];
+        $stockMap = [];
+        foreach ($stocks as $s) {
+            $t = trim((string)$s->yahooname);
+            if (!empty($t)) {
+                $tickers[] = $t;
+                $stockMap[$t] = $s;
+            }
+        }
+
+        $quotes = $yahooService->getQuotes($tickers);
+
+        $successCount = 0;
+        $errorCount = 0;
+
+        foreach ($stocks as $stock) {
+            $ticker = trim((string)$stock->yahooname);
+            $quote = $quotes[$ticker] ?? null;
+
+            if ($quote && isset($quote['price']) && (float)$quote['price'] > 0) {
+                $price = (float)$quote['price'];
+                $time = !empty($quote['time']) ? (int)$quote['time'] : $now;
+                $retried = !empty($quote['retried']) ? 1 : 0;
+
+                // Mise à jour cacval en succès
+                $updateSql = "UPDATE cacval 
+                              SET valeur = ?, lasttime = ?, lasttimedown = ?, last_attempt = ?, 
+                                  last_status = 'success', fail_count = 0, retry_count = ?, last_error = NULL,
+                                  authachat = IF(is_archived = '0', '1', '0')
+                              WHERE codesico = ?";
+                $this->execute($updateSql, [$price, $time, $now, $now, $retried, (int)$stock->codesico]);
+
+                // Insertion historique de cotation
+                $this->execute(
+                    "INSERT INTO stock_history (codesico, temps, valeur) VALUES (?, ?, ?)",
+                    [(int)$stock->codesico, $now, $price]
+                );
+
+                $successCount++;
+            } else {
+                // Échec de récupération de la cotation
+                $errorCount++;
+                $prevFails = (int)($stock->fail_count ?? 0);
+                $newFailCount = $prevFails + 1;
+                $shouldBlockBuy = ($newFailCount >= 3);
+                $shouldDisableSync = ($newFailCount >= 15);
+
+                $updateSql = "UPDATE cacval 
+                              SET last_attempt = ?, last_status = 'failed', 
+                                  fail_count = ?, total_fails = total_fails + 1, 
+                                  retry_count = 0, last_error = ?,
+                                  authachat = IF(?, '0', authachat),
+                                  down = IF(?, '0', down)
+                              WHERE codesico = ?";
+                $this->execute($updateSql, [
+                    $now,
+                    $newFailCount,
+                    'Cours introuvable ou échec Yahoo Finance',
+                    $shouldBlockBuy ? 1 : 0,
+                    $shouldDisableSync ? 1 : 0,
+                    (int)$stock->codesico,
+                ]);
+            }
+        }
+
+        $duration = microtime(true) - $startTime;
+        $totalStocks = count($stocks);
+
+        // Journalisation dans market_sync_log (uniquement pour un cycle global ou multiple)
+        if ($targetCodeSico === null || $totalStocks > 1) {
+            $this->execute(
+                "INSERT INTO market_sync_log (sync_time, total_stocks, success_count, error_count, duration_seconds, details)
+                 VALUES (?, ?, ?, ?, ?, ?)",
+                [
+                    $now,
+                    $totalStocks,
+                    $successCount,
+                    $errorCount,
+                    round($duration, 2),
+                    "Actualisation forcée admin : $successCount succès, $errorCount échecs",
+                ]
+            );
+        }
+
+        // Déclencher l'exécution des ordres en attente susceptibles d'être exécutables avec les nouveaux cours
+        if (function_exists('execute_ordre')) {
+            try {
+                execute_ordre();
+            } catch (\Throwable $e) {
+                error_log("Erreur execute_ordre lors de syncQuotes: " . $e->getMessage());
+            }
+        }
+
+        return [
+            'totalStocks' => $totalStocks,
+            'successCount' => $successCount,
+            'errorCount' => $errorCount,
+            'durationSeconds' => round($duration, 2),
+        ];
     }
 
     /**
@@ -877,6 +1023,32 @@ class StockRepository extends BaseRepository
             'archivedCount' => $archivedCount,
             'totalPositionsClosed' => $totalPositionsClosed,
             'totalCashCredited' => round($totalCash, 2),
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * Supprime un lot d'actions par leurs codes SICOVAM.
+     */
+    public function deleteBulkStocks(array $codesicos): array
+    {
+        $deletedCount = 0;
+        $errors = [];
+
+        foreach ($codesicos as $code) {
+            $codeInt = (int)$code;
+            if ($codeInt <= 0) continue;
+            $res = $this->deleteStock($codeInt);
+            if ($res['success']) {
+                $deletedCount++;
+            } else {
+                $errors[] = "#$codeInt: " . ($res['error'] ?? 'Erreur inconnue');
+            }
+        }
+
+        return [
+            'success' => count($errors) === 0,
+            'deletedCount' => $deletedCount,
             'errors' => $errors,
         ];
     }

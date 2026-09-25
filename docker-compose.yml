@@ -24,6 +24,7 @@ services:
     volumes:
       - ./www:/var/www/html
     environment:
+      TZ: Europe/Paris
       DB_HOST: db
       DB_NAME: nettrader
       DB_USER: nettrader_user
@@ -42,6 +43,10 @@ services:
     volumes:
       - ./pythonfetch:/app
     environment:
+      TZ: Europe/Paris
+      IGNORE_MARKET_HOURS: "${IGNORE_MARKET_HOURS:-0}"
+      MAX_FAILURES_BLOCK_BUY: "${MAX_FAILURES_BLOCK_BUY:-3}"
+      MAX_FAILURES_DISABLE_SYNC: "${MAX_FAILURES_DISABLE_SYNC:-15}"
       DB_HOST: db
       DB_NAME: nettrader
       DB_USER: nettrader_user
@@ -62,6 +67,7 @@ services:
     volumes:
       - ./pythonfetch:/app
     environment:
+      TZ: Europe/Paris
       DB_HOST: db
       DB_NAME: nettrader
       DB_USER: nettrader_user

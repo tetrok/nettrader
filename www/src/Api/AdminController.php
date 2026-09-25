@@ -211,6 +211,44 @@ class AdminController
         ApiResponse::success(null, "Tous les compteurs d'échecs ont été réinitialisés.");
     }
 
+    /**
+     * Forcer l'actualisation globale des cotations depuis Yahoo Finance pour tous les titres suivis.
+     */
+    public function forceMarketSync(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $result = $this->stockRepo->syncQuotes();
+
+        ApiResponse::success(
+            $result,
+            "Actualisation forcée terminée : {$result['successCount']}/{$result['totalStocks']} valeurs synchronisées en {$result['durationSeconds']}s."
+        );
+    }
+
+    /**
+     * Forcer l'actualisation de la cotation pour un titre spécifique.
+     */
+    public function forceStockSync(Request $request, int $codesico): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $stock = $this->stockRepo->findByCode($codesico);
+        if (!$stock) {
+            ApiResponse::error("Valeur introuvable.", 404);
+        }
+
+        $result = $this->stockRepo->syncQuotes($codesico);
+
+        if ($result['successCount'] > 0) {
+            ApiResponse::success($result, "Cotation actualisée avec succès pour " . ($stock->yahooname ?? 'ce titre') . ".");
+        } else {
+            ApiResponse::error("Impossible de récupérer la cotation Yahoo Finance pour ce titre.", 502, $result);
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Catalogue & Gestion des Actions Boursières
     // -------------------------------------------------------------------------
@@ -406,6 +444,45 @@ class AdminController
 
         $result = $this->stockRepo->archiveBulkStocks($codes);
         ApiResponse::success($result, "{$result['archivedCount']} action(s) archivée(s) avec succès. {$result['totalPositionsClosed']} position(s) liquidée(s).");
+    }
+
+    /**
+     * Suppression en masse d'actions avec validation par mot de passe administrateur.
+     */
+    public function deleteBulkStocks(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $payload = $request->getJson();
+        $password = trim((string)($payload['adminPassword'] ?? ''));
+        $codes = $payload['codes'] ?? [];
+
+        if (empty($password)) {
+            ApiResponse::error("Le mot de passe administrateur est requis pour confirmer la suppression en masse.", 400);
+        }
+
+        if (empty($codes) || !is_array($codes)) {
+            ApiResponse::error("Aucune action spécifiée pour la suppression.", 400);
+        }
+
+        // Vérification sécurisée du mot de passe de l'administrateur connecté
+        $adminId = $session->getId();
+        if (!$this->userRepo->verifyPassword($adminId, $password)) {
+            ApiResponse::error("Mot de passe administrateur incorrect. Suppression annulée.", 403);
+        }
+
+        $result = $this->stockRepo->deleteBulkStocks($codes);
+
+        if ($result['deletedCount'] === 0 && !empty($result['errors'])) {
+            ApiResponse::error("Aucune action n'a pu être supprimée : " . implode("; ", array_slice($result['errors'], 0, 3)), 400);
+        }
+
+        ApiResponse::success(
+            $result,
+            "{$result['deletedCount']} action(s) supprimée(s) avec succès du catalogue." .
+            (!empty($result['errors']) ? " (" . count($result['errors']) . " échec(s))" : "")
+        );
     }
 
     /**

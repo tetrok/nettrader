@@ -226,6 +226,18 @@ export const adminApi = {
     });
   },
 
+  forceMarketSync: async (): Promise<import('../types').MarketSyncRunResult> => {
+    return apiClient('admin/market-sync/force-sync', {
+      method: 'POST',
+    });
+  },
+
+  forceStockSync: async (codesico: number): Promise<import('../types').MarketSyncRunResult> => {
+    return apiClient(`admin/market-sync/stocks/${codesico}/force-sync`, {
+      method: 'POST',
+    });
+  },
+
   // Catalogue & Gestion des Actions Boursières
   getAdminStocks: async (params: {
     page?: number;
@@ -299,6 +311,16 @@ export const adminApi = {
     return apiClient('admin/stocks/archive-bulk', {
       method: 'POST',
       body: JSON.stringify({ codes }),
+    });
+  },
+
+  deleteBulkStocks: async (
+    codes: number[],
+    adminPassword: string
+  ): Promise<import('../types').DeleteBulkStocksResult> => {
+    return apiClient('admin/stocks/delete-bulk', {
+      method: 'POST',
+      body: JSON.stringify({ codes, adminPassword }),
     });
   },
 
