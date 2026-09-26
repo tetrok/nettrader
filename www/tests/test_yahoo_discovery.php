@@ -21,14 +21,13 @@ echo "=== DÉBUT DES TESTS YAHOO FINANCE & DISCOVERY ===\n\n";
 $service = new YahooFinanceService();
 $repo = new StockRepository();
 
-// 1. Test des constituants d'indices prédéfinis
-echo "1. Test des constituants d'indices :\n";
-$cac40 = $service->getIndexConstituents('cac40');
-assertTest("CAC 40 retourne 40 valeurs", count($cac40['constituents']) === 40, "Count: " . count($cac40['constituents']));
-assertTest("Le premier symbole CAC 40 est AI.PA", ($cac40['constituents'][0]['symbol'] ?? '') === 'AI.PA');
+// 1. Test de rejet strict des symboles sans cours actif (ex: MT.PA fantôme)
+echo "1. Test de rejet strict des symboles sans cotation valide :\n";
+$invalidQuote = $service->getQuote('MT.PA');
+assertTest("MT.PA (fonds fantôme sans regularMarketPrice) est strictement rejeté (null)", $invalidQuote === null);
 
-$sbf120 = $service->getIndexConstituents('sbf120');
-assertTest("SBF 120 retourne au moins 80 valeurs", count($sbf120['constituents']) >= 80, "Count: " . count($sbf120['constituents']));
+$nonExistent = $service->getQuote('TICKER_INEXISTANT_9999.PA');
+assertTest("Ticker inexistant est strictement rejeté (null)", $nonExistent === null);
 
 // 2. Test de récupération d'une cotation en direct via chart API
 echo "\n2. Test de récupération de cotation Yahoo (MC.PA) :\n";
@@ -53,9 +52,12 @@ assertTest("Le code Sicovam proposé n'est pas déjà pris", $existingStock === 
 
 // 5. Test StockRepository: findExistingTickersMap
 echo "\n5. Test findExistingTickersMap :\n";
-$map = $repo->findExistingTickersMap(['AI.PA', 'MC.PA', 'TICKER_INEXISTANT_XYZ.PA']);
-assertTest("AI.PA est trouvé dans la base", isset($map['AI.PA']));
+$dummyTicker = 'TEST_MAP_' . time() . '.PA';
+$repo->bulkImportStocks([['yahooname' => $dummyTicker, 'nom' => 'Dummy', 'valeur' => 10.0]]);
+$map = $repo->findExistingTickersMap([$dummyTicker, 'TICKER_INEXISTANT_XYZ.PA']);
+assertTest("$dummyTicker est trouvé dans la base", isset($map[$dummyTicker]));
 assertTest("TICKER_INEXISTANT_XYZ.PA n'est pas dans la base", !isset($map['TICKER_INEXISTANT_XYZ.PA']));
+Database::getConnection()->prepare("DELETE FROM cacval WHERE yahooname = ?")->execute([$dummyTicker]);
 
 // 6. Test StockRepository: bulkImportStocks (simulation insertion puis rollback / nettoyage)
 echo "\n6. Test bulkImportStocks avec activation immédiate :\n";

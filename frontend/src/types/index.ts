@@ -387,24 +387,6 @@ export interface YahooStockCandidate {
   currentDbPrice?: number | null;
 }
 
-export interface YahooIndexConstituent {
-  symbol: string;
-  name: string;
-  price: number;
-  inDatabase: boolean;
-  codesico?: number | null;
-  isTracked?: boolean;
-  isAuthBuy?: boolean;
-}
-
-export interface YahooIndexOverview {
-  indexKey: string;
-  indexName: string;
-  totalConstituents: number;
-  trackedCount: number;
-  missingCount: number;
-  constituents: YahooIndexConstituent[];
-}
 
 export interface YahooSyncResult {
   success: boolean;

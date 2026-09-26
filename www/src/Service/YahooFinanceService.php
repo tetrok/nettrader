@@ -12,113 +12,7 @@ class YahooFinanceService
     private static ?string $cachedCrumb = null;
     private static int $cacheExpiry = 0;
 
-    /**
-     * Composants officiels du CAC 40 (Euronext Paris).
-     */
-    public const CAC40_CONSTITUENTS = [
-        ['symbol' => 'AI.PA', 'name' => 'Air Liquide'],
-        ['symbol' => 'AIR.PA', 'name' => 'Airbus'],
-        ['symbol' => 'ALO.PA', 'name' => 'Alstom'],
-        ['symbol' => 'MT.PA', 'name' => 'ArcelorMittal'],
-        ['symbol' => 'CS.PA', 'name' => 'AXA'],
-        ['symbol' => 'BNP.PA', 'name' => 'BNP Paribas'],
-        ['symbol' => 'EN.PA', 'name' => 'Bouygues'],
-        ['symbol' => 'CAP.PA', 'name' => 'Capgemini'],
-        ['symbol' => 'CA.PA', 'name' => 'Carrefour'],
-        ['symbol' => 'ACA.PA', 'name' => 'Crédit Agricole'],
-        ['symbol' => 'BN.PA', 'name' => 'Danone'],
-        ['symbol' => 'DSY.PA', 'name' => 'Dassault Systèmes'],
-        ['symbol' => 'EDEN.PA', 'name' => 'Edenred'],
-        ['symbol' => 'ENGI.PA', 'name' => 'Engie'],
-        ['symbol' => 'EL.PA', 'name' => 'EssilorLuxottica'],
-        ['symbol' => 'ERF.PA', 'name' => 'Eurofins Scientific'],
-        ['symbol' => 'RMS.PA', 'name' => 'Hermès International'],
-        ['symbol' => 'KER.PA', 'name' => 'Kering'],
-        ['symbol' => 'OR.PA', 'name' => "L'Oréal"],
-        ['symbol' => 'LR.PA', 'name' => 'Legrand'],
-        ['symbol' => 'MC.PA', 'name' => 'LVMH'],
-        ['symbol' => 'ML.PA', 'name' => 'Michelin'],
-        ['symbol' => 'ORA.PA', 'name' => 'Orange'],
-        ['symbol' => 'RI.PA', 'name' => 'Pernod Ricard'],
-        ['symbol' => 'PUB.PA', 'name' => 'Publicis Groupe'],
-        ['symbol' => 'RNO.PA', 'name' => 'Renault'],
-        ['symbol' => 'SAF.PA', 'name' => 'Safran'],
-        ['symbol' => 'SGO.PA', 'name' => 'Saint-Gobain'],
-        ['symbol' => 'SAN.PA', 'name' => 'Sanofi'],
-        ['symbol' => 'SU.PA', 'name' => 'Schneider Electric'],
-        ['symbol' => 'GLE.PA', 'name' => 'Société Générale'],
-        ['symbol' => 'STLAP.PA', 'name' => 'Stellantis'],
-        ['symbol' => 'STMPA.PA', 'name' => 'STMicroelectronics'],
-        ['symbol' => 'TEP.PA', 'name' => 'Teleperformance'],
-        ['symbol' => 'HO.PA', 'name' => 'Thales'],
-        ['symbol' => 'TTE.PA', 'name' => 'TotalEnergies'],
-        ['symbol' => 'URW.PA', 'name' => 'Unibail-Rodamco-Westfield'],
-        ['symbol' => 'VIE.PA', 'name' => 'Veolia'],
-        ['symbol' => 'DG.PA', 'name' => 'Vinci'],
-        ['symbol' => 'WLN.PA', 'name' => 'Worldline'],
-    ];
 
-    /**
-     * Composants complémentaires de l'indice SBF 120 (CAC Next 20 & CAC Mid 60).
-     */
-    public const SBF120_EXTRA_CONSTITUENTS = [
-        ['symbol' => 'ADP.PA', 'name' => 'Aéroports de Paris'],
-        ['symbol' => 'AKE.PA', 'name' => 'Arkema'],
-        ['symbol' => 'AMUN.PA', 'name' => 'Amundi'],
-        ['symbol' => 'ATE.PA', 'name' => 'Alten'],
-        ['symbol' => 'ATO.PA', 'name' => 'Atos'],
-        ['symbol' => 'BB.PA', 'name' => 'BIC'],
-        ['symbol' => 'BIM.PA', 'name' => 'bioMérieux'],
-        ['symbol' => 'BOL.PA', 'name' => 'Bolloré'],
-        ['symbol' => 'BVI.PA', 'name' => 'Bureau Veritas'],
-        ['symbol' => 'CARM.PA', 'name' => 'Carmila'],
-        ['symbol' => 'COFA.PA', 'name' => 'Coface'],
-        ['symbol' => 'COV.PA', 'name' => 'Covivio'],
-        ['symbol' => 'DBG.PA', 'name' => 'Derichebourg'],
-        ['symbol' => 'ELIS.PA', 'name' => 'Elis'],
-        ['symbol' => 'ENX.PA', 'name' => 'Euronext'],
-        ['symbol' => 'ERA.PA', 'name' => 'Eramet'],
-        ['symbol' => 'EUTL.PA', 'name' => 'Eutelsat Communications'],
-        ['symbol' => 'FDJ.PA', 'name' => 'La Française des Jeux'],
-        ['symbol' => 'FGR.PA', 'name' => 'Eiffage'],
-        ['symbol' => 'GFC.PA', 'name' => 'Gecina'],
-        ['symbol' => 'GTT.PA', 'name' => 'Gaztransport & Technigaz'],
-        ['symbol' => 'ICAD.PA', 'name' => 'Icade'],
-        ['symbol' => 'IDIP.PA', 'name' => 'ID Logistics Group'],
-        ['symbol' => 'IPN.PA', 'name' => 'Ipsen'],
-        ['symbol' => 'IPS.PA', 'name' => 'Ipsos'],
-        ['symbol' => 'JCDX.PA', 'name' => 'JCDecaux'],
-        ['symbol' => 'KOF.PA', 'name' => 'Kaufman & Broad'],
-        ['symbol' => 'MF.PA', 'name' => 'Wendel'],
-        ['symbol' => 'MMB.PA', 'name' => 'Lagardère'],
-        ['symbol' => 'NEX.PA', 'name' => 'Nexans'],
-        ['symbol' => 'NXI.PA', 'name' => 'Nexity'],
-        ['symbol' => 'NK.PA', 'name' => 'Imerys'],
-        ['symbol' => 'OPM.PA', 'name' => 'OPmobility (Plastic Omnium)'],
-        ['symbol' => 'RXL.PA', 'name' => 'Rexel'],
-        ['symbol' => 'SCR.PA', 'name' => 'SCOR SE'],
-        ['symbol' => 'SEB.PA', 'name' => 'SEB'],
-        ['symbol' => 'SESL.PA', 'name' => 'SES-imagotag (VusionGroup)'],
-        ['symbol' => 'SO.PA', 'name' => 'Sodexo'],
-        ['symbol' => 'SOI.PA', 'name' => 'Soitec'],
-        ['symbol' => 'SOP.PA', 'name' => 'Sopra Steria Group'],
-        ['symbol' => 'SPIE.PA', 'name' => 'SPIE'],
-        ['symbol' => 'TFI.PA', 'name' => 'TF1'],
-        ['symbol' => 'UBI.PA', 'name' => 'Ubisoft Entertainment'],
-        ['symbol' => 'VAC.PA', 'name' => 'Vallourec'],
-        ['symbol' => 'VLLP.PA', 'name' => 'Vicat'],
-        ['symbol' => 'VALN.PA', 'name' => 'Valneva'],
-        ['symbol' => 'VIRP.PA', 'name' => 'Virbac'],
-        ['symbol' => 'VIV.PA', 'name' => 'Vivendi'],
-        ['symbol' => 'VRAP.PA', 'name' => 'Verallia'],
-        ['symbol' => 'BEN.PA', 'name' => 'Bénéteau'],
-        ['symbol' => 'FNAC.PA', 'name' => 'Fnac Darty'],
-        ['symbol' => 'TRIG.PA', 'name' => 'Trigano'],
-        ['symbol' => 'SMCP.PA', 'name' => 'SMCP'],
-        ['symbol' => 'RBO.PA', 'name' => 'Rubis'],
-        ['symbol' => 'SK.PA', 'name' => 'SECHE ENVIRONNEMENT'],
-        ['symbol' => 'PLX.PA', 'name' => 'Pluxee'],
-    ];
 
     /**
      * Obtient un tuple [cookie, crumb] pour les appels à l'API Yahoo Screener.
@@ -202,7 +96,14 @@ class YahooFinanceService
         }
 
         $price = (float)($meta['regularMarketPrice'] ?? 0.0);
-        $name = !empty($meta['shortName']) ? (string)$meta['shortName'] : (string)($meta['symbol'] ?? $ticker);
+        $instrumentType = strtoupper((string)($meta['instrumentType'] ?? ''));
+
+        // Rejeter formellement toute valeur sans cotation active ou instrument parasite
+        if ($price <= 0.0 || ($instrumentType !== '' && $instrumentType !== 'EQUITY')) {
+            return null;
+        }
+
+        $name = !empty($meta['shortName']) ? (string)$meta['shortName'] : (!empty($meta['longName']) ? (string)$meta['longName'] : (string)($meta['symbol'] ?? $ticker));
 
         return [
             'symbol' => (string)($meta['symbol'] ?? $ticker),
@@ -398,7 +299,7 @@ class YahooFinanceService
         ];
 
         // Demander un buffer suffisant pour combler les éventuels symboles obligataires filtrés
-        $fetchSize = min(max($limit + 15, 25), 100);
+        $fetchSize = min(max($limit + 30, 25), 250);
 
         $queryPayload = [
             "size" => $fetchSize,
@@ -465,40 +366,5 @@ class YahooFinanceService
             'items' => $items,
         ];
     }
-
-
-    /**
-     * Retourne la liste des constituants pour un indice donné ('cac40' ou 'sbf120').
-     */
-    public function getIndexConstituents(string $indexKey): array
-    {
-        $key = strtolower(trim($indexKey));
-        if ($key === 'cac40' || $key === 'cac 40') {
-            return [
-                'key' => 'cac40',
-                'name' => 'CAC 40',
-                'constituents' => self::CAC40_CONSTITUENTS,
-            ];
-        }
-
-        if ($key === 'sbf120' || $key === 'sbf 120') {
-            $all = array_merge(self::CAC40_CONSTITUENTS, self::SBF120_EXTRA_CONSTITUENTS);
-            // Dédupliquer par symbole
-            $unique = [];
-            foreach ($all as $item) {
-                $unique[$item['symbol']] = $item;
-            }
-            return [
-                'key' => 'sbf120',
-                'name' => 'SBF 120',
-                'constituents' => array_values($unique),
-            ];
-        }
-
-        return [
-            'key' => $key,
-            'name' => strtoupper($key),
-            'constituents' => [],
-        ];
-    }
 }
+

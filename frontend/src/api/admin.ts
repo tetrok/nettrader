@@ -355,15 +355,6 @@ export const adminApi = {
     return apiClient(`admin/yahoo/discover?${q.toString()}`);
   },
 
-  getYahooIndex: async (indexName: string): Promise<import('../types').YahooIndexOverview> => {
-    return apiClient(`admin/yahoo/index/${encodeURIComponent(indexName)}`);
-  },
-
-  syncYahooIndex: async (indexName: string): Promise<import('../types').YahooSyncResult> => {
-    return apiClient(`admin/yahoo/sync-index/${encodeURIComponent(indexName)}`, {
-      method: 'POST',
-    });
-  },
 
   importYahooStocks: async (items: Array<{
     symbol?: string;

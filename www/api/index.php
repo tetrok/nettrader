@@ -256,17 +256,9 @@ try {
         (new AdminController())->deleteStock($request, (int)$segments[2]);
     }
 
-    // Administration - Découverte & Indices Yahoo Finance
+    // Administration - Découverte Yahoo Finance (Dynamique)
     elseif ($path === 'admin/yahoo/discover' && $method === 'GET') {
         (new AdminController())->discoverYahooMarket($request);
-    } elseif (isset($segments[0], $segments[1], $segments[2]) &&
-              $segments[0] === 'admin' && $segments[1] === 'yahoo' && $segments[2] === 'index' &&
-              isset($segments[3]) && $method === 'GET') {
-        (new AdminController())->getYahooIndex($request, $segments[3]);
-    } elseif (isset($segments[0], $segments[1], $segments[2]) &&
-              $segments[0] === 'admin' && $segments[1] === 'yahoo' && $segments[2] === 'sync-index' &&
-              isset($segments[3]) && $method === 'POST') {
-        (new AdminController())->syncYahooIndex($request, $segments[3]);
     } elseif ($path === 'admin/yahoo/import' && $method === 'POST') {
         (new AdminController())->importYahooStocks($request);
     }

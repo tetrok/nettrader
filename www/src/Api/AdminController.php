@@ -1014,120 +1014,8 @@ class AdminController
     }
 
     /**
-     * Récupère le statut des constituants d'un indice de référence (CAC 40 ou SBF 120).
-     */
-    public function getYahooIndex(Request $request, string $indexName): void
-    {
-        $session = UserSession::current();
-        $this->checkAdmin($session);
-
-        $indexData = $this->yahooService->getIndexConstituents($indexName);
-        $constituents = $indexData['constituents'] ?? [];
-        if (empty($constituents)) {
-            ApiResponse::error("Indice '$indexName' non reconnu. Indices supportés: cac40, sbf120.", 404);
-        }
-
-        $symbols = array_map(function ($c) {
-            return $c['symbol'];
-        }, $constituents);
-
-        $existingMap = $this->stockRepo->findExistingTickersMap($symbols);
-
-        $augmented = [];
-        $trackedCount = 0;
-        $missingCount = 0;
-
-        foreach ($constituents as $c) {
-            $sym = $c['symbol'];
-            $exists = isset($existingMap[$sym]);
-            $row = $exists ? $existingMap[$sym] : null;
-
-            if ($exists && $row->down === '1') {
-                $trackedCount++;
-            } else {
-                $missingCount++;
-            }
-
-            $augmented[] = [
-                'symbol' => $sym,
-                'name' => $exists ? (string)$row->nom : (string)$c['name'],
-                'inDatabase' => $exists,
-                'codesico' => $row ? (int)$row->codesico : null,
-                'price' => $row ? (float)$row->valeur : 0.0,
-                'isTracked' => $row ? ($row->down === '1') : false,
-                'isAuthBuy' => $row ? ($row->authachat === '1') : false,
-            ];
-        }
-
-        ApiResponse::success([
-            'indexKey' => $indexData['key'],
-            'indexName' => $indexData['name'],
-            'totalConstituents' => count($constituents),
-            'trackedCount' => $trackedCount,
-            'missingCount' => $missingCount,
-            'constituents' => $augmented,
-        ]);
-    }
-
-    /**
-     * Synchronise et active l'ensemble des constituants d'un indice (CAC 40 ou SBF 120).
-     */
-    public function syncYahooIndex(Request $request, string $indexName): void
-    {
-        $session = UserSession::current();
-        $this->checkAdmin($session);
-
-        $indexData = $this->yahooService->getIndexConstituents($indexName);
-        $constituents = $indexData['constituents'] ?? [];
-        if (empty($constituents)) {
-            ApiResponse::error("Indice '$indexName' non reconnu. Indices supportés: cac40, sbf120.", 404);
-        }
-
-        $symbols = array_map(function ($c) {
-            return $c['symbol'];
-        }, $constituents);
-
-        $existingMap = $this->stockRepo->findExistingTickersMap($symbols);
-
-        $stocksToImport = [];
-        foreach ($constituents as $c) {
-            $sym = $c['symbol'];
-            $exists = isset($existingMap[$sym]);
-
-            $price = 0.0;
-            $name = $c['name'];
-
-            // Récupérer le cours actuel si nouvelle action ou si cours nul
-            if (!$exists || (float)$existingMap[$sym]->valeur <= 0.0) {
-                $quote = $this->yahooService->getQuote($sym);
-                if ($quote) {
-                    $price = (float)$quote['price'];
-                    if (!empty($quote['name'])) {
-                        $name = $quote['name'];
-                    }
-                }
-            } else {
-                $price = (float)$existingMap[$sym]->valeur;
-            }
-
-            $stocksToImport[] = [
-                'yahooname' => $sym,
-                'nom' => $name,
-                'valeur' => $price,
-                'authachat' => '1',
-                'down' => '1',
-                'idsecteur' => 22,
-                'idmarket' => 1,
-            ];
-        }
-
-        $result = $this->stockRepo->bulkImportStocks($stocksToImport);
-
-        ApiResponse::success($result, "Indice '{$indexData['name']}' synchronisé avec succès ({$result['created']} ajoutées, {$result['updated']} mises à jour).");
-    }
-
-    /**
      * Importe une sélection d'actions Yahoo dans la base de données avec activation immédiate.
+     * Rejette formellement toute valeur sans cours actif (> 0).
      */
     public function importYahooStocks(Request $request): void
     {
@@ -1149,6 +1037,8 @@ class AdminController
         }
 
         $stocksToImport = [];
+        $skipped = [];
+
         foreach ($items as $item) {
             $ticker = trim((string)($item['yahooname'] ?? $item['symbol'] ?? ''));
             if (empty($ticker)) {
@@ -1158,7 +1048,7 @@ class AdminController
             $name = trim((string)($item['nom'] ?? $item['name'] ?? ''));
             $price = (float)($item['valeur'] ?? $item['price'] ?? 0.0);
 
-            // Si le nom ou le cours manquent, interroger Yahoo pour les métadonnées fraîches
+            // Si le nom ou le cours manquent ou sont invalides, interroger Yahoo pour les métadonnées fraîches
             if (empty($name) || $price <= 0.0) {
                 $quote = $this->yahooService->getQuote($ticker);
                 if ($quote) {
@@ -1169,6 +1059,12 @@ class AdminController
                         $price = (float)$quote['price'];
                     }
                 }
+            }
+
+            // Exclusion stricte : si le cours n'est pas strictement supérieur à zéro, ne jamais importer !
+            if ($price <= 0.0) {
+                $skipped[] = $ticker;
+                continue;
             }
 
             $stocksToImport[] = [
@@ -1183,11 +1079,21 @@ class AdminController
         }
 
         if (empty($stocksToImport)) {
-            ApiResponse::error("Aucun symbole valide à importer.", 400);
+            $msg = !empty($skipped)
+                ? "Aucun symbole valide à importer. Symboles sans cotation active ignorés : " . implode(', ', $skipped)
+                : "Aucun symbole valide à importer.";
+            ApiResponse::error($msg, 400);
         }
 
         $result = $this->stockRepo->bulkImportStocks($stocksToImport);
-        ApiResponse::success($result, "Importation terminée ({$result['created']} ajoutées, {$result['updated']} mises à jour).");
+        $result['skipped'] = $skipped;
+
+        $msg = "Importation terminée ({$result['created']} ajoutées, {$result['updated']} mises à jour).";
+        if (!empty($skipped)) {
+            $msg .= " " . count($skipped) . " valeur(s) sans cotation ignorée(s).";
+        }
+
+        ApiResponse::success($result, $msg);
     }
 }
 
