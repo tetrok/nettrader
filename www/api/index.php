@@ -108,6 +108,8 @@ try {
         } else {
             (new TradingController())->cancelAllOrders($request);
         }
+    } elseif ($segments[0] === 'trading' && ($segments[1] ?? '') === 'orders' && isset($segments[2]) && ($method === 'PUT' || $method === 'POST')) {
+        (new TradingController())->updateOrder($request, $segments[2]);
     } elseif ($segments[0] === 'trading' && ($segments[1] ?? '') === 'orders' && isset($segments[2]) && $method === 'DELETE') {
         (new TradingController())->cancelOrder($request, $segments[2]);
     } elseif ($path === 'trading/history' && $method === 'GET') {
@@ -146,7 +148,23 @@ try {
     }
 
     // Équipes
-    elseif ($segments[0] === 'teams' && isset($segments[1]) && is_numeric($segments[1]) && $method === 'GET') {
+    elseif ($path === 'teams/my-team' && $method === 'GET') {
+        (new TeamController())->getMyTeam($request);
+    } elseif ($path === 'teams/invitations' && $method === 'GET') {
+        (new TeamController())->getMyInvitations($request);
+    } elseif ($segments[0] === 'teams' && ($segments[1] ?? '') === 'invitations' && isset($segments[2]) && is_numeric($segments[2]) && ($segments[3] ?? '') === 'reject' && $method === 'POST') {
+        (new TeamController())->rejectInvitation($request, (int)$segments[2]);
+    } elseif ($segments[0] === 'teams' && isset($segments[1]) && is_numeric($segments[1]) && ($segments[2] ?? '') === 'candidates' && $method === 'GET') {
+        (new TeamController())->searchCandidates($request, (int)$segments[1]);
+    } elseif ($segments[0] === 'teams' && isset($segments[1]) && is_numeric($segments[1]) && ($segments[2] ?? '') === 'invitations' && $method === 'POST') {
+        (new TeamController())->invitePlayer($request, (int)$segments[1]);
+    } elseif ($segments[0] === 'teams' && isset($segments[1]) && is_numeric($segments[1]) && ($segments[2] ?? '') === 'invitations' && isset($segments[3]) && is_numeric($segments[3]) && $method === 'DELETE') {
+        (new TeamController())->cancelInvitation($request, (int)$segments[1], (int)$segments[3]);
+    } elseif ($segments[0] === 'teams' && isset($segments[1]) && is_numeric($segments[1]) && ($segments[2] ?? '') === 'members' && isset($segments[3]) && is_numeric($segments[3]) && $method === 'DELETE') {
+        (new TeamController())->kickMember($request, (int)$segments[1], (int)$segments[3]);
+    } elseif ($segments[0] === 'teams' && isset($segments[1]) && is_numeric($segments[1]) && ($method === 'PUT' || $method === 'POST') && !isset($segments[2])) {
+        (new TeamController())->updateTeam($request, (int)$segments[1]);
+    } elseif ($segments[0] === 'teams' && isset($segments[1]) && is_numeric($segments[1]) && !isset($segments[2]) && $method === 'GET') {
         (new TeamController())->getTeam($request, (int)$segments[1]);
     } elseif ($path === 'teams' && $method === 'POST') {
         (new TeamController())->createTeam($request);
@@ -194,6 +212,10 @@ try {
         (new AdminController())->getPlayers($request);
     } elseif ($path === 'admin/jobs/execute-orders' && $method === 'POST') {
         (new AdminController())->executeOrdersJob($request);
+    } elseif ($path === 'admin/teams/pending' && $method === 'GET') {
+        (new AdminController())->getPendingTeams($request);
+    } elseif ($segments[0] === 'admin' && ($segments[1] ?? '') === 'teams' && ($segments[2] ?? '') === 'pending' && isset($segments[3]) && is_numeric($segments[3]) && ($segments[4] ?? '') === 'review' && $method === 'POST') {
+        (new AdminController())->reviewPendingTeam($request, (int)$segments[3]);
     }
 
     // Administration - Suivi des Cotations & Mises à Jour

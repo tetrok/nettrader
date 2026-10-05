@@ -2301,7 +2301,7 @@ function getcompositionequipe($idgroupe)
     $date1 = mktime(1, 1, 1, $mon, 1, $yr);
     $ladate=date("Y-m-d",$date1);
     $cap=CAPDEB;
-    $query="SELECT pseudonyme, FROM_UNIXTIME( datejoint, '%d/%m/%Y' ) as dateinscription,membregroupe.capitalinscr as capitalinscr ,round( (
+    $query="SELECT compte.idcompte, pseudonyme, FROM_UNIXTIME( datejoint, '%d/%m/%Y' ) as dateinscription,membregroupe.capitalinscr as capitalinscr ,round( (
             (
             COALESCE( SUM( cacval.valeur * portef.quant ) , 0 ) + compte.cashback - COALESCE( scores.capitalscores, $cap) ) / COALESCE( scores.capitalscores, $cap ) ) * 100, 2
             ) AS prog, round( COALESCE( SUM( cacval.valeur * portef.quant ) , 0 ) + cashback, 2 ) AS capital

@@ -4,6 +4,7 @@ import { Portfolio, Order, Position, Stock } from '../types';
 import { PositionsTable } from '../components/trading/PositionsTable';
 import { PendingOrdersTable } from '../components/trading/PendingOrdersTable';
 import { OrderModal } from '../components/trading/OrderModal';
+import { EditOrderModal } from '../components/trading/EditOrderModal';
 import {
   Wallet,
   PieChart,
@@ -26,6 +27,9 @@ export const PortfolioPage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedStockForOrder, setSelectedStockForOrder] = useState<Stock | null>(null);
   const [selectedSens, setSelectedSens] = useState<'achat' | 'vente'>('achat');
+
+  // Edit order modal state
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   const loadData = async (silent = false) => {
     if (!silent) setRefreshing(true);
@@ -207,6 +211,7 @@ export const PortfolioPage: React.FC = () => {
           orders={orders}
           onCancelOrder={handleCancelOrder}
           onCancelAllOrders={handleCancelAllOrders}
+          onEditOrder={(order) => setEditingOrder(order)}
         />
       </div>
 
@@ -217,6 +222,14 @@ export const PortfolioPage: React.FC = () => {
         initialSens={selectedSens}
         initialStock={selectedStockForOrder}
         onOrderCompleted={() => loadData(true)}
+      />
+
+      {/* Edit Order Modal */}
+      <EditOrderModal
+        isOpen={!!editingOrder}
+        order={editingOrder}
+        onClose={() => setEditingOrder(null)}
+        onOrderUpdated={() => loadData(true)}
       />
     </div>
   );

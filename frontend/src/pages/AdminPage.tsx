@@ -4,6 +4,9 @@ import { AdminForumManagement } from '../components/admin/AdminForumManagement';
 import { AdminMarketSync } from '../components/admin/AdminMarketSync';
 import { AdminStockManagement } from '../components/admin/AdminStockManagement';
 import { AdminYahooDiscovery } from '../components/admin/AdminYahooDiscovery';
+import { AdminTeamApprovals } from '../components/admin/AdminTeamApprovals';
+import { teamsApi } from '../api/teams';
+import { PendingTeamApproval } from '../types';
 import {
   Shield,
   Play,
@@ -19,11 +22,13 @@ import {
   TrendingUp,
   Layers,
   Globe,
+  Flag,
 } from 'lucide-react';
 
 export const AdminPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'supervision' | 'stocks' | 'yahoo' | 'marketSync' | 'players' | 'forum'>('supervision');
+  const [activeTab, setActiveTab] = useState<'supervision' | 'stocks' | 'yahoo' | 'marketSync' | 'players' | 'teams' | 'forum'>('supervision');
   const [dashboard, setDashboard] = useState<AdminDashboardData | null>(null);
+  const [teamApprovals, setTeamApprovals] = useState<PendingTeamApproval[]>([]);
   const [players, setPlayers] = useState<any[]>([]);
   const [playersTotal, setPlayersTotal] = useState(0);
   const [playersPage, setPlayersPage] = useState(1);
@@ -35,14 +40,16 @@ export const AdminPage: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const [d, p] = await Promise.all([
+      const [d, p, t] = await Promise.all([
         adminApi.getDashboard(),
         adminApi.getPlayers(playersPage, 20, playersSearch),
+        teamsApi.getPendingApprovals(),
       ]);
       setDashboard(d);
       setPlayers(p.items);
       setPlayersTotal(p.total);
       setPlayersTotalPages(p.totalPages);
+      setTeamApprovals(t);
     } finally {
       setLoading(false);
     }
@@ -162,6 +169,22 @@ export const AdminPage: React.FC = () => {
         >
           <Users className="w-4 h-4" />
           <span>Joueurs Enregistrés ({playersTotal})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('teams')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition relative ${
+            activeTab === 'teams'
+              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+              : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Flag className="w-4 h-4" />
+          <span>Équipes & Clubs</span>
+          {teamApprovals.length > 0 && (
+            <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-amber-400 text-slate-950">
+              {teamApprovals.length}
+            </span>
+          )}
         </button>
         <button
           onClick={() => setActiveTab('forum')}
@@ -303,6 +326,11 @@ export const AdminPage: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* TAB: TEAMS APPROVAL */}
+      {activeTab === 'teams' && (
+        <AdminTeamApprovals approvals={teamApprovals} onRefresh={loadData} />
       )}
 
       {/* TAB 3: FORUM ADMINISTRATION */}

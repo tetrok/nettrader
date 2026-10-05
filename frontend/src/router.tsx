@@ -14,6 +14,7 @@ import { MessagesPage } from './pages/MessagesPage';
 import { ForumsPage } from './pages/ForumsPage';
 import { TopicPage } from './pages/TopicPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { MyTeamPage } from './pages/MyTeamPage';
 import { HelpPage } from './pages/HelpPage';
 import { AdminPage } from './pages/AdminPage';
 
@@ -77,6 +78,14 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute>
             <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/my-team"
+        element={
+          <ProtectedRoute>
+            <MyTeamPage />
           </ProtectedRoute>
         }
       />

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { accountApi, ProfileData } from '../api/account';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -10,6 +11,8 @@ import {
   CheckCircle2,
   RefreshCw,
   Save,
+  Users,
+  ChevronRight,
 } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
@@ -112,6 +115,28 @@ export const ProfilePage: React.FC = () => {
         <p className="text-xs text-slate-400 mt-1">
           Gérez vos informations de trader, vos préférences de notification et vos accès
         </p>
+      </div>
+
+      {/* Team status banner */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20">
+            <Users className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">Équipes & Clubs de Trading</h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Rejoignez un club de traders, consultez vos invitations reçues ou gérez votre équipe.
+            </p>
+          </div>
+        </div>
+        <Link
+          to="/my-team"
+          className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-slate-950 flex items-center justify-center gap-1.5 transition shadow-sm shrink-0"
+        >
+          <span>Accéder à Mon Équipe</span>
+          <ChevronRight className="w-4 h-4" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

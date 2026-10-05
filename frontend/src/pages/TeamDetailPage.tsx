@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { leaderboardApi } from '../api/leaderboard';
 import { TeamDetail, TeamMember } from '../types';
-import { ArrowLeft, Users, Trophy, Globe, Crown, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Users, Trophy, Globe, Crown, RefreshCw, ExternalLink } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const TeamDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [team, setTeam] = useState<TeamDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -37,15 +39,29 @@ export const TeamDetailPage: React.FC = () => {
     );
   }
 
+  const isMember = user ? team.members.some((m) => m.userId === user.id) : false;
+
   return (
     <div className="space-y-6 pb-12">
-      <Link
-        to="/leaderboards"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Retour aux classements
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link
+          to="/leaderboards"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Retour aux classements
+        </Link>
+
+        {user && (
+          <Link
+            to="/my-team"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:underline"
+          >
+            <Users className="w-4 h-4" />
+            {isMember ? 'Gérer mon club' : 'Voir mon équipe'}
+          </Link>
+        )}
+      </div>
 
       {/* Team Card */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6">
@@ -62,13 +78,13 @@ export const TeamDetailPage: React.FC = () => {
                 <Crown className="w-3.5 h-3.5 text-amber-400" />
                 Chef d'équipe : <strong>{team.leader.pseudo}</strong>
               </span>
-              {team.website && (
+              {team.website && (team.website.startsWith('http://') || team.website.startsWith('https://')) && (
                 <>
                   <span>•</span>
                   <a
                     href={team.website}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="flex items-center gap-1 text-emerald-400 hover:underline"
                   >
                     <Globe className="w-3.5 h-3.5" />

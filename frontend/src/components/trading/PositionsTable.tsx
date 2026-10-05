@@ -1,6 +1,6 @@
 import React from 'react';
 import { Position, Stock } from '../../types';
-import { ArrowUpRight, ArrowDownRight, ArrowRightLeft } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ArrowRightLeft, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Tooltip } from '../ui/Tooltip';
 
@@ -31,6 +31,7 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({ positions, onSel
           <thead className="bg-slate-950/60 border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase tracking-wider">
             <tr>
               <th className="px-5 py-3.5">Titre</th>
+              <th className="px-5 py-3.5 text-center">Date d'achat</th>
               <th className="px-5 py-3.5 text-right">Quantité</th>
               <th className="px-5 py-3.5 text-right">PRU</th>
               <th className="px-5 py-3.5 text-right">Cours Actuel</th>
@@ -52,6 +53,20 @@ export const PositionsTable: React.FC<PositionsTableProps> = ({ positions, onSel
                       <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
                         VAD
                       </span>
+                    )}
+                  </td>
+                  <td className="px-5 py-4 text-center font-sans text-xs text-slate-400 whitespace-nowrap">
+                    {pos.buyDate ? (
+                      <span className="inline-flex items-center gap-1 text-slate-300">
+                        <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                        {new Date(pos.buyDate * 1000).toLocaleDateString('fr-FR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    ) : (
+                      <span className="text-slate-600">—</span>
                     )}
                   </td>
                   <td className="px-5 py-4 text-right text-slate-300">

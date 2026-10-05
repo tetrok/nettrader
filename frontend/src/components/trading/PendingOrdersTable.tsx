@@ -1,18 +1,20 @@
 import React from 'react';
 import { Order } from '../../types';
-import { X, Trash2, Clock } from 'lucide-react';
+import { X, Trash2, Clock, Pencil } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 
 interface PendingOrdersTableProps {
   orders: Order[];
   onCancelOrder: (id: string) => void;
   onCancelAllOrders: () => void;
+  onEditOrder?: (order: Order) => void;
 }
 
 export const PendingOrdersTable: React.FC<PendingOrdersTableProps> = ({
   orders,
   onCancelOrder,
   onCancelAllOrders,
+  onEditOrder,
 }) => {
   if (orders.length === 0) {
     return (
@@ -70,17 +72,35 @@ export const PendingOrdersTable: React.FC<PendingOrdersTableProps> = ({
                   <td className="px-5 py-3 text-right text-slate-300">{ord.quantity}</td>
                   <td className="px-5 py-3 text-right text-slate-300">{ord.currentValue ? `${ord.currentValue.toFixed(2)} €` : '—'}</td>
                   <td className="px-5 py-3 text-right text-slate-400">
-                    {ord.valmin > 0 || ord.valmax > 0 ? `${ord.valmin.toFixed(2)} € - ${ord.valmax.toFixed(2)} €` : 'Au marché'}
+                    {ord.valmin > 0 && ord.valmax > 0
+                      ? `${ord.valmin.toFixed(2)} € - ${ord.valmax.toFixed(2)} €`
+                      : ord.valmax > 0
+                      ? `≤ ${ord.valmax.toFixed(2)} €`
+                      : ord.valmin > 0
+                      ? `≥ ${ord.valmin.toFixed(2)} €`
+                      : 'Au marché'}
                   </td>
                   <td className="px-5 py-3 text-center">
-                    <Tooltip content="Annuler cet ordre en attente">
-                      <button
-                        onClick={() => onCancelOrder(ord.id)}
-                        className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </Tooltip>
+                    <div className="flex items-center justify-center gap-1">
+                      {onEditOrder && (
+                        <Tooltip content="Modifier cet ordre">
+                          <button
+                            onClick={() => onEditOrder(ord)}
+                            className="p-1 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
+                      )}
+                      <Tooltip content="Annuler cet ordre en attente">
+                        <button
+                          onClick={() => onCancelOrder(ord.id)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </Tooltip>
+                    </div>
                   </td>
                 </tr>
               );

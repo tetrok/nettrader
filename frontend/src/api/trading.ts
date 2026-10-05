@@ -35,6 +35,21 @@ export const tradingApi = {
     });
   },
 
+  updateOrder: async (
+    id: string,
+    payload: {
+      quantity: number;
+      valmin?: number;
+      valmax?: number;
+      validity?: number;
+    }
+  ): Promise<{ message: string }> => {
+    return apiClient<{ message: string }>(`trading/orders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
   cancelAllOrders: async (): Promise<void> => {
     await apiClient('trading/orders', {
       method: 'DELETE',

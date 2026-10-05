@@ -190,7 +190,21 @@ export const LeaderboardPage: React.FC = () => {
 
       {/* Teams Table */}
       {tab === 'teams' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <div className="text-xs text-slate-300">
+              Vous souhaitez rejoindre un club ou gérer vos invitations d'équipe ?
+            </div>
+            <Link
+              to="/my-team"
+              className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-slate-950 flex items-center gap-1.5 transition shadow-sm"
+            >
+              <Users className="w-3.5 h-3.5" />
+              Accéder à Mon Équipe
+            </Link>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-950/60 border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase tracking-wider">
@@ -246,6 +260,7 @@ export const LeaderboardPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </div>
         </div>
       )}
     </div>

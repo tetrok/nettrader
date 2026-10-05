@@ -71,6 +71,30 @@ class TradingController
             $pendingQty = $this->tradingService->getPendingSellOrderQuantity($userId, $code, $conn);
             $availableQty = max(0, $qty - $pendingQty);
 
+            // Recherche de la date d'achat (dernière opération d'achat ou de VAD correspondante)
+            $buyDate = null;
+            $sensSearch = ($qty < 0) ? 'Vente' : 'Achat';
+            $stmtHist = ExecRequete(
+                "SELECT temps FROM historique WHERE idcompte = ? AND codesico = ? AND sens = ? ORDER BY temps DESC, idhisto DESC LIMIT 1",
+                $conn,
+                [$userId, $code, $sensSearch]
+            );
+            $histRow = LigneSuivante($stmtHist);
+            if (is_object($histRow) && isset($histRow->temps)) {
+                $buyDate = (int)$histRow->temps;
+            } else {
+                // Fallback si l'opération d'origine a été enregistrée avec un autre libellé
+                $stmtHistFallback = ExecRequete(
+                    "SELECT temps FROM historique WHERE idcompte = ? AND codesico = ? ORDER BY temps DESC, idhisto DESC LIMIT 1",
+                    $conn,
+                    [$userId, $code]
+                );
+                $histFallbackRow = LigneSuivante($stmtHistFallback);
+                if (is_object($histFallbackRow) && isset($histFallbackRow->temps)) {
+                    $buyDate = (int)$histFallbackRow->temps;
+                }
+            }
+
             $positions[] = [
                 'code' => $code,
                 'name' => $name,
@@ -79,6 +103,7 @@ class TradingController
                 'pendingQuantity' => $pendingQty,
                 'currentPrice' => $currentPrice,
                 'buyPrice' => $buyPrice,
+                'buyDate' => $buyDate,
                 'totalValue' => round($totalValue, 2),
                 'gainLoss' => round($gainLoss, 2),
                 'gainLossPercent' => round($gainLossPercent, 2),
@@ -226,6 +251,136 @@ class TradingController
         ApiResponse::success([
             'message' => $parsed['message'],
         ], $parsed['message']);
+    }
+
+    /**
+     * Modifie un ordre en attente.
+     */
+    public function updateOrder(Request $request, string $id): void
+    {
+        $session = UserSession::current();
+        if (!$session->isLoggedIn()) {
+            ApiResponse::error("Non authentifié", 401);
+        }
+
+        if (empty($id)) {
+            ApiResponse::error("Identifiant d'ordre manquant", 400);
+        }
+
+        $userId = $session->getId();
+        $order = $this->orderRepo->findActiveByAccountAndIdentifier($userId, $id);
+        if (!$order) {
+            ApiResponse::error("Ordre introuvable ou vous n'êtes pas autorisé à le modifier.", 404);
+        }
+
+        // Vérifier si le marché est ouvert
+        if (!$this->tradingService->isMarketOpen(time(), $userId)) {
+            ApiResponse::error("Le marché est actuellement fermé.", 400);
+        }
+
+        $payload = $request->getJson();
+        $nbr = isset($payload['quantity']) ? (int)$payload['quantity'] : (int)$order->nbr;
+        if ($nbr <= 0) {
+            ApiResponse::error("La quantité doit être supérieure à zéro.", 400);
+        }
+
+        $valminNum = isset($payload['valmin']) ? (float)str_replace(',', '.', (string)$payload['valmin']) : (float)$order->coursmin;
+        $valmaxNum = isset($payload['valmax']) ? (float)str_replace(',', '.', (string)$payload['valmax']) : (float)$order->coursmax;
+
+        if ($valminNum < 0 || $valmaxNum < 0) {
+            ApiResponse::error("Les seuils de cours ne peuvent pas être négatifs.", 400);
+        }
+        if ($valminNum > 0 && $valmaxNum > 0 && $valminNum > $valmaxNum) {
+            ApiResponse::error("Le cours minimum ne peut pas dépasser le cours maximum.", 400);
+        }
+
+        $conn = Connexion(NOM, PASSE, BASE, SERVEUR);
+        $levelInfo = $this->tradingService->getUserLevelInfo($userId, $conn);
+        $canUseThreshold = (bool)($levelInfo->seuil ?? false);
+        $canUseRange = (bool)($levelInfo->plage ?? false);
+        $hasThreshold = ($valminNum > 0 || $valmaxNum > 0);
+
+        if ($hasThreshold && !$canUseThreshold) {
+            ApiResponse::error("Les ordres à seuil ne sont pas autorisés pour votre niveau de joueur.", 400);
+        }
+        if ($valminNum > 0 && $valmaxNum > 0 && !$canUseRange) {
+            ApiResponse::error("Les ordres avec plage de cours nécessitent le niveau Initié ou Expert.", 400);
+        }
+
+        // Calcul tempsLimite
+        $tempslim = (int)$order->tempslim;
+        $validity = $payload['validity'] ?? null;
+        if (is_numeric($validity) && (int)$validity > 0) {
+            $valInt = (int)$validity;
+            if ($valInt <= 365) {
+                $tempslim = time() + ($valInt * 86400);
+            } else {
+                $tempslim = $valInt;
+            }
+        }
+
+        // Contrôles spécifiques au sens
+        $sens = (string)$order->sens;
+        $codesico = (int)$order->codesico;
+        $stock = $this->tradingService->getStockInfo($codesico, $conn);
+        $stockPrice = $stock ? (float)$stock->valeur : 0.0;
+
+        if ($sens === 'vente') {
+            $isVadAllowed = (bool)($levelInfo->vad ?? false);
+            $ownedShares = $this->tradingService->getOwnedStockQuantity($userId, $codesico, $conn);
+            $pendingSellOther = (int)$this->orderRepo->fetchOne(
+                "SELECT COALESCE(SUM(nbr), 0) as total FROM ordre WHERE idcompte = ? AND codesico = ? AND sens = 'vente' AND etat = '1' AND datecreation != ? AND idordre != ?",
+                [$userId, $codesico, $order->datecreation, (int)$order->idordre]
+            )->total;
+            $availableShares = max(0, $ownedShares - $pendingSellOther);
+
+            if (!$isVadAllowed) {
+                if ($nbr > $availableShares) {
+                    ApiResponse::error("Quantité insuffisante : vous disposez de {$availableShares} action(s) disponible(s).", 400);
+                }
+            } else {
+                $maxVad = $this->tradingService->getMaxVadPossible($userId, $conn);
+                $vadShares = $this->tradingService->getMaxBuyableShares($maxVad, $stockPrice);
+                $totalPossible = $availableShares + $vadShares;
+                if ($nbr > $totalPossible) {
+                    ApiResponse::error("Quantité excessive pour votre capacité de vente ({$totalPossible} max).", 400);
+                }
+            }
+        } elseif ($sens === 'achat') {
+            $priceRef = ($valmaxNum > 0) ? $valmaxNum : $stockPrice;
+            $tax = $this->tradingService->calculateTax($priceRef, $nbr);
+            $totalRequired = round(($priceRef * $nbr) + $tax, 2);
+
+            // Calcul des liquidités engagées par les AUTRES ordres d'achat
+            $otherCommitted = 0.0;
+            $stmtOther = Database::execute(
+                "SELECT o.nbr, o.coursmax, c.valeur 
+                 FROM ordre o 
+                 LEFT JOIN cacval c ON o.codesico = c.codesico 
+                 WHERE o.idcompte = ? AND o.sens = 'achat' AND o.etat = '1' AND o.tempslim > ? AND o.datecreation != ? AND o.idordre != ?",
+                [$userId, time(), $order->datecreation, (int)$order->idordre],
+                $conn
+            );
+            while ($rowO = Database::fetchObject($stmtOther)) {
+                $q = (int)$rowO->nbr;
+                $p = ((float)$rowO->coursmax > 0) ? (float)$rowO->coursmax : (float)$rowO->valeur;
+                if ($p > 0 && $q > 0) {
+                    $otherCommitted += ($q * $p) + $this->tradingService->calculateTax($p, $q);
+                }
+            }
+            $currentCash = function_exists('GetCashBack') ? (float)GetCashBack($userId) : 0.0;
+            $availableCashForOrder = max(0.0, round($currentCash - $otherCommitted, 2));
+
+            if ($totalRequired > $availableCashForOrder) {
+                ApiResponse::error("Liquidités insuffisantes pour modifier cet ordre. Requis : " . number_format($totalRequired, 2, ',', ' ') . " € (Disponible : " . number_format($availableCashForOrder, 2, ',', ' ') . " €).", 400);
+            }
+        }
+
+        // Mettre à jour l'ordre
+        $updateSql = "UPDATE ordre SET nbr = ?, coursmin = ?, coursmax = ?, tempslim = ? WHERE idcompte = ? AND (datecreation = ? OR idordre = ?)";
+        ExecRequete($updateSql, $conn, [$nbr, $valminNum, $valmaxNum, $tempslim, $userId, $order->datecreation, (int)$order->idordre]);
+
+        ApiResponse::success(null, "Ordre modifié avec succès !");
     }
 
     /**

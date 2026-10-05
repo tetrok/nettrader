@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Stock, SimulationResult } from '../../types';
+import { Stock, SimulationResult, Position } from '../../types';
 import { tradingApi } from '../../api/trading';
 import { marketApi } from '../../api/market';
+import { useAuth } from '../../context/AuthContext';
 import { X, ArrowDownRight, ArrowUpRight, Calculator, CheckCircle2, AlertTriangle, AlertCircle, Loader2 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
 
@@ -20,8 +21,10 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   initialSens = 'achat',
   onOrderCompleted,
 }) => {
+  const { user } = useAuth();
   const [sens, setSens] = useState<'achat' | 'vente'>(initialSens);
   const [stocks, setStocks] = useState<Stock[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [selectedStockCode, setSelectedStockCode] = useState<number>(initialStock ? initialStock.code : 0);
   const [quantity, setQuantity] = useState<number>(1);
   const [orderType, setOrderType] = useState<'marche' | 'seuil'>('marche');
@@ -41,17 +44,65 @@ export const OrderModal: React.FC<OrderModalProps> = ({
     setSens(initialSens);
   }, [initialStock, initialSens, isOpen]);
 
-  // Load stocks list
+  // Load stocks list and portfolio positions
   useEffect(() => {
-    if (isOpen && stocks.length === 0) {
+    if (isOpen) {
       marketApi.getStocks().then((data) => {
         setStocks(data);
-        if (!selectedStockCode && data.length > 0) {
-          setSelectedStockCode(data[0].code);
-        }
       });
+
+      tradingApi.getPortfolio().then((p) => {
+        const posList = p.positions || [];
+        setPositions(posList);
+
+        // If opening in vente mode without a preselected stock (or stock not in portfolio)
+        if (initialSens === 'vente' && !initialStock) {
+          if (posList.length > 0) {
+            setSelectedStockCode(posList[0].code);
+            setSellVadMode(false);
+          } else if (user?.vad) {
+            setSellVadMode(true);
+          }
+        } else if (!selectedStockCode && !initialStock) {
+          marketApi.getStocks().then((data) => {
+            if (data.length > 0) setSelectedStockCode(data[0].code);
+          });
+        }
+      }).catch(() => {});
     }
   }, [isOpen]);
+
+  const [sellVadMode, setSellVadMode] = useState<boolean>(false);
+
+  // If user switches between achat and vente, adapt the selected stock
+  const canVad = Boolean(user?.vad);
+
+  // Positions maps
+  const positionMap = new Map<number, Position>();
+  positions.forEach((p) => positionMap.set(p.code, p));
+
+  // Determine stocks to display in the selector
+  const availableSellStocks = stocks.filter((s) => positionMap.has(s.code));
+  const otherStocksForVad = stocks.filter((s) => !positionMap.has(s.code));
+
+  // Switch sens handler
+  const handleSensChange = (newSens: 'achat' | 'vente') => {
+    setSens(newSens);
+    if (newSens === 'vente') {
+      // If the current stock is in portfolio, keep it
+      if (positionMap.has(selectedStockCode)) {
+        return;
+      }
+      // Otherwise, if positions exist, select the first portfolio position
+      if (availableSellStocks.length > 0) {
+        setSelectedStockCode(availableSellStocks[0].code);
+        setSellVadMode(false);
+      } else if (canVad && stocks.length > 0) {
+        // Portfolio is empty but user has VAD allowed
+        setSellVadMode(true);
+      }
+    }
+  };
 
   // Run simulation whenever selected stock or quantity changes
   useEffect(() => {
@@ -94,6 +145,14 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   };
 
   const getValidationIssue = (): string | null => {
+    if (sens === 'vente' && availableSellStocks.length === 0 && !canVad) {
+      return "Vous ne possédez actuellement aucune action dans votre portefeuille et la vente à découvert (VAD) n'est pas autorisée pour votre niveau de joueur.";
+    }
+
+    if (!selectedStockCode) {
+      return "Veuillez sélectionner un titre boursier.";
+    }
+
     if (quantity <= 0) {
       return "La quantité d'actions doit être strictement supérieure à 0.";
     }
@@ -112,20 +171,20 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       const owned = simulation.ownedQuantity;
       const available = simulation.availableSellQuantity;
       const pending = simulation.pendingSellQuantity;
-      const canVad = simulation.canVad;
+      const vadAllowed = simulation.canVad;
 
-      if (owned <= 0 && !canVad) {
+      if (owned <= 0 && !vadAllowed) {
         return "Vous ne possédez aucune action sur ce titre et la vente à découvert (VAD) n'est pas autorisée pour votre niveau de joueur.";
       }
 
-      if (owned > 0 && !canVad && quantity > available) {
+      if (owned > 0 && !vadAllowed && quantity > available) {
         if (available <= 0) {
           return `Toutes vos actions (${owned}) sont déjà engagées dans des ordres de vente en attente d'exécution.`;
         }
         return `Quantité demandée (${quantity}) supérieure à votre disponible (${available} action${available > 1 ? 's' : ''}${pending > 0 ? `, ${pending} déjà engagée${pending > 1 ? 's' : ''} en attente` : ''}).`;
       }
 
-      if (canVad) {
+      if (vadAllowed) {
         const vadNeeded = Math.max(0, quantity - owned);
         const vadAmount = vadNeeded * simulation.stockPrice;
         if (vadAmount > simulation.maxVad) {
@@ -151,8 +210,14 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       }
 
       if (min <= 0 && max <= 0) {
-        return "Veuillez renseigner au moins un seuil de cours (min ou max) pour un ordre à cours limité.";
+        return sens === 'achat'
+          ? "Veuillez renseigner un cours d'achat maximum souhaité."
+          : "Veuillez renseigner au moins un seuil de cours (minimum ou maximum).";
       }
+    }
+
+    if (orderType === 'marche' && simulation.isMarketOpen === false) {
+      return "Le marché est actuellement fermé. Pour programmer un ordre qui s'exécutera à l'ouverture, choisissez 'À cours limité / Seuil'.";
     }
 
     return null;
@@ -160,6 +225,17 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
   const validationIssue = getValidationIssue();
   const canSubmit = !submitting && !simLoading && !validationIssue;
+
+  // Calcul du mode d'exécution prévisionnel (immédiat ou programmé en attente)
+  const isMarketOpen = simulation?.isMarketOpen ?? true;
+  const currentPrice = currentStock ? currentStock.price : 0;
+  const numMin = parseFloat(valMin) || 0;
+  const numMax = parseFloat(valMax) || 0;
+  const willExecuteImmediately =
+    isMarketOpen &&
+    (orderType === 'marche' ||
+      (sens === 'achat' && (numMax === 0 || currentPrice <= numMax) && (numMin === 0 || currentPrice >= numMin)) ||
+      (sens === 'vente' && (numMin === 0 || currentPrice >= numMin) && (numMax === 0 || currentPrice <= numMax)));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,7 +291,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           <div className="grid grid-cols-2 gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800">
             <button
               type="button"
-              onClick={() => setSens('achat')}
+              onClick={() => handleSensChange('achat')}
               className={`py-2 text-sm font-semibold rounded-lg transition flex items-center justify-center gap-1.5 ${
                 sens === 'achat'
                   ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
@@ -227,7 +303,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             </button>
             <Tooltip
               content={
-                simulation && simulation.ownedQuantity <= 0 && !simulation.canVad
+                availableSellStocks.length === 0 && !canVad
+                  ? "Vous ne possédez aucune action en portefeuille et la VAD n'est pas autorisée à votre niveau."
+                  : simulation && simulation.ownedQuantity <= 0 && !simulation.canVad
                   ? "Vous ne possédez aucune action sur ce titre et la vente à découvert (VAD) n'est pas autorisée à votre niveau."
                   : simulation && simulation.availableSellQuantity <= 0 && !simulation.canVad
                   ? `Toutes vos actions (${simulation.ownedQuantity}) sont déjà engagées dans des ordres en attente.`
@@ -237,7 +315,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             >
               <button
                 type="button"
-                onClick={() => setSens('vente')}
+                onClick={() => handleSensChange('vente')}
                 className={`w-full py-2 text-sm font-semibold rounded-lg transition flex items-center justify-center gap-1.5 ${
                   sens === 'vente'
                     ? 'bg-rose-500 text-white shadow-md shadow-rose-500/20'
@@ -245,25 +323,96 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 }`}
               >
                 <ArrowUpRight className="w-4 h-4" />
-                Vendre / VAD
+                Vendre {canVad ? '/ VAD' : ''}
               </button>
             </Tooltip>
           </div>
 
           {/* Stock Selection */}
           <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">Titre Boursier</label>
-            <select
-              value={selectedStockCode}
-              onChange={(e) => setSelectedStockCode(parseInt(e.target.value, 10))}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition"
-            >
-              {stocks.map((s) => (
-                <option key={s.code} value={s.code}>
-                  {s.name} ({s.ticker}) — {s.price.toFixed(2)} €
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium text-slate-400">
+                {sens === 'vente' ? 'Position à Vendre' : 'Titre Boursier'}
+              </label>
+
+              {/* Sub-selector toggle for VAD if user has VAD allowed and is in Vente mode */}
+              {sens === 'vente' && canVad && availableSellStocks.length > 0 && (
+                <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSellVadMode(false);
+                      if (availableSellStocks.length > 0 && !positionMap.has(selectedStockCode)) {
+                        setSelectedStockCode(availableSellStocks[0].code);
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded font-medium transition ${
+                      !sellVadMode
+                        ? 'bg-slate-800 text-white'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Mon Portefeuille ({availableSellStocks.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSellVadMode(true);
+                      if (otherStocksForVad.length > 0 && positionMap.has(selectedStockCode)) {
+                        setSelectedStockCode(otherStocksForVad[0].code);
+                      }
+                    }}
+                    className={`px-2 py-0.5 rounded font-medium transition ${
+                      sellVadMode
+                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    VAD (Autres titres)
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {sens === 'vente' && availableSellStocks.length === 0 && !canVad ? (
+              <div className="w-full bg-slate-950 border border-dashed border-slate-800 rounded-xl px-3.5 py-3 text-xs text-slate-400 text-center">
+                Aucune action disponible dans votre portefeuille.
+              </div>
+            ) : (
+              <select
+                value={selectedStockCode}
+                onChange={(e) => setSelectedStockCode(parseInt(e.target.value, 10))}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition"
+              >
+                {sens === 'achat' ? (
+                  stocks.map((s) => (
+                    <option key={s.code} value={s.code}>
+                      {s.name} ({s.ticker}) — {s.price.toFixed(2)} €
+                    </option>
+                  ))
+                ) : sens === 'vente' && canVad && sellVadMode ? (
+                  otherStocksForVad.map((s) => (
+                    <option key={s.code} value={s.code}>
+                      [VAD] {s.name} ({s.ticker}) — {s.price.toFixed(2)} €
+                    </option>
+                  ))
+                ) : sens === 'vente' ? (
+                  availableSellStocks.map((s) => {
+                    const pos = positionMap.get(s.code);
+                    const qtyInfo = pos
+                      ? pos.pendingQuantity && pos.pendingQuantity > 0
+                        ? ` (Dispo: ${pos.availableQuantity} / Total: ${pos.quantity})`
+                        : ` (${pos.quantity} en portefeuille)`
+                      : '';
+                    return (
+                      <option key={s.code} value={s.code}>
+                        {s.name} ({s.ticker}){qtyInfo} — {s.price.toFixed(2)} €
+                      </option>
+                    );
+                  })
+                ) : null}
+              </select>
+            )}
           </div>
 
           {/* Quantity & Max Helper */}
@@ -354,21 +503,47 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
           {/* Threshold Inputs */}
           {orderType === 'seuil' && (
-            <div className="space-y-2 p-3 bg-slate-950 rounded-xl border border-slate-800 animate-in fade-in duration-150">
+            <div className="space-y-2 p-3.5 bg-slate-950 rounded-xl border border-slate-800 animate-in fade-in duration-150">
               <div className="grid grid-cols-2 gap-3">
+                {sens === 'vente' ? (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">
+                      Prix Min souhaité (€)
+                      <span className="text-[10px] text-slate-500 block">Vendre si cours ≥ Min</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={valMin}
+                      onChange={(e) => setValMin(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono"
+                      placeholder="0.00"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">
+                      Seuil Min optionnel (€)
+                      <span className="text-[10px] text-slate-500 block">0 = pas de plancher</span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={valMin}
+                      onChange={(e) => setValMin(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono"
+                      placeholder="0.00"
+                    />
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Seuil Min (€)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={valMin}
-                    onChange={(e) => setValMin(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white font-mono"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1">Seuil Max (€)</label>
+                  <label className="block text-xs font-medium text-slate-300 mb-1">
+                    {sens === 'achat' ? "Prix Max souhaité (€)" : "Seuil Max optionnel (€)"}
+                    <span className="text-[10px] text-slate-500 block">
+                      {sens === 'achat' ? "Acheter si cours ≤ Max" : "Plafond max"}
+                    </span>
+                  </label>
                   <input
                     type="number"
                     step="0.01"
@@ -386,6 +561,20 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               )}
             </div>
           )}
+
+          {/* Mode d'exécution prévisionnel (Badge) */}
+          <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950 border border-slate-800/80 text-xs">
+            <span className="text-slate-400">Statut d'exécution prévu :</span>
+            {willExecuteImmediately ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                ⚡ Exécution immédiate
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                ⏳ Programmé en carnet d'ordres
+              </span>
+            )}
+          </div>
 
           {/* Estimation & Fees Summary Card */}
           <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2 text-xs">

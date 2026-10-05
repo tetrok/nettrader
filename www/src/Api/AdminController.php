@@ -1095,5 +1095,68 @@ class AdminController
 
         ApiResponse::success($result, $msg);
     }
+
+    /**
+     * Liste des demandes de création/modification d'équipes en attente de validation.
+     */
+    public function getPendingTeams(Request $request): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $conn = Connexion(NOM, PASSE, BASE, SERVEUR);
+        $stmt = ExecRequete(
+            "SELECT vg.*, c.pseudonyme, c.email
+             FROM verifgroupe vg
+             JOIN compte c ON vg.idcompte = c.idcompte
+             ORDER BY vg.idverifgroupe ASC",
+            $conn
+        );
+
+        $items = [];
+        while ($row = LigneSuivante($stmt)) {
+            $items[] = [
+                'id' => (int)$row->idverifgroupe,
+                'teamId' => (int)$row->idgroupe,
+                'isModification' => ((int)$row->idgroupe > 0),
+                'userId' => (int)$row->idcompte,
+                'pseudo' => (string)$row->pseudonyme,
+                'email' => (string)$row->email,
+                'name' => (string)$row->titregroupe,
+                'tag' => (string)$row->initialgroupe,
+                'website' => (string)($row->urlsite ?? ''),
+                'description' => (string)$row->descriptiongroupe,
+            ];
+        }
+
+        ApiResponse::success($items);
+    }
+
+    /**
+     * Valider ou rejeter une demande d'équipe dans verifgroupe.
+     */
+    public function reviewPendingTeam(Request $request, int $id): void
+    {
+        $session = UserSession::current();
+        $this->checkAdmin($session);
+
+        $payload = $request->getJson();
+        $action = trim((string)($payload['action'] ?? ''));
+        $comment = trim((string)($payload['comment'] ?? ''));
+
+        if (!in_array($action, ['approve', 'reject'], true)) {
+            ApiResponse::error("Action invalide. Spécifiez 'approve' ou 'reject'.", 400);
+        }
+
+        $choixAdmin = ($action === 'approve') ? "1" : "0";
+
+        ob_start();
+        $msg = dogroupeaccepterefuse($id, $choixAdmin, $comment);
+        ob_end_clean();
+
+        $actionText = ($action === 'approve') ? "approuvée" : "rejetée";
+        ApiResponse::success(null, "La demande d'équipe a été {$actionText}.");
+    }
 }
+
 

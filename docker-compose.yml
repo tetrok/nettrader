@@ -36,6 +36,31 @@ services:
       mailpit:
         condition: service_started
     restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: nettrader
+      DB_USER: nettrader_user
+      DB_PASSWORD: nettrader_password
+      CRON_SECRET: "nettrader_cron_secure_token_secret"
+      MAIL_HOST: mailpit
+      MAIL_PORT: "1025"
+      IGNORE_MARKET_HOURS: "${IGNORE_MARKET_HOURS:-0}"
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    restart: unless-stopped
     
   python-fetcher:
     build: ./pythonfetch
@@ -112,5 +137,5 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - app
+      - backend
     restart: unless-stopped

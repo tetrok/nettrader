@@ -41,6 +41,7 @@ export interface Position {
   quantity: number;
   currentPrice: number;
   buyPrice: number;
+  buyDate?: number | null;
   totalValue: number;
   gainLoss: number;
   gainLossPercent: number;
@@ -99,6 +100,7 @@ export interface SimulationResult {
   canVad: boolean;
   canThreshold: boolean;
   canRange: boolean;
+  isMarketOpen?: boolean;
 }
 
 export interface PlayerRank {
@@ -141,6 +143,7 @@ export interface TeamDetail {
   tag: string;
   description: string;
   website: string;
+  forumId?: number | null;
   leader: {
     id: number;
     pseudo: string;
@@ -151,6 +154,49 @@ export interface TeamDetail {
     bronze: number;
   };
   members: TeamMember[];
+  pendingInvitesSent?: {
+    userId: number;
+    pseudo: string;
+  }[];
+}
+
+export interface TeamInvitation {
+  teamId: number;
+  name: string;
+  tag: string;
+  description: string;
+  website: string;
+  leader: {
+    id: number;
+    pseudo: string;
+  };
+}
+
+export interface MyTeamStatus {
+  hasTeam: boolean;
+  isLeader: boolean;
+  team: TeamDetail | null;
+  pendingApproval: {
+    id: number;
+    name: string;
+    tag: string;
+    website: string;
+    description: string;
+    isModification: boolean;
+  } | null;
+}
+
+export interface PendingTeamApproval {
+  id: number;
+  teamId: number;
+  isModification: boolean;
+  userId: number;
+  pseudo: string;
+  email: string;
+  name: string;
+  tag: string;
+  website: string;
+  description: string;
 }
 
 export interface Message {

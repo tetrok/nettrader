@@ -66,6 +66,12 @@ export const Navbar: React.FC = () => {
                 <Trophy className="w-4 h-4 text-amber-400" />
                 Classements
               </Link>
+              {user && (
+                <Link to="/my-team" className="px-3 py-2 rounded-md font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-emerald-400" />
+                  Mon Équipe
+                </Link>
+              )}
               <Link to="/forums" className="px-3 py-2 rounded-md font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
                 <MessageSquare className="w-4 h-4 text-indigo-400" />
                 Forums
@@ -202,6 +208,13 @@ export const Navbar: React.FC = () => {
                 className="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:bg-slate-800"
               >
                 Mon Profil
+              </Link>
+              <Link
+                to="/my-team"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-md text-base font-medium text-emerald-400 hover:bg-slate-800"
+              >
+                Mon Équipe
               </Link>
               {user.isAdmin && (
                 <Link
