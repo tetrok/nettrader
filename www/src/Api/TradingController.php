@@ -1,5 +1,22 @@
 <?php
 
+/**
+ * NetTrader 2 — Contrôleur REST des Opérations Boursières & Courtage
+ *
+ * Usage:
+ *   Expose les fonctionnalités de négociation d'actifs pour le frontend (/api/trading).
+ *
+ * Logique & Fonctionnement:
+ *   - getPortfolio() : retourne la valorisation totale, les liquidités, le PRU et les lignes d'actions détenues.
+ *   - getPendingOrders() : liste les ordres d'achat et de vente actuellement en carnet d'ordres.
+ *   - placeOrder() : valide et insère un nouvel ordre (au marché, limité, ou à seuil de déclenchement),
+ *     contrôle les liquidités requises, les frais de courtage et les autorisations par niveau d'expertise.
+ *   - cancelOrder() / cancelAllOrders() : retire les ordres en attente et libère les liquidités ou actions engagées.
+ *   - updateOrder() : permet la modification du volume ou des seuils d'un ordre existant.
+ *   - simulateOrder() : calcule les frais et taxes prévisionnels avant validation par le joueur.
+ *   - getHistory() : consulte l'historique complet des transactions passées.
+ */
+
 namespace NetTrader\Api;
 
 use NetTrader\Http\Request;

@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — DTO de Connexion (LoginDto)
+ *
+ * Usage:
+ *   Valide le pseudonyme et le mot de passe fournis lors de la tentative d'authentification.
+ */
+
 import { IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 

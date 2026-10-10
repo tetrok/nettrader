@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Module NestJS d'Administration
+ *
+ * Usage:
+ *   Assemble l'ensemble des contrôleurs et services d'administration et supervise la gestion globale du jeu.
+ */
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../entities/user.entity';

@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Client API d'Authentification
+ *
+ * Usage:
+ *   Expose les fonctions réseau pour la connexion, l'inscription, la vérification de session et la déconnexion.
+ */
+
 import { apiClient, setToken } from './client';
 import { User } from '../types';
 

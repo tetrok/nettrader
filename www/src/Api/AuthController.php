@@ -1,5 +1,20 @@
 <?php
 
+/**
+ * NetTrader 2 — Contrôleur REST d'Authentification & Gestion des Identifiants
+ *
+ * Usage:
+ *   Gère les flux d'authentification des utilisateurs pour l'application frontend React (/api/auth).
+ *
+ * Logique & Fonctionnement:
+ *   - login() : vérification des identifiants, prise en charge transparente de la migration MD5 -> bcrypt,
+ *     génération d'un jeton de session CSPRNG et renvoi du profil complet.
+ *   - register() : validation des contraintes de pseudo/email, hachage bcrypt, initialisation du capital à 10 000 €.
+ *   - me() : retourne les informations de l'utilisateur connecté à partir du jeton de session.
+ *   - logout() : invalidation de la session en base de données et suppression du cookie.
+ *   - requestPasswordReset() / resetPassword() : génération de token temporaire et réinitialisation sécurisée.
+ */
+
 namespace NetTrader\Api;
 
 use NetTrader\Http\Request;

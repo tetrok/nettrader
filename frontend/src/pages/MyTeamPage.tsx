@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Page de Gestion de Mon Équipe (MyTeamPage)
+ *
+ * Usage:
+ *   Espace collaboratif pour les membres et le capitaine d'une équipe.
+ *
+ * Logique & Fonctionnement:
+ *   - Permet au chef d'équipe de gérer les candidatures (acceptation / refus), d'inviter des membres et d'exclure.
+ *   - Permet aux membres de consulter les statistiques d'équipe ou de démissionner.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { teamsApi } from '../api/teams';

@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service de Gestion du Compte Utilisateur
+ *
+ * Usage:
+ *   Implémente la logique de mise à jour du profil joueur, de sécurité du mot de passe et de réinitialisation de capital.
+ */
+
 import {
   Injectable,
   NotFoundException,

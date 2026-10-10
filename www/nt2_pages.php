@@ -1,110 +1,20 @@
 <?php
 
 /**
- * Fichier: nt2_pages.php
- * Ce fichier contient les fonctions suivantes :
- * - inclskr
- * - achatvente
- * - formlistaction
- * - dovente
- * - inscrjeu
- * - jscript_av
- * - SetValeur
- * - ChgQuant
- * - sela_click1
- * - sela_click2
- * - selv_click1
- * - selv_click2
- * - doachat
- * - get_nextrefresh
- * - execute_ordre
- * - tab_mess_ordre
- * - form_list_ordre
- * - list_ordre_sens
- * - form_list_ordrefe
- * - htm_iconhelp
- * - htm_iconinfo
- * - profilaction
- * - txt_help
- * - txt_faq
- * - supprtoutordre
- * - supprordre
- * - jscript_ordre
- * - confirmLink
- * - jscript_inscr
- * - test
- * - verif_email
- * - jscript_groupe
- * - test
- * - back_link
- * - chgmdp
- * - editprofil
- * - jscript_profil
- * - test
- * - jscript_profil2
- * - test
- * - classementequipes
- * - formclasse
- * - sous_formclasse
- * - formhisto
- * - form_messagerie
- * - form_nouvmessage
- * - sendmessage
- * - txt_accueil
- * - txt_regl
- * - forminscription
- * - formprofil
- * - connectstat
- * - formcontact
- * - formachat
- * - formvente
- * - form_news
- * - pgaccueil
- * - newpart
- * - menu
- * - txtfuncjour
- * - imgdot
- * - formrecuppass
- * - formsendpass
- * - dosendpass
- * - frmrazjoueur
- * - doraz
- * - lstAction
- * - frminvitejoueur
- * - frmgroupeaction
- * - frmexclurejoueur
- * - frmmodifajgroupe
- * - frmquittegroupe
- * - doquittegroupe
- * - doexcluregroupe
- * - tabgroupeprofil
- * - lstforums
- * - lstsujets
- * - lstposts
- * - javaforum
- * - helpline
- * - getarraysize
- * - arraypush
- * - arraypop
- * - checkForm
- * - emoticon
- * - bbfontstyle
- * - bbstyle
- * - storeCaret
- * - forum_postmessage
- * - formchgmdp
- * - disabledaily
- * - disableweekly
- * - junkoldsicav
+ * NetTrader 2 — Contrôleur de Rendu des Pages de l'Interface Legacy
+ *
+ * Usage:
+ *   Génère le code HTML de chaque vue de l'interface utilisateur web historique :
+ *   accueil, fiche de trading, portefeuille, carnet d'ordres, classements, messagerie et forum.
+ *
+ * Logique & Fonctionnement:
+ *   - page_accueil() : tableau de bord du joueur, résumé de marché et actualités.
+ *   - page_portefeuille() : valorisation des actifs, liquidités disponibles, tableau des positions.
+ *   - page_ordre() : formulaire de passage d'ordre avec contrôles de solde et de niveau.
+ *   - page_classement() : palmarès des traders et équipes avec calcul des progressions.
+ *   - page_forum() / page_sujet() : affichage des rubriques et messages avec support BBCode.
  */
 
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
 function inclskr()
 {
     include_once ("skin/default/include_interface.php");

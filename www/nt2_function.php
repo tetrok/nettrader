@@ -1,5 +1,21 @@
 <?php
 
+/**
+ * NetTrader 2 — Boîte à Outils Générale & Helpers Transverses
+ *
+ * Usage:
+ *   Contient les fonctions utilitaires réutilisées dans toute l'application legacy :
+ *   sécurisation des sorties HTML, calculs financiers, BBCode, pagination et helpers graphiques.
+ *
+ * Logique & Fonctionnement:
+ *   - Sécurité : fonction e() pour l'échappement HTML systématique (htmlspecialchars UTF-8).
+ *   - Calculs boursiers : gettaxe() (commissions de courtage et TVA), getnbactionmax() (pouvoir d'achat),
+ *     getmontantvadpossible() (marge autorisée pour la vente à découvert selon le niveau).
+ *   - Formatage : bbtohtml() (parseur BBCode sécurisé contre les failles XSS javascript:),
+ *     conversion de dates et couleurs d'évolution boursière.
+ *   - Logique de jeu : tempsjeu() (contrôle des horaires de cotation Euronext), checkscore().
+ */
+
 require_once __DIR__ . '/autoload.php';
 
 use NetTrader\Service\TradingService;
@@ -7,74 +23,7 @@ use NetTrader\Service\FormattingService;
 use NetTrader\Service\MailerService;
 use NetTrader\Auth\UserSession;
 
-/**
- * Fichier: nt2_function.php
- * Ce fichier contient les fonctions suivantes :
- * - e
- * - tabvaleurouzero
- * - affichpseudo
- * - affichgroupe
- * - msgtab
- * - compareclass
- * - sign
- * - getvaleur
- * - traiteeuronextcsv
- * - traiteyahoocsv
- * - traitehtmlsicav
- * - ansgetvaleur
- * - leading_zero
- * - updateplayersicav
- * - echotabadmin
- * - sorttableau
- * - barrepage
- * - tempsjeu
- * - updaterecompensegroupes
- * - checkscore
- * - updatenomsicav
- * - getnbactionmax
- * - gettaxe
- * - getmontantvadpossible
- * - get_refresh
- * - updatelistsicav
- * - cmd_to_update_liste
- * - cmd_downhisto
- * - cmd_euronextdownvaleur
- * - cmd_downvaleur
- * - cmd_nodownvaleur
- * - cmd_setvaleur
- * - tomoisfr
- * - numlimit
- * - finjour
- * - openform
- * - classtohtmlcolor
- * - couleurfonctionclasse
- * - htmlourien
- * - lnkachat
- * - lnkvente
- * - html_lien
- * - getnewurl
- * - getsigne
- * - tabordre
- * - lienordre
- * - bbtohtml
- * - estadmingroupe
- * - estmembregroupe
- * - getidgroupe
- * - envoimail
- * - retiftrue
- * - majstats
- * - print_reward
- * - forum_peut_editer
- * - geturlaide
- */
 
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
 
 /**
  * Sécurise une chaîne de caractères pour l'affichage HTML

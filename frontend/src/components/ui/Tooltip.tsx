@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Composant Infobulle Accessible (Tooltip)
+ *
+ * Usage:
+ *   Affiche une explication textuelle contextuelle au survol d'un élément d'interface.
+ */
+
 import React, { ReactNode } from 'react';
 
 interface TooltipProps {

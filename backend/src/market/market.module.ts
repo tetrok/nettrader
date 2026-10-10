@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Module NestJS du Marché
+ *
+ * Usage:
+ *   Assemble MarketController, MarketService et injecte les entités Stock et StockHistory.
+ */
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MarketController } from './market.controller';

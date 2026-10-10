@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Définitions des Types & Modèles de Données TypeScript
+ *
+ * Usage:
+ *   Centralise l'ensemble des interfaces et types métier partagés dans le frontend :
+ *   User, Stock, Order, Portfolio, TradeHistory, ForumTopic, Team, etc.
+ *
+ * Logique & Fonctionnement:
+ *   - Assure un typage strict des réponses d'API et des props de composants.
+ *   - Définit les énumérations et structures pour les ordres (sens, types), les niveaux et les métriques de marché.
+ */
+
 export interface User {
   id: number;
   pseudo: string;

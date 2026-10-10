@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Modération des Forums (AdminForumManagement)
+ *
+ * Usage:
+ *   Permet aux modérateurs et administrateurs d'éditer ou supprimer des rubriques, sujets et messages.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { adminApi } from '../../api/admin';

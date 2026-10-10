@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Découverte et Import Yahoo Finance (AdminYahooDiscovery)
+ *
+ * Usage:
+ *   Outil de recherche et d'import direct de nouveaux symboles boursiers dans le catalogue du jeu.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../api/admin';
 import {

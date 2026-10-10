@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Page de Connexion Utilisateur (LoginPage)
+ *
+ * Usage:
+ *   Formulaire d'authentification des joueurs avec gestion des erreurs et redirection fluide.
+ */
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

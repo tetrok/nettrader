@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Client API des Données de Marché & Cotations
+ *
+ * Usage:
+ *   Expose les requêtes pour consulter la synthèse du marché, le catalogue des actions et l'historique des cours.
+ */
+
 import { apiClient } from './client';
 import { MarketSummary, Stock, StockDetail, StockHistoryPoint, ChartPeriod } from '../types';
 

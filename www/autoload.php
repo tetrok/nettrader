@@ -1,8 +1,19 @@
 <?php
 
 /**
- * Autoloader PSR-4 universel pour le namespace NetTrader.
+ * NetTrader 2 — Autoloader PSR-4 & Compatibilité PHP
+ *
+ * Usage:
+ *   Ce fichier charge dynamiquement les classes du namespace NetTrader\
+ *   à partir du répertoire src/ sans nécessiter d'outils externes obligatoires.
+ *   Il est inclus au démarrage par l'API REST (api/index.php), les scripts CLI et le front legacy.
+ *
+ * Logique & Fonctionnement:
+ *   - Déclare une fonction anonyme via spl_autoload_register.
+ *   - Découpe le namespace "NetTrader\" pour mapper le nom qualifié vers le chemin de fichier (ex: NetTrader\Api\AuthController -> src/Api/AuthController.php).
+ *   - Fournit des polyfills PHP 8 (str_contains, str_starts_with, str_ends_with) pour assurer la rétrocompatibilité sous PHP 7.4.
  */
+
 spl_autoload_register(function (string $class): void {
     $prefix = 'NetTrader\\';
     $baseDir = __DIR__ . '/src/';

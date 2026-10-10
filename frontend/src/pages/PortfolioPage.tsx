@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Page de Gestion de Portefeuille & Trading (PortfolioPage)
+ *
+ * Usage:
+ *   Espace central du trader affichant ses avoirs, sa valorisation totale et ses ordres en cours.
+ *
+ * Logique & Fonctionnement:
+ *   - Affiche les KPIs financiers : capital total, liquidités disponibles, plus-values latentes globales.
+ *   - Intègre le tableau des positions détenues (PositionsTable) avec prix de revient unitaire (PRU).
+ *   - Affiche le carnet d'ordres en attente d'exécution (PendingOrdersTable) avec option d'annulation ou modification.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { tradingApi } from '../api/trading';
 import { Portfolio, Order, Position, Stock } from '../types';

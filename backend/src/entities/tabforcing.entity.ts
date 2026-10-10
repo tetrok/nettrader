@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Forçage Manuel de Cotation (TabForcing)
+ *
+ * Usage:
+ *   Mappe la table `tabforcing` permettant aux administrateurs de forcer manuellement le cours d'un titre.
+ */
+
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('tabforcing')

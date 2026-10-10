@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Filtre Global de Gestion des Exceptions HTTP
+ *
+ * Usage:
+ *   Intercepte toutes les exceptions non capturées de l'application NestJS pour formater
+ *   une réponse d'erreur JSON standardisée attendue par le frontend.
+ *
+ * Logique & Fonctionnement:
+ *   - Extrait le code de statut HTTP et le message d'erreur de l'exception (HttpException ou Error native).
+ *   - Formate la réponse en : { "success": false, "error": string, "statusCode": number, "timestamp": string }.
+ */
+
 import {
   ExceptionFilter,
   Catch,

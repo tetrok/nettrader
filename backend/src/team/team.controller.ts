@@ -1,3 +1,16 @@
+/**
+ * NetTrader 2 — Contrôleur REST des Équipes (Groupes)
+ *
+ * Usage:
+ *   Expose les routes /api/teams pour la gestion collaborative des équipes de trading.
+ *
+ * Logique & Fonctionnement:
+ *   - getMyTeam() / getTeam() : consultation de la fiche équipe et de ses membres.
+ *   - createTeam() : création d'une nouvelle équipe avec tag unique.
+ *   - joinTeam() / leaveTeam() : adhésion ou départ d'une équipe.
+ *   - approveMember() / rejectMember() : gestion des demandes par le capitaine.
+ */
+
 import {
   Controller,
   Get,

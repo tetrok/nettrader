@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Gestionnaire d'État de Session & Contrôle d'Accès
+ *
+ * Usage:
+ *   Fournit aux contrôleurs REST les informations sur l'utilisateur actuellement authentifié,
+ *   ses privilèges administrateur et son jeton de session.
+ *
+ * Logique & Fonctionnement:
+ *   - current() : résout la session active soit via le cookie PHP standard, soit via l'en-tête "Authorization: Bearer <token>".
+ *   - Vérifie la validité du jeton en base (table session), la date d'expiration (tempsLimite) et charge le compte associé.
+ *   - requireAuth() et requireAdmin() : interrompent la requête avec un code HTTP 401 ou 403 si les prérequis ne sont pas satisfaits.
+ */
+
 namespace NetTrader\Auth;
 
 /**

@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Module NestJS de Messagerie
+ *
+ * Usage:
+ *   Assemble MessageController, MessageService et injecte l'entité Message.
+ */
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MessageController } from './message.controller';

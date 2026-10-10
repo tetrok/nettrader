@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — DTO de Modification d'Ordre en Carnet (UpdateOrderDto)
+ *
+ * Usage:
+ *   Valide les modifications de quantité ou de seuils de déclenchement d'un ordre existant.
+ */
+
 import {
   IsInt,
   IsNumber,

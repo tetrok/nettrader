@@ -1,5 +1,19 @@
 <?php
 
+/**
+ * NetTrader 2 — Moteur Métier de Négociation & Courtage Boursier
+ *
+ * Usage:
+ *   Centralise l'application des règles financières et de négociation de la plateforme NetTrader 2 :
+ *   frais de courtage, taux de TVA, plafonds d'achat, marges de Vente À Découvert et contrôles de niveaux.
+ *
+ * Logique & Fonctionnement:
+ *   - calculateTax() : calcule les commissions de courtage (0,30% + TVA 19,6% avec forfait minimum de 4,95 €).
+ *   - getMaxBuyableShares() : détermine la quantité maximale de titres achetable avec le cash disponible net de frais.
+ *   - getMaxVadPossible() : calcule la marge disponible pour la vente à découvert selon le niveau d'expertise du joueur.
+ *   - validateOrderConstraints() : vérifie la compatibilité de l'ordre avec le niveau du trader (ex: seuils interdits en niveau Débutant).
+ */
+
 namespace NetTrader\Service;
 
 use NetTrader\Database\Database;

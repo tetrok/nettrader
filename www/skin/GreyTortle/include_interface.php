@@ -1,41 +1,15 @@
 <?php
 
 /**
- * Fichier: include_interface.php
- * Ce fichier contient les fonctions suivantes :
- * - Html_radio
- * - getgooglePub
- * - Html_textezone
- * - Html_texte
- * - Html_pass
- * - Html_bouton
- * - Html_head_liste
- * - Html_liste
- * - opentab
- * - closetab
- * - openligne
- * - closeligne
- * - opencol
- * - closecol
- * - openfont
- * - closefont
- * - html_header
- * - html_footer
- * - html_login
- * - return_link_menu
- * - html_menu
- * - html_anime
- * - StartAnim
- * - defilimg
+ * NetTrader 2 — Gabarit et Composants Graphiques du Thème GreyTortle
+ *
+ * Usage:
+ *   Variante graphique alternative (thème sombre/gris) pour l'interface web legacy.
+ *
+ * Logique & Fonctionnement:
+ *   - Fournit les mêmes signatures de composants que le skin par défaut avec une mise en forme CSS spécifique.
  */
 
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
 function Html_radio($nom,$valeur,$texte,$checked,$add="")
 {
     $nom_safe = e($nom);

@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Fil de Discussion d'un Sujet de Forum (TopicPage)
+ *
+ * Usage:
+ *   Affiche les messages d'un sujet, permet d'y répondre avec mise en forme BBCode.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { forumsApi } from '../api/forums';

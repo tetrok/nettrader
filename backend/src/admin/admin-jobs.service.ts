@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service de Déclenchement des Tâches Système
+ *
+ * Usage:
+ *   Permet aux administrateurs de forcer l'exécution des tâches périodiques (synchronisation marché, exécution du carnet).
+ */
+
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
 import { TradingService } from '../trading/trading.service';
 

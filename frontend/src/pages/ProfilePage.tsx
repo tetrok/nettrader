@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Page de Profil & Paramètres du Compte (ProfilePage)
+ *
+ * Usage:
+ *   Permet au joueur de modifier son e-mail, son mot de passe et de réinitialiser son portefeuille.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { accountApi, ProfileData } from '../api/account';

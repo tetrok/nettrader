@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Équipe de Joueurs (Group)
+ *
+ * Usage:
+ *   Mappe la table `groupe` représentant une équipe de traders en compétition dans le classement inter-équipes.
+ */
+
 import {
   Entity,
   PrimaryGeneratedColumn,

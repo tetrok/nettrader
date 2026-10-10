@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Client API des Classements
+ *
+ * Usage:
+ *   Expose les requêtes pour récupérer le palmarès des meilleurs traders et équipes.
+ */
+
 import { apiClient } from './client';
 import { PlayerRank, TeamRank, TeamDetail } from '../types';
 

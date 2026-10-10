@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Page du Marché & Catalogue des Cotations (MarketPage)
+ *
+ * Usage:
+ *   Permet aux joueurs d'explorer l'ensemble des valeurs boursières cotées sur Euronext Paris.
+ *
+ * Logique & Fonctionnement:
+ *   - Propose une barre de recherche textuelle temps réel (nom, ticker, secteur).
+ *   - Offre des filtres par secteur économique et un tri sur les cours ou variations.
+ *   - Permet d'ouvrir le modal de négociation directe (achat/vente) pour chaque valeur.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { marketApi } from '../api/market';
 import { Stock } from '../types';

@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Contrôleur REST de Messagerie Privée Interne
+ *
+ * Usage:
+ *   Permet la communication directe et sécurisée entre traders du jeu (/api/messages).
+ *
+ * Logique & Fonctionnement:
+ *   - getInbox() / getSent() : consultation paginée des messages reçus et envoyés.
+ *   - sendMessage() : envoi d'un message avec vérification de l'existence du destinataire et quota anti-spam.
+ *   - markAsRead() : mise à jour de l'état de lecture du message.
+ *   - deleteMessage() : suppression logique d'un message pour le compte demandeur.
+ */
+
 namespace NetTrader\Api;
 
 use NetTrader\Http\Request;

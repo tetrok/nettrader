@@ -1,3 +1,13 @@
+/**
+ * NetTrader 2 — Intercepteur Global de Formatage des Réponses
+ *
+ * Usage:
+ *   Enveloppe toutes les réponses réussies retournées par les contrôleurs dans une structure uniforme.
+ *
+ * Logique & Fonctionnement:
+ *   - Transforme le payload retourné par les handlers de route en : { "success": true, "data": ... }.
+ */
+
 import {
   Injectable,
   NestInterceptor,

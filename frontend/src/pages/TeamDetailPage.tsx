@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Page Fiche Publique d'une Équipe (TeamDetailPage)
+ *
+ * Usage:
+ *   Consulte les informations d'une équipe, son capitaine, ses médailles et la liste de ses membres.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { leaderboardApi } from '../api/leaderboard';

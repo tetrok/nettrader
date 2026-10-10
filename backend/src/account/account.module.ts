@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Module NestJS du Compte Utilisateur
+ *
+ * Usage:
+ *   Assemble AccountController, AccountService et les entités User et Session.
+ */
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccountController } from './account.controller';

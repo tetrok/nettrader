@@ -1,3 +1,20 @@
+/**
+ * NetTrader 2 — Moteur Métier de Négociation & Courtage Boursier
+ *
+ * Usage:
+ *   Cœur financier de l'application NestJS : applique l'ensemble des règles de courtage, calculs de taxes,
+ *   vérifications de solvabilité, marges de Vente À Découvert et exécutions transactionnelles ACID.
+ *
+ * Logique & Fonctionnement:
+ *   - Calcul des taxes et courtage : commission de 0,30% + TVA 19,6% avec forfait plancher de 4,95 €.
+ *   - Validation stricte des ordres selon le niveau d'expertise :
+ *     * Niveau 1 Débutant : comptant uniquement (pas de seuils de prix, pas de VAD).
+ *     * Niveau 2 Initié : ordres à cours limité et à seuil de déclenchement autorisés.
+ *     * Niveau 3 Expert : Vente À Découvert (VAD) avec calcul du levier sur marge.
+ *   - Prévention des doubles dépenses : comptabilisation des liquidités et actions engagées en carnet d'ordres.
+ *   - Exécution atomique des transactions : utilisation de transactions TypeORM avec verrous pessimistes.
+ */
+
 import {
   Injectable,
   BadRequestException,
@@ -47,7 +64,7 @@ export class TradingService {
   async resolveUserIdFromToken(token?: string): Promise<number | null> {
     if (!token) return null;
     const clean = token.replace('Bearer ', '').trim();
-    if (!clean) return null;
+    if (!clean || clean.startsWith('reset_') || !/^[a-f0-9]{32,64}$/i.test(clean)) return null;
     const now = Math.floor(Date.now() / 1000);
     const session = await this.dataSource.getRepository(Session).findOne({
       where: { idSession: clean },

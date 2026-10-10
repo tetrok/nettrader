@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * NetTrader 2 — Abstraction Singleton de Connexion PDO & Transactions ACID
+ *
+ * Usage:
+ *   Point d'accès unique à la connexion MariaDB pour la nouvelle architecture orientée objet (PSR-4).
+ *   Utilisé par les Repositories et Services pour exécuter des requêtes et sécuriser les transactions.
+ *
+ * Logique & Fonctionnement:
+ *   - getConnection() : crée ou réutilise l'instance singleton PDO configurée en mode PDO::ERR_MODE_EXCEPTION et UTF-8.
+ *   - beginTransaction(), commit(), rollBack() : encapsulent les transactions pour garantir l'intégrité financière.
+ */
+
 namespace NetTrader\Database;
 
 use PDO;

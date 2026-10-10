@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service des Données de Marché & Cotations
+ *
+ * Usage:
+ *   Récupère les cotations boursières, agrège les statistiques de variations et filtre les séries temporelles d'historique.
+ */
+
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';

@@ -4,3 +4,8 @@ node_modules/
 dist/
 __pycache__/
 *.pyc
+mysql_dump_old.sql
+.env
+*.swp
+*.swo
+

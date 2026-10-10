@@ -1,3 +1,13 @@
+/**
+ * NetTrader 2 — Entité TypeORM Historique des Transactions Réalisées (TradeHistory)
+ *
+ * Usage:
+ *   Mappe la table `trade_history` archivant toutes les transactions exécutées pour chaque joueur.
+ *
+ * Logique & Fonctionnement:
+ *   - Consigne la date, le titre, le sens (achat/vente), le volume, le prix d'exécution unitaire et les taxes perçues.
+ */
+
 import {
   Entity,
   PrimaryGeneratedColumn,

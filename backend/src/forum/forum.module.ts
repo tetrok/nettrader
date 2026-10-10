@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Module NestJS des Forums
+ *
+ * Usage:
+ *   Assemble ForumController, ForumService et injecte les entités Forum, Topic, TopicPost et TopicPostContent.
+ */
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ForumController } from './forum.controller';

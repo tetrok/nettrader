@@ -1,5 +1,19 @@
 <?php
 
+/**
+ * NetTrader 2 — Contrôleur REST de Gestion des Équipes (Groupes)
+ *
+ * Usage:
+ *   Gère l'espace communautaire des équipes de traders (/api/teams).
+ *
+ * Logique & Fonctionnement:
+ *   - getTeam() / getMyTeam() : consultation de la fiche équipe, de ses membres et de ses statistiques.
+ *   - createTeam() : création d'une nouvelle équipe avec validation de l'unicité du nom et du tag.
+ *   - joinTeam() / requestJoin() : demande d'adhésion ou intégration selon les règles d'invitation.
+ *   - approveMember() / rejectMember() : validation ou refus des candidatures par le chef d'équipe.
+ *   - leaveTeam() / kickMember() : départ volontaire d'un membre ou exclusion par le leader.
+ */
+
 namespace NetTrader\Api;
 
 use NetTrader\Http\Request;

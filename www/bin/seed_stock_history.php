@@ -1,5 +1,20 @@
 <?php
 
+/**
+ * NetTrader 2 — Script CLI de Peuplement de l'Historique des Cotations
+ *
+ * Usage:
+ *   Script en ligne de commande permettant de générer un historique réaliste de cours
+ *   dans la table `stock_history` pour toutes les actions actives de `cacval`.
+ *   Permet d'alimenter les graphiques Recharts (1J, 1S, 1M, 1A) en environnement de développement ou de test.
+ *
+ * Logique & Fonctionnement:
+ *   - Vérifie la présence de données existantes dans `stock_history` (option --force pour écraser).
+ *   - Pour chaque titre : génère des points chronologiques pseudo-aléatoires cohérents
+ *     (bruit brownien géométrique) basés sur la valeur actuelle et les variations passées.
+ *   - Insère les enregistrements dans une transaction PDO unique pour maximiser les performances.
+ */
+
 require_once __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/../const.php';
 

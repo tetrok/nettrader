@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — DTO de Passage d'Ordre Boursier (PlaceOrderDto)
+ *
+ * Usage:
+ *   Valide le sens (achat/vente), la quantité, le code action, le type d'ordre et les seuils de cours éventuels.
+ */
+
 import {
   IsIn,
   IsInt,

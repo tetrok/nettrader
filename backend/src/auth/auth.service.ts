@@ -1,8 +1,21 @@
+/**
+ * NetTrader 2 — Service d'Authentification & Hachage Cryptographique
+ *
+ * Usage:
+ *   Contient la logique métier d'authentification des joueurs, gestion des mots de passe et génération de sessions.
+ *
+ * Logique & Fonctionnement:
+ *   - Valide les mots de passe avec bcrypt (avec mise à niveau transparente des anciens hash MD5).
+ *   - Génère des jetons de session cryptographiquement sûrs (CSPRNG 256 bits).
+ *   - Gère la révocation des sessions annexes lors d'un changement de mot de passe.
+ */
+
 import {
   Injectable,
   UnauthorizedException,
   ConflictException,
   NotFoundException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -303,6 +316,53 @@ export class AuthService {
     return {
       message:
         'Si un compte correspond à cet identifiant, un email vous a été envoyé.',
+    };
+  }
+
+  /**
+   * Confirmation et exécution de la réinitialisation de mot de passe.
+   */
+  async confirmPasswordReset(token: string, newPassword: string) {
+    const cleanToken = token.trim();
+    if (!cleanToken) {
+      throw new BadRequestException('Jeton de réinitialisation invalide.');
+    }
+    if (!newPassword || newPassword.length < 6) {
+      throw new BadRequestException('Le nouveau mot de passe doit comporter au moins 6 caractères.');
+    }
+
+    const sessionKey = cleanToken.startsWith('reset_') ? cleanToken : `reset_${cleanToken}`;
+    const now = Math.floor(Date.now() / 1000);
+
+    const session = await this.sessionRepository.findOne({
+      where: { idSession: sessionKey },
+    });
+
+    if (!session || Number(session.tempsLimite) < now) {
+      throw new BadRequestException('Jeton de réinitialisation invalide ou expiré.');
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id: session.idcompte },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Utilisateur introuvable.');
+    }
+
+    // Hashage avec bcrypt
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.passe = hashedPassword;
+    await this.userRepository.save(user);
+
+    // Suppression immédiate du token de réinitialisation (usage unique)
+    await this.sessionRepository.delete({ idSession: sessionKey });
+
+    // Révocation de toutes les autres sessions actives par sécurité
+    await this.sessionRepository.delete({ idcompte: user.id });
+
+    return {
+      message: 'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.',
     };
   }
 }

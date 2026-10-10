@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Abstraction d'une Requête HTTP Entrante
+ *
+ * Usage:
+ *   Encapsule les données de la requête HTTP entrante (méthode, URI, headers,
+ *   corps JSON, variables GET et POST, adresse IP) pour les contrôleurs de l'API REST.
+ *
+ * Logique & Fonctionnement:
+ *   - createFromGlobals() : instancie l'objet à partir des superglobales PHP et décode le flux php://input en JSON.
+ *   - Méthodes d'accès typées (getInt, getString, getBool) évitant les erreurs de type et assurant le filtrage des entrées.
+ *   - getClientIp() : résout l'adresse IP cliente réelle en tenant compte des en-têtes de proxy inverses (X-Forwarded-For).
+ */
+
 namespace NetTrader\Http;
 
 /**

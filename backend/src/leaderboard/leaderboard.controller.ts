@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Contrôleur REST des Classements
+ *
+ * Usage:
+ *   Fournit les classements des joueurs et des équipes (/api/leaderboard).
+ *
+ * Logique & Fonctionnement:
+ *   - getPlayers() : classement général individuel selon la valorisation totale et la progression relative.
+ *   - getTeams() : palmarès des équipes de traders.
+ */
+
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { LeaderboardService } from './leaderboard.service';

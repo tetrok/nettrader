@@ -1,3 +1,13 @@
+/**
+ * NetTrader 2 — Page d'Historique des Transactions (HistoryPage)
+ *
+ * Usage:
+ *   Permet au joueur de consulter l'historique complet des ordres boursiers exécutés sur son compte.
+ *
+ * Logique & Fonctionnement:
+ *   - Liste chronologiquement les transactions passées : date, action, sens (achat/vente), quantité, cours et taxes.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { tradingApi } from '../api/trading';
 import { HistoryItem } from '../types';

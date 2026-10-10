@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service de Calcul des Classements & Palmarès
+ *
+ * Usage:
+ *   Calcule dynamiquement les valorisations de portefeuilles et établit les classements périodiques.
+ */
+
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';

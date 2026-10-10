@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * NetTrader 2 — Tests du Service Yahoo Finance et Découverte de Titres
+ *
+ * Usage:
+ *   Valide l'intégration avec les endpoints Yahoo Finance (recherche, cotations, screening).
+ */
+
 require_once __DIR__ . '/../constbdd.php';
 require_once __DIR__ . '/../autoload.php';
 

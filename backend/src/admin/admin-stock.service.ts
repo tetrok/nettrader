@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service de Gestion du Catalogue des Actions
+ *
+ * Usage:
+ *   Permet aux administrateurs d'ajouter, modifier, archiver, diviser (split) ou supprimer des valeurs boursières.
+ */
+
 import {
   Injectable,
   NotFoundException,

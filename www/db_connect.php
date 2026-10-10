@@ -1,39 +1,21 @@
 <?php
 
 /**
- * Fichier: db_connect.php
- * Ce fichier contient les fonctions suivantes :
- * - sec
- * - echoadmin
- * - getmicrotime
- * - cookievalide
- * - Connexion
- * - ExecRequete
- * - LigneSuivante
- * - ChercheInternaute
- * - nbessai
- * - ChercheSession
- * - SessionValide
- * - CreerSession
- * - ControleAcces
- * - deconnection
- * - ChercheComptePseudo
+ * NetTrader 2 — Couche de Connexion Base de Données & Gestion des Sessions Legacy
+ *
+ * Usage:
+ *   Fournit la connexion PDO singleton historique, les fonctions d'exécution de requêtes
+ *   sécurisées et le cycle de vie des sessions utilisateur pour l'interface legacy.
+ *
+ * Logique & Fonctionnement:
+ *   - Connexion() : instancie ou réutilise l'objet PDO connecté à MariaDB avec encodage UTF-8.
+ *   - ExecRequete() : exécute des requêtes préparées systématiques pour éliminer tout risque d'injection SQL.
+ *   - LigneSuivante() : itère sur les enregistrements (fetchObject / fetchAssoc).
+ *   - CreerSession(), SessionValide(), ChercheSession() : génère des jetons de session cryptographiquement
+ *     sûrs via CSPRNG (random_bytes 256 bits), contrôle l'expiration (tempsLimite) et vérifie l'IP/compte.
+ *   - ControleAcces() : garde-fou vérifiant si l'internaute est authentifié avant d'autoriser une action.
  */
 
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
-
-/**
- * Fonction sec (Obsolète : remplacée par les requêtes préparées PDO)
- * @deprecated
- * @param mixed $input
- * @return mixed
- */
 function sec($input = "")
 {
     if (is_array($input)) {

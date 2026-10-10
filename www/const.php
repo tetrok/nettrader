@@ -1,18 +1,20 @@
 <?php
 
 /**
- * Fichier: const.php
- * Aucune fonction portée par ce fichier.
+ * NetTrader 2 — Constantes Métier et Configuration Économique
+ *
+ * Usage:
+ *   Définit les règles globales, paramètres de négociation, URLs de référence
+ *   et seuils de sécurité utilisés par l'ensemble de l'application (legacy et services).
+ *
+ * Logique & Fonctionnement:
+ *   - URLs des sources de données externes et passerelles de cotations.
+ *   - Paramètres de jeu : seuils d'activation d'équipes, délais anti-triche (SECURE),
+ *     quotas de messages privés récents (MAX_MESSAGE_ENVOYE_NON_LU).
+ *   - Constantes de calcul économique et de frais de courtage.
  */
 
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
-  //
+//
   // Fichier contenant les definitions de constantes
   //
   //define ("NOUVADDR","http://fr.finance.yahoo.com/d/quotes.csv?s=");

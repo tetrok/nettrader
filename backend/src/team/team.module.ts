@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Module NestJS des Équipes
+ *
+ * Usage:
+ *   Assemble TeamController, TeamService et injecte les entités Group et GroupMember.
+ */
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TeamController } from './team.controller';

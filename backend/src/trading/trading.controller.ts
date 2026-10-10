@@ -1,3 +1,19 @@
+/**
+ * NetTrader 2 — Contrôleur REST des Opérations de Trading
+ *
+ * Usage:
+ *   Expose l'ensemble des endpoints de courtage (/api/trading) : portefeuille, carnet d'ordres, simulations et historique.
+ *
+ * Logique & Fonctionnement:
+ *   - getPortfolio() : retourne la valorisation totale, les liquidités et le détail des positions.
+ *   - getPendingOrders() : liste les ordres d'achat et de vente en carnet.
+ *   - placeOrder() : passe un ordre d'achat ou de vente (au marché, limité, ou à seuil).
+ *   - cancelOrder() / cancelAllOrders() : annule un ordre ou tous les ordres en attente.
+ *   - updateOrder() : met à jour la quantité ou les seuils de prix d'un ordre en attente.
+ *   - simulateOrder() : calcule les frais et taxes avant validation de l'ordre.
+ *   - getHistory() : consulte l'historique des transactions passées.
+ */
+
 import {
   Controller,
   Get,

@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Entité TypeORM Compte Joueur (User)
+ *
+ * Usage:
+ *   Mappe la table `compte` représentant les utilisateurs, traders et administrateurs du jeu.
+ *
+ * Logique & Fonctionnement:
+ *   - Gère le pseudonyme, l'e-mail, le mot de passe haché (bcrypt), le solde liquide (cashback),
+ *     le niveau d'expertise (authlevel : 1 Débutant, 2 Initié, 3 Expert, 99 Admin), et les options de notification.
+ */
+
 import {
   Entity,
   PrimaryGeneratedColumn,

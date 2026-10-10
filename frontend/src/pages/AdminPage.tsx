@@ -1,3 +1,13 @@
+/**
+ * NetTrader 2 — Panneau d'Administration Multi-Onglets (AdminPage)
+ *
+ * Usage:
+ *   Console de gestion réservée aux administrateurs.
+ *
+ * Logique & Fonctionnement:
+ *   - Onglets commutables : Dashboard KPIs, Catalogue Actions, Market Sync Monitor, Modération Forums, Validation Équipes.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { adminApi, AdminDashboardData } from '../api/admin';
 import { AdminForumManagement } from '../components/admin/AdminForumManagement';

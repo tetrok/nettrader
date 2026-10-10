@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * NetTrader 2 — Service d'Expédition et Mise en File des E-mails
+ *
+ * Usage:
+ *   Enregistre les messages transactionnels (inscription, réinitialisation de mot de passe, alertes)
+ *   dans la table `mail_tosend` pour expédition asynchrone par le microservice Python (pymailing.py).
+ *
+ * Logique & Fonctionnement:
+ *   - queueMail() : insère un enregistrement avec statut 'attente' et horodatage d'envoi.
+ */
+
 namespace NetTrader\Service;
 
 use NetTrader\Database\Database;

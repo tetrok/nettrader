@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Contrôleur Webhook Interne (cmd.php)
+ *
+ * Usage:
+ *   Fournit la compatibilité pour les appels webhooks émis par les microservices Python ou crons avec clé secrète CRON_SECRET.
+ */
+
 import { Controller, Get, Post, Query, Headers, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { AdminJobsService } from './admin-jobs.service';

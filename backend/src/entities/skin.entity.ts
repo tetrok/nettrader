@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Thème Graphique (Skin)
+ *
+ * Usage:
+ *   Mappe la table `skin` répertoriant les thèmes d'affichage disponibles.
+ */
+
 import { Entity, PrimaryColumn, Column } from 'typeorm';
 
 @Entity('skin')

@@ -1,3 +1,16 @@
+/**
+ * NetTrader 2 — Contrôleur REST des Données de Marché
+ *
+ * Usage:
+ *   Fournit les endpoints publics et connectés pour consulter l'état du marché (/api/market).
+ *
+ * Logique & Fonctionnement:
+ *   - getSummary() : synthèse du marché (indices, top hausses, top baisses, volume global).
+ *   - getStocks() : liste paginée et filtrable des actions cotées.
+ *   - getStockDetail() : métriques financières complètes d'un titre.
+ *   - getStockHistory() : points chronologiques pour les graphiques Recharts (1J, 1S, 1M, 1A).
+ */
+
 import { Controller, Get, Param, Query, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { MarketService, ChartPeriod } from './market.service';

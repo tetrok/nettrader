@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Repository d'Accès aux Comptes Utilisateurs (Users)
+ *
+ * Usage:
+ *   Gère les interactions avec les tables `compte`, `session` et `scores`.
+ *
+ * Logique & Fonctionnement:
+ *   - findById() / findByPseudo() / findByEmail() : recherche d'utilisateurs.
+ *   - verifyPassword() : validation du mot de passe avec mise à niveau automatique MD5 -> bcrypt.
+ *   - updateCashback() : modification sécurisée du solde de liquidités sous verrouillage transactionnel.
+ *   - getLeaderboard() : calcul dynamique des valorisations pour établir le palmarès des meilleurs joueurs.
+ */
+
 namespace NetTrader\Repository;
 
 use PDO;

@@ -1,29 +1,19 @@
-
 <?php
 
 /**
- * Fichier: nt2_adminfunction.php
- * Ce fichier contient les fonctions suivantes :
- * - formadmin
- * - frmadmincacval
- * - setCheckboxesRange
- * - adminfuncliste
- * - afficheadminres
- * - lstplayeradmin
- * - setCheckboxesRange
- * - dodelplayers
- * - modiflstactions
- * - tabgroupe
- * - admingroupes
+ * NetTrader 2 — Fonctions et Formulaires d'Administration Legacy
+ *
+ * Usage:
+ *   Regroupe les fonctions de gestion administrative utilisées dans les pages d'administration legacy :
+ *   catalogue des actions, maintenance des comptes joueurs et modération des équipes.
+ *
+ * Logique & Fonctionnement:
+ *   - Affichage de formulaires administratifs (synthèse des joueurs, listing des requêtes).
+ *   - Actions sur le catalogue des valeurs : suppression de titre, fractionnement (split)
+ *     d'actions détenues en portefeuille, ajustement de cotations.
+ *   - Modération et gestion des groupes / équipes.
  */
 
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
 function formadmin() //affiche la liste des requetes dispo
 {
 $tab = listadminreq();

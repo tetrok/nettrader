@@ -17,26 +17,6 @@ services:
       retries: 5
     restart: unless-stopped
 
-  app:
-    build: .
-    ports:
-      - "8080:80"
-    volumes:
-      - ./www:/var/www/html
-    environment:
-      TZ: Europe/Paris
-      DB_HOST: db
-      DB_NAME: nettrader
-      DB_USER: nettrader_user
-      DB_PASSWORD: nettrader_password
-      CRON_SECRET: "nettrader_cron_secure_token_secret"
-    depends_on:
-      db:
-        condition: service_healthy
-      mailpit:
-        condition: service_started
-    restart: unless-stopped
-
   backend:
     build:
       context: ./backend
@@ -77,12 +57,12 @@ services:
       DB_USER: nettrader_user
       DB_PASSWORD: nettrader_password
       CAPDEB: "10000"
-      URLINDEX: "http://app/"
+      URLINDEX: "http://backend:3000/"
       CRON_SECRET: "nettrader_cron_secure_token_secret"
     depends_on:
       db:
         condition: service_healthy
-      app:
+      backend:
         condition: service_started
     restart: unless-stopped
     
@@ -98,7 +78,7 @@ services:
       DB_USER: nettrader_user
       DB_PASSWORD: nettrader_password
       CAPDEB: "10000"
-      URLINDEX: "http://app/"
+      URLINDEX: "http://backend:3000/"
       MAIL_HOST: mailpit
       MAIL_PORT: "1025"
       SENDMAIL_FOR_REAL: "1"

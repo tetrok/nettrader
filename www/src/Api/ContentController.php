@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * NetTrader 2 — Contrôleur REST des Contenus Statiques & Assistance
+ *
+ * Usage:
+ *   Expose les règles de trading, pages d'aide et formulaire de contact (/api/content).
+ *
+ * Logique & Fonctionnement:
+ *   - getHelp() : documentation des niveaux d'expertise (Débutant, Initié, Expert) et types d'ordres.
+ *   - submitContact() : réception et mise en file d'attente des demandes de contact destinées aux administrateurs.
+ */
+
 namespace NetTrader\Api;
 
 use NetTrader\Http\Request;

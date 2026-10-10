@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Message Privé Interne (Message)
+ *
+ * Usage:
+ *   Mappe la table `messages` stockant les correspondances privées échangées entre joueurs.
+ */
+
 import {
   Entity,
   PrimaryGeneratedColumn,

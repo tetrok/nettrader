@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * NetTrader 2 — Contrôleur REST des Classements & Palmarès
+ *
+ * Usage:
+ *   Fournit les classements individuels et par équipes pour la page Leaderboard (/api/leaderboard).
+ *
+ * Logique & Fonctionnement:
+ *   - getPlayerLeaderboard() : classement paginé des joueurs selon la valorisation totale ou la progression relative.
+ *   - getTeamLeaderboard() : classement des équipes selon la performance moyenne pondérée de leurs membres.
+ */
+
 namespace NetTrader\Api;
 
 use NetTrader\Http\Request;

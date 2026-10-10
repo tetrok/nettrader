@@ -1,3 +1,19 @@
+/**
+ * NetTrader 2 — Point d'Entrée & Bootstrap du Serveur NestJS
+ *
+ * Usage:
+ *   Initialise et démarre l'application NestJS moderne remplaçant l'ancienne API PHP.
+ *   Configure le préfixe d'API global, les middlewares de validation, le formatage des réponses et Swagger.
+ *
+ * Logique & Fonctionnement:
+ *   - Préfixe d'API global : configure '/api' pour correspondre au routage du frontend React (Nginx reverse-proxy).
+ *   - ValidationPipe globale : validation et transformation automatique des DTOs avec class-validator/class-transformer.
+ *   - TransformInterceptor & HttpExceptionFilter : normalise toutes les réponses au format JSON unifié.
+ *   - CORS : autorisation des origines configurées avec gestion des cookies/credentials.
+ *   - Swagger OpenAPI : documentation interactive des endpoints exposée sur '/api/docs'.
+ *   - Écoute sur le port d'environnement PORT (défaut: 3000) sur toutes les interfaces réseau (0.0.0.0).
+ */
+
 import { NestFactory } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';

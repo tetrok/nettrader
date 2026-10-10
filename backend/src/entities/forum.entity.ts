@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Rubrique de Forum (Forum)
+ *
+ * Usage:
+ *   Mappe la table `forum` représentant un salon de discussion thématique au sein d'une section.
+ */
+
 import {
   Entity,
   PrimaryGeneratedColumn,

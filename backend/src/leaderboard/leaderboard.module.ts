@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Module NestJS des Classements
+ *
+ * Usage:
+ *   Assemble LeaderboardController, LeaderboardService et les entités associées.
+ */
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LeaderboardController } from './leaderboard.controller';

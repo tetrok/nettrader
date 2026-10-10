@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Repository d'Accès aux Données des Valeurs Boursières (Stocks)
+ *
+ * Usage:
+ *   Gère les interactions avec les tables `cacval`, `stock_history` et `market_sync_log`.
+ *
+ * Logique & Fonctionnement:
+ *   - findByCode() / findByTicker() : recherche unitaire d'action par code SICAV ou symbole Yahoo.
+ *   - getMarketSyncStocks() : extraction paginée des valeurs avec métriques de disponibilité et d'échecs.
+ *   - getStockHistory() : extraction chronologique des cours pour les graphiques intraday et pluri-annuels.
+ *   - saveStock() / deleteStock() : persistance et suppression sécurisée des titres du catalogue.
+ */
+
 namespace NetTrader\Repository;
 
 use PDO;

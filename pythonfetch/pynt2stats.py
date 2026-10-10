@@ -1,48 +1,74 @@
 # -*- coding: utf-8 -*-
-#
-# NetTrader 2
-#
-# @package NetTrader
-# @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-# @author Nicolas Fortin <nfortin@nettrader.fr>
+"""
+NetTrader 2 — Calculateur de Statistiques et Rapports de Performance
+
+Usage:
+    Ce module est utilisé par `pymailing.py` pour générer le contenu textuel
+    des e-mails récapitulatifs envoyés aux traders abonnés.
+    Il compile les données de marché, valorise les portefeuilles et établit les
+    classements périodiques (journaliers et hebdomadaires).
+
+Logique & Fonctionnement:
+    - `Stats_Daily` :
+      * Crée une table temporaire `dailystatclassement` pour calculer la valorisation totale
+        (cash + titres valorisés au dernier cours) et la progression par rapport à la veille.
+      * Génère un récapitulatif par joueur : rang au classement, performance, valorisation,
+        composition du portefeuille et meilleures/pires performances du marché.
+    - `Stats_Weekly` :
+      * Crée une table temporaire `weeklystatclassement` pour calculer la progression sur 7 jours.
+      * Agrège le bilan de la semaine pour le joueur, ses positions et la tendance globale.
+    - Fonctions utilitaires :
+      * Extraction et alignement textuel des colonnes (`getRowDict`, `tgetValue`, `setValOk`).
+"""
+
 import os
 import pymysql
 import time
 from pyconst import *
 import hashlib
-SIZETAB=8
 
-def getRowDict(rowData,desc):
-    dicodata={}
-    if(rowData!=None):
-        for i in range(0,len(rowData)):
-            dicodata[desc[i][0]]=rowData[i]
+SIZETAB = 8
+
+def getRowDict(rowData, desc):
+    """Convertit un tuple de résultat SQL en dictionnaire basé sur la description des colonnes."""
+    dicodata = {}
+    if rowData is not None:
+        for i in range(0, len(rowData)):
+            dicodata[desc[i][0]] = rowData[i]
     return dicodata
-def getValue(tab,col):
+
+def getValue(tab, col):
+    """Récupère une valeur sous forme de chaîne à partir d'un dictionnaire de ligne."""
     if col in tab:
         return str(tab[col])
     else:
         return ""
-def tgetValue(tab,col):
+
+def tgetValue(tab, col):
+    """Formate une valeur textuelle avec un espacement fixe (padding) pour tableau ASCII."""
     if col in tab:
-        if len(str(tab[col]))<SIZETAB:
-            return str(tab[col])+(" "*(SIZETAB-len(str(tab[col]))))
+        if len(str(tab[col])) < SIZETAB:
+            return str(tab[col]) + (" " * (SIZETAB - len(str(tab[col]))))
         else:
-            return str(tab[col])[:SIZETAB*2-1]
+            return str(tab[col])[:SIZETAB * 2 - 1]
     else:
         return ""
 
 def setValOk(val):
-    if val=="":
+    """Normalise une valeur vide en zéro."""
+    if val == "":
         return 0
     else:
         return val
 
 class Stats_Daily:
-    def __init__(self,db):
-        self.db=db
+    """Moteur de calcul et de formatage des statistiques quotidiennes."""
+
+    def __init__(self, db):
+        self.db = db
         cursor = self.db.cursor()
-        #Creation du classement journalier tout les joueurs
+        # Creation du classement journalier de tous les joueurs
+
         cursor.execute("DROP TABLE IF EXISTS `dailystatclassement`")
         cursor.execute("CREATE TABLE `dailystatclassement` \
         SELECT pseudonyme, round( COALESCE( SUM( cacval.valeur * portef.quant ) , 0 ) + cashback, 2 ) AS capital, round( (\
@@ -294,7 +320,7 @@ Si les informations dans ce mail ne s'affichent pas correctement c'est que vous 
 % (joueur["pseudonyme"],sinceoneweek,today,todayprog,weekincome,monthrank,weekrank,weekbestplayer,histoscore,footer) 
             return body
 """
-db = pymysql.connect(host=C_HOST, user=C_USER, passwd=C_PWD, db=C_DBNAME)
+db = pymysql.connect(host=C_HOST, user=C_USER, password=C_PWD, database=C_DBNAME)
 
 statsengine=Stats_Daily(db)
 print(statsengine.createstatsforuser(1991))

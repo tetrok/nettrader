@@ -1,17 +1,20 @@
 <?php
 
 /**
- * Fichier: index.php
- * Aucune fonction portée par ce fichier.
+ * NetTrader 2 — Front Controller de l'Interface Web Legacy (PHP/HTML)
+ *
+ * Usage:
+ *   Point d'entrée pour les utilisateurs accédant à l'ancienne interface web du jeu.
+ *   Orchestre l'authentification formulaire, la gestion des sessions et l'inclusion des vues.
+ *
+ * Logique & Fonctionnement:
+ *   - Démarrage de la session PHP et instanciation du contexte (Request, UserSession).
+ *   - Traitement de la connexion utilisateur (vérification des identifiants avec hachage bcrypt).
+ *   - Analyse du paramètre d'URL "do" pour aiguiller la requête vers la page appropriée
+ *     (accueil, portefeuille, ordre d'achat/vente, classements, messagerie, forum, profil).
+ *   - Inclusion du template d'habillage graphique (skin) et rendu HTML final.
  */
 
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
 //profil d'un groupe( classement integré)
 session_start();
 require_once __DIR__ . '/autoload.php';

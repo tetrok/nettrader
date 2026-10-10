@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Accueil des Forums Communautaires (ForumsPage)
+ *
+ * Usage:
+ *   Affiche l'arborescence des sections et salons de discussion du jeu.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { forumsApi } from '../api/forums';

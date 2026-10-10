@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Métadonnées d'un Message de Forum (TopicPost)
+ *
+ * Usage:
+ *   Mappe la table `topicpost` liant un message à son sujet, à son auteur et à sa date de publication.
+ */
+
 import {
   Entity,
   PrimaryGeneratedColumn,

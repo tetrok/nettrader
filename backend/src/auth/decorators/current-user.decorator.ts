@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Décorateur de Paramètre @CurrentUser()
+ *
+ * Usage:
+ *   Injecte facilement l'entité utilisateur connectée dans les méthodes de contrôleur.
+ */
+
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { User } from '../../entities/user.entity';
 

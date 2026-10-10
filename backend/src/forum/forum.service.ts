@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service des Forums de Discussion
+ *
+ * Usage:
+ *   Gère l'arborescence des sections, l'affichage paginé des sujets et le formatage sécurisé du BBCode.
+ */
+
 import {
   Injectable,
   NotFoundException,
@@ -36,7 +43,7 @@ export class ForumService {
   async resolveUserFromToken(token?: string): Promise<User | null> {
     if (!token) return null;
     const clean = token.replace('Bearer ', '').trim();
-    if (!clean) return null;
+    if (!clean || clean.startsWith('reset_') || !/^[a-f0-9]{32,64}$/i.test(clean)) return null;
     const now = Math.floor(Date.now() / 1000);
     const session = await this.dataSource.getRepository(Session).findOne({
       where: { idSession: clean },

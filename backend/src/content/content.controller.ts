@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Contrôleur REST des Contenus Statiques & Assistance
+ *
+ * Usage:
+ *   Expose les règles de trading, l'aide aux débutants et la réception du formulaire de contact (/api/content).
+ */
+
 import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { ContentService } from './content.service';

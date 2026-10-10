@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Modération et Approbation des Équipes (AdminTeamApprovals)
+ *
+ * Usage:
+ *   Interface administrateur pour valider, suspendre ou modifier les équipes de joueurs.
+ */
+
 import React, { useState } from 'react';
 import { teamsApi } from '../../api/teams';
 import { Shield, Check, X, Globe, User, Clock, AlertCircle } from 'lucide-react';

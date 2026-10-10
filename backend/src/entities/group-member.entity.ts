@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Membre d'Équipe (GroupMember)
+ *
+ * Usage:
+ *   Mappe la table `groupemembres` associant un compte joueur à son équipe avec son capital de référence d'adhésion.
+ */
+
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
 import { Group } from './group.entity';

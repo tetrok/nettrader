@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — DTO du Formulaire de Contact
+ *
+ * Usage:
+ *   Valide l'e-mail, le nom, le sujet et le message soumis par le visiteur.
+ */
+
 import { IsEmail, IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 

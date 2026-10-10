@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Page des Classements & Palmarès (LeaderboardPage)
+ *
+ * Usage:
+ *   Affiche la compétition entre les traders et les équipes.
+ *
+ * Logique & Fonctionnement:
+ *   - Deux vues commutables : classement individuel des joueurs et classement des équipes.
+ *   - Tri par valorisation absolue du capital ou par performance relative en pourcentage.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { leaderboardApi } from '../api/leaderboard';
 import { PlayerRank, TeamRank } from '../types';

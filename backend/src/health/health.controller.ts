@@ -1,3 +1,13 @@
+/**
+ * NetTrader 2 — Contrôleur de Santé du Système (Health Check)
+ *
+ * Usage:
+ *   Expose un endpoint de surveillance léger (/api/health) pour les sondes Docker, Kubernetes ou de monitoring externe.
+ *
+ * Logique & Fonctionnement:
+ *   - getHealth() : retourne le statut opérationnel du serveur, l'horodatage système et l'uptime du processus.
+ */
+
 import { Controller, Get } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 

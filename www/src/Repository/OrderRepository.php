@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Repository d'Accès au Carnet d'Ordres Boursiers (Orders)
+ *
+ * Usage:
+ *   Gère les interactions avec les tables `ordre` (achats et ventes en attente).
+ *
+ * Logique & Fonctionnement:
+ *   - getPendingOrdersByAccount() : liste les ordres ouverts d'un joueur.
+ *   - createOrder() : enregistrement d'un nouvel ordre avec ses conditions de déclenchement.
+ *   - cancelOrder() : annulation atomique d'un ordre en attente.
+ *   - getEngagedShares() / getEngagedCash() : calcule les volumes d'actions ou de liquidités déjà bloqués en carnet.
+ */
+
 namespace NetTrader\Repository;
 
 use PDO;

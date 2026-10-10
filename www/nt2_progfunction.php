@@ -1,21 +1,17 @@
 <?php
 
 /**
- * Fichier: nt2_progfunction.php
- * Ce fichier contient les fonctions suivantes :
- * - get_ordrelistprog
- * - sorttableauprog
- * - form_list_ordreprog
+ * NetTrader 2 — Passerelle de Données pour Client Desktop VB6 (Archivée)
+ *
+ * Usage:
+ *   Contient les fonctions historiques d'exportation de données (ordres, cours)
+ *   formatées au format texte/CSV avec séparateur point-virgule pour l'ancien client Visual Basic 6.
+ *
+ * Logique & Fonctionnement:
+ *   - get_ordrelistprog() : sélectionne les ordres d'un joueur en base.
+ *   - sorttableauprog() : formate le jeu d'enregistrements PDO en flux texte délimité.
  */
 
-
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
 function get_ordrelistprog()
 {
     global $internaute;

@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Session Utilisateur Active (Session)
+ *
+ * Usage:
+ *   Mappe la table `session` stockant les jetons cryptographiques de session CSPRNG et leur échéance temporelle.
+ */
+
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
 

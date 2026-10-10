@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * NetTrader 2 — Tests Unitaires et d'Intégration de la Couche DAL (Repositories)
+ *
+ * Usage:
+ *   Valide le comportement des classes d'accès aux données PSR-4 (StockRepository,
+ *   UserRepository, OrderRepository, PortfolioRepository, ForumRepository).
+ *
+ * Logique & Fonctionnement:
+ *   - Vérifie la cohérence des requêtes préparées, des transactions et des structures retournées.
+ */
+
 require_once __DIR__ . '/../autoload.php';
 require_once __DIR__ . '/../const.php';
 require_once __DIR__ . '/../constbdd.php';

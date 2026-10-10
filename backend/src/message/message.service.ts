@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service de Messagerie Privée Interne
+ *
+ * Usage:
+ *   Gère le stockage des messages, le décompte des messages non lus et les règles de rétention.
+ */
+
 import {
   Injectable,
   NotFoundException,

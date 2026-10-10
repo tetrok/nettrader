@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Entité TypeORM Action Boursière (Stock)
+ *
+ * Usage:
+ *   Mappe la table `cacval` contenant le catalogue des valeurs négociables sur Euronext Paris.
+ *
+ * Logique & Fonctionnement:
+ *   - Stocke le code SICAV, le symbole Yahoo Finance, le nom, la dernière valeur, l'horodatage de cotation,
+ *     les compteurs de pannes de synchronisation (fail_count, retry_count) et les drapeaux (authachat, down, is_archived).
+ */
+
 import { Entity, PrimaryColumn, Column, OneToOne, ManyToOne, JoinColumn } from 'typeorm';
 import { StockMaj } from './stock-maj.entity';
 import { Sector } from './sector.entity';

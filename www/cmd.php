@@ -1,17 +1,24 @@
 <?php
 
 /**
- * Fichier: cmd.php
- * Aucune fonction portée par ce fichier.
+ * NetTrader 2 — Point d'Entrée Sécurisé des Tâches Système et Webhooks
+ *
+ * Usage:
+ *   Script exécuté périodiquement par le cron ou appelé en webhook par le microservice
+ *   Python (pynt2markdown.py) pour synchroniser le marché et déclencher les traitements différés.
+ *
+ * Logique & Fonctionnement:
+ *   1. Contrôle d'accès strict :
+ *      - Autorisé sans restriction en mode CLI (ligne de commande).
+ *      - En mode HTTP : rejet systématique (HTTP 403) si la clé secrète partagée
+ *        CRON_SECRET n'est pas fournie (via l'en-tête X-Cron-Key ou le paramètre GET key).
+ *   2. Actions prises en charge ($action) :
+ *      - "executeorder" : vérification et exécution des ordres boursiers au marché ou à seuil,
+ *        mise à jour des statistiques journalières, recalcul des classements et expiration des ordres obsolètes.
+ *      - "checkscore" : capture des cours d'ouverture pour le calcul des performances relatives.
+ *      - "testscript" : test unitaire de génération d'historique.
  */
 
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
 require_once __DIR__ . '/autoload.php';
 
 use NetTrader\Http\Request;

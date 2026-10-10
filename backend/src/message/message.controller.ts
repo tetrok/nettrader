@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Contrôleur REST de Messagerie Privée
+ *
+ * Usage:
+ *   Expose les routes /api/messages pour l'échange de messages entre traders.
+ *
+ * Logique & Fonctionnement:
+ *   - getInbox() / getSent() : consultation des messages reçus et envoyés.
+ *   - sendMessage() : envoi d'un message avec contrôle anti-spam et vérification du destinataire.
+ *   - markAsRead() / deleteMessage() : marquage comme lu ou suppression d'un message.
+ */
+
 import {
   Controller,
   Get,

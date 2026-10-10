@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Client API d'Administration & Supervision
+ *
+ * Usage:
+ *   Expose les requêtes du panneau d'administration : dashboard KPIs, actions, market sync, modération.
+ */
+
 import { apiClient } from './client';
 import {
   AdminForumSection,

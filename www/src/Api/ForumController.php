@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Contrôleur REST des Forums de Discussion
+ *
+ * Usage:
+ *   Gère les espaces d'échanges communautaires, sujets et réponses (/api/forums).
+ *
+ * Logique & Fonctionnement:
+ *   - getSections() : arborescence des sections et rubriques thématiques du forum.
+ *   - getTopics() : liste paginée des fils de discussion d'une rubrique ordonnée par dernier message.
+ *   - getMessages() : affichage paginé des messages d'un fil avec interprétation sécurisée du BBCode.
+ *   - createTopic() / reply() : publication de nouveau sujet ou réponse avec mise à jour des compteurs.
+ */
+
 namespace NetTrader\Api;
 
 use NetTrader\Http\Request;

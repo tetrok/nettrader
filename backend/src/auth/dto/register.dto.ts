@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — DTO d'Inscription (RegisterDto)
+ *
+ * Usage:
+ *   Valide les contraintes de format du pseudonyme, de l'adresse e-mail et de complexité du mot de passe.
+ */
+
 import {
   IsEmail,
   IsNotEmpty,

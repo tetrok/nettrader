@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — DTOs de Gestion de Compte
+ *
+ * Usage:
+ *   Valide les payloads de mise à jour de profil et de changement de mot de passe.
+ */
+
 import {
   IsEmail,
   IsInt,

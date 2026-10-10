@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * NetTrader 2 — Repository d'Accès aux Lignes de Portefeuille (Portfolios)
+ *
+ * Usage:
+ *   Gère les interactions avec la table `portef` représentant les actifs détenus par chaque trader.
+ *
+ * Logique & Fonctionnement:
+ *   - getPositions() : extrait les lignes de titres détenues par un compte avec calcul de valorisation au cours direct.
+ *   - addPosition() / updatePosition() / deletePosition() : gestion atomique des quantités et du PRU.
+ *   - getHistory() : historique financier des opérations exécutées.
+ */
+
 namespace NetTrader\Repository;
 
 use PDO;

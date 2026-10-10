@@ -1,9 +1,19 @@
 <?php
 
 /**
- * Fichier: redir.php
- * Ce fichier contient les fonctions suivantes :
- * - get_ip
+ * NetTrader 2 — Relais Sécurisé de Redirection Sortante & Traçabilité des Clics
+ *
+ * Usage:
+ *   Intermédiaire utilisé pour les liens pointant vers l'extérieur (Yahoo Finance, Euronext, partenaires).
+ *   Prévient les failles de type "Open Redirect" et consigne les statistiques de navigation.
+ *
+ * Logique & Fonctionnement:
+ *   1. Traçabilité : enregistre l'adresse IP et l'URL cible dans la table de statistiques "statout".
+ *   2. Contrôle de sécurité (Anti-Open Redirect) :
+ *      - Compare le domaine cible à une liste blanche stricte ($allowedHosts).
+ *      - Si le domaine est autorisé : redirection HTTP 302 vers l'URL externe.
+ *      - Si le chemin est un chemin interne relatif valide : redirection vers la ressource locale.
+ *      - En cas d'URL non reconnue ou suspecte : repli sécurisé par redirection vers index.php.
  */
 
 //profil d'un groupe( classement integr�)

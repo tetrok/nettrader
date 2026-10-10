@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Bâtisseur de Réponses HTTP JSON Normalisées
+ *
+ * Usage:
+ *   Fournit une structure uniforme pour toutes les réponses émises par les contrôleurs de l'API REST.
+ *
+ * Logique & Fonctionnement:
+ *   - success($data, $status = 200) : envoie un JSON avec header HTTP correspondant :
+ *     { "success": true, "data": $data }
+ *   - error($message, $status = 400) : envoie un JSON d'erreur :
+ *     { "success": false, "error": $message, "data": null }
+ */
+
 namespace NetTrader\Api;
 
 /**

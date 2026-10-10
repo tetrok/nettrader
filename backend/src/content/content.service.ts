@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service des Contenus Statiques & Support
+ *
+ * Usage:
+ *   Fournit la documentation des niveaux d'expertise et traite les messages soumis via le formulaire de contact.
+ */
+
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';

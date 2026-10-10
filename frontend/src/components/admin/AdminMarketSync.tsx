@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Supervision de la Synchronisation de Marché (AdminMarketSync)
+ *
+ * Usage:
+ *   Moniteur en temps réel de la collecte des cotations Yahoo Finance.
+ *
+ * Logique & Fonctionnement:
+ *   - Affiche les indicateurs de santé (taux de succès, nombre d'actions suivies, dernier cycle).
+ *   - Liste les titres en échec et permet la réinitialisation unitaire ou globale des compteurs d'erreurs.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { adminApi } from '../../api/admin';
 import {

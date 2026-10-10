@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Contrôleur REST des Données de Marché & Cotations
+ *
+ * Usage:
+ *   Fournit les cours de bourse, fiches valeurs et graphiques historiques au frontend (/api/market).
+ *
+ * Logique & Fonctionnement:
+ *   - getSummary() : retourne les indices généraux, top hausses, top baisses et volumes globaux.
+ *   - getStocks() : liste paginée des actions avec filtres de recherche (nom, ticker, secteur, marché).
+ *   - getStockDetail() : métriques financières complètes d'une action spécifique (cours, ouverture, +haut, +bas).
+ *   - getStockHistory() : retourne la série temporelle de cotations pour la période demandée (1d, 1w, 1m, 1y).
+ */
+
 namespace NetTrader\Api;
 
 use NetTrader\Http\Request;

@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Configuration du Routage & Gardes d'Accès (Router)
+ *
+ * Usage:
+ *   Définit l'ensemble des routes de l'application frontend SPA et contrôle les droits d'accès.
+ *
+ * Logique & Fonctionnement:
+ *   - ProtectedRoute : restreint l'accès aux utilisateurs authentifiés (redirection vers /login).
+ *   - AdminRoute : restreint l'accès aux administrateurs (authlevel >= 99, redirection vers /).
+ *   - Mappe chaque chemin d'URL vers la page correspondante (Portfolio, Market, Trading, Admin, Forums, etc.).
+ */
+
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';

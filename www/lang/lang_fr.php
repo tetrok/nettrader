@@ -1,18 +1,17 @@
 <?php
 
 /**
- * Fichier: lang_fr.php
- * Ce fichier contient les fonctions suivantes :
- * - lang
+ * NetTrader 2 — Dictionnaire de Localisation Français
+ *
+ * Usage:
+ *   Centralise les messages applicatifs, libellés d'interface, erreurs de validation
+ *   et notifications traduits en langue française pour l'ensemble du jeu.
+ *
+ * Logique & Fonctionnement:
+ *   - Fonction lang($idphrase) : aiguille un identifiant numérique de message
+ *     vers le texte correspondant via une structure switch/case optimisée.
  */
 
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
 function lang($idphrase)
 {
 switch($idphrase)

@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Page d'Accueil & Présentation du Jeu (HomePage)
+ *
+ * Usage:
+ *   Page principale accueillant les visiteurs et les joueurs connectés.
+ *
+ * Logique & Fonctionnement:
+ *   - Présente le concept du jeu de simulation boursière et le capital initial de 10 000 €.
+ *   - Affiche un aperçu dynamique du marché : principaux indices, top 5 hausses et baisses de la séance.
+ *   - Propose des boutons d'action rapide vers le trading, le portefeuille ou l'inscription.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { marketApi } from '../api/market';

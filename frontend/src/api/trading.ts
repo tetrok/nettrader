@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Client API des Opérations Boursières & Courtage
+ *
+ * Usage:
+ *   Expose les requêtes pour le portefeuille, le carnet d'ordres, l'historique et la simulation de frais.
+ */
+
 import { apiClient } from './client';
 import { Portfolio, Order, HistoryItem, SimulationResult } from '../types';
 

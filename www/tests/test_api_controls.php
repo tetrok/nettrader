@@ -1,9 +1,16 @@
 <?php
 
 /**
- * Script de tests automatisés pour la vérification des contrôles de sécurité et métier
- * sur l'API REST NetTrader 2.
- * Compatible PHP 7.4+
+ * NetTrader 2 — Suite de Tests d'Intégration & Contrôles de Sécurité API
+ *
+ * Usage:
+ *   Script de test automatisé validant le bon fonctionnement des règles métier,
+ *   des contrôles de sécurité et des endpoints REST de l'application.
+ *
+ * Logique & Fonctionnement:
+ *   - Tests TradingService : interdiction de vente à découvert pour débutants, vérification du cash.
+ *   - Tests Endpoints REST : codes HTTP 400 sur requêtes invalides, 403 sur ressources protégées, 404 sur inconnues.
+ *   - Tests de durcissement : révocation de session, injection XSS BBCode, jetons CSPRNG, accès cmd.php par clé secrète.
  */
 
 require_once __DIR__ . '/../autoload.php';

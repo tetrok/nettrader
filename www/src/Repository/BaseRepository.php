@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * NetTrader 2 — Classe de Base pour la Couche d'Accès aux Données (DAL)
+ *
+ * Usage:
+ *   Classe abstraite dont héritent tous les Repositories de l'application.
+ *   Fournit l'accès centralisé à l'instance PDO et aux méthodes d'exécution de requêtes préparées.
+ *
+ * Logique & Fonctionnement:
+ *   - query($sql, $params) : prépare et exécute une requête SQL avec gestion explicite des erreurs PDO.
+ *   - getDb() : expose la connexion PDO sous-jacente pour les opérations transactionnelles.
+ */
+
 namespace NetTrader\Repository;
 
 use NetTrader\Database\Database;

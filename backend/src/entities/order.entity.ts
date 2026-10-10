@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Entité TypeORM Ordre Boursier en Carnet (Order)
+ *
+ * Usage:
+ *   Mappe la table `ordre` représentant les ordres d'achat ou de vente en attente d'exécution sur le marché.
+ *
+ * Logique & Fonctionnement:
+ *   - Définit le sens (achat/vente), la quantité, le type d'ordre (au marché, cours limité, seuils min/max),
+ *     l'expiration temporelle (tempsLimite) et l'utilisateur émetteur.
+ */
+
 import {
   Entity,
   PrimaryGeneratedColumn,

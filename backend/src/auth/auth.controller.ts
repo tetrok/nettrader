@@ -1,3 +1,17 @@
+/**
+ * NetTrader 2 — Contrôleur REST d'Authentification NestJS
+ *
+ * Usage:
+ *   Expose les routes /api/auth pour la connexion, l'inscription, la consultation de session et la déconnexion.
+ *
+ * Logique & Fonctionnement:
+ *   - login() : valide les identifiants, migre le hash si nécessaire, génère un token CSPRNG et initialise la session.
+ *   - register() : crée un nouveau compte avec capital initial de 10 000 € après validation du pseudo et de l'e-mail.
+ *   - me() : retourne le profil complet de l'utilisateur actif via le token Bearer.
+ *   - logout() : révoque la session active en base de données.
+ *   - requestPasswordReset() / resetPassword() : gère la réinitialisation de mot de passe par jeton temporaire.
+ */
+
 import {
   Controller,
   Post,
@@ -12,7 +26,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { PasswordResetDto } from './dto/password-reset.dto';
+import { PasswordResetDto, ConfirmPasswordResetDto } from './dto/password-reset.dto';
 import { AuthGuard } from './guards/auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { User } from '../entities/user.entity';
@@ -67,5 +81,12 @@ export class AuthController {
   @ApiOperation({ summary: 'Demande de réinitialisation de mot de passe' })
   async requestPasswordReset(@Body() dto: PasswordResetDto) {
     return this.authService.requestPasswordReset(dto.login);
+  }
+
+  @Post('password-reset/confirm')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Confirmation et exécution de la réinitialisation de mot de passe' })
+  async confirmPasswordReset(@Body() dto: ConfirmPasswordResetDto) {
+    return this.authService.confirmPasswordReset(dto.token, dto.newPassword);
   }
 }

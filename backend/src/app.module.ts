@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Module Racine de l'Application NestJS
+ *
+ * Usage:
+ *   Déclare et assemble l'ensemble des modules fonctionnels et la configuration globale TypeORM.
+ *
+ * Logique & Fonctionnement:
+ *   - TypeOrmModule.forRootAsync : initialise la connexion MariaDB/MySQL avec les entités de l'application.
+ *   - Importation des modules métier : AuthModule, AccountModule, TradingModule, MarketModule,
+ *     LeaderboardModule, TeamModule, MessageModule, ForumModule, ContentModule, AdminModule.
+ */
+
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';

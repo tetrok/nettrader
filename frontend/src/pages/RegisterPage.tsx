@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Page d'Inscription (RegisterPage)
+ *
+ * Usage:
+ *   Formulaire de création de nouveau compte trader avec allocation initiale de 10 000 €.
+ */
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../api/auth';

@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Contrôleur REST de Gestion du Compte Utilisateur
+ *
+ * Usage:
+ *   Permet au joueur de consulter et modifier ses paramètres personnels (/api/account).
+ *
+ * Logique & Fonctionnement:
+ *   - getProfile() : consultation des informations détaillées du compte (pseudo, email, niveau, options d'e-mail).
+ *   - updateProfile() : mise à jour des paramètres avec préservation des données non modifiées.
+ *   - changePassword() : vérification de l'ancien mot de passe, nouveau hachage bcrypt et révocation des autres sessions.
+ *   - resetAccount() : réinitialisation complète du portefeuille au capital initial de 10 000 €.
+ */
+
 namespace NetTrader\Api;
 
 use NetTrader\Http\Request;

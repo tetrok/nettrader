@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Barre de Navigation Principale (Navbar)
+ *
+ * Usage:
+ *   En-tête de navigation présent sur toutes les pages de l'application.
+ *
+ * Logique & Fonctionnement:
+ *   - Affiche les liens de navigation (Marché, Portefeuille, Classements, Forums, Aide).
+ *   - Affiche l'état de connexion de l'utilisateur, son capital liquide et le menu utilisateur (Profil, Déconnexion, Admin).
+ */
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';

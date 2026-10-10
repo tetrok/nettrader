@@ -1,8 +1,33 @@
 <?php
 
 /**
- * NetTrader 2 - Passerelle API REST
- * Point d'entrée unique pour l'IHM React
+ * NetTrader 2 — Passerelle Principale de l'API REST JSON
+ *
+ * Usage:
+ *   Point d'entrée unique (Front Controller) pour le frontend React SPA (port 3000).
+ *   Intercepte toutes les requêtes dirigées vers /api/* et les achemine vers les contrôleurs PSR-4.
+ *
+ * Logique & Fonctionnement:
+ *   1. Sécurité CORS & Sessions :
+ *      - Validation stricte de l'origine entrante (whitelist localhost:3000, FRONTEND_URL).
+ *      - Traitement immédiat des requêtes de pré-vol HTTP OPTIONS (200 OK).
+ *      - Démarrage sécurisé de la session PHP et initialisation des dépendances.
+ *   2. Résolution d'URI et Routage :
+ *      - Analyse du chemin d'URL ($path) et de la méthode HTTP ($method).
+ *      - Dispatch vers les contrôleurs spécialisés :
+ *        * /api/auth/*        -> AuthController
+ *        * /api/trading/*     -> TradingController
+ *        * /api/market/*      -> MarketController
+ *        * /api/leaderboard/* -> LeaderboardController
+ *        * /api/account/*     -> AccountController
+ *        * /api/teams/*       -> TeamController
+ *        * /api/messages/*    -> MessageController
+ *        * /api/forums/*      -> ForumController
+ *        * /api/content/*     -> ContentController
+ *        * /api/admin/*       -> AdminController
+ *   3. Format de Réponse Normalisé :
+ *      - Toutes les réponses sont retournées au format JSON standardisé :
+ *        { "success": true, "data": ... } ou { "success": false, "error": ... }
  */
 
 // 1. Initialisation Session & En-têtes CORS

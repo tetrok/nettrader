@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service de Gestion des Équipes de Joueurs
+ *
+ * Usage:
+ *   Gère les règles d'adhésion, les invitations, les performances collectives et la composition des équipes.
+ */
+
 import {
   Injectable,
   NotFoundException,

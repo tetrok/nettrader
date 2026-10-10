@@ -1,3 +1,16 @@
+/**
+ * NetTrader 2 — Fiche Détaillée d'une Valeur Boursière (StockDetailPage)
+ *
+ * Usage:
+ *   Affiche les données financières complètes et le graphique interactif d'une action spécifique.
+ *
+ * Logique & Fonctionnement:
+ *   - Récupère le code de l'action depuis les paramètres d'URL (useParams).
+ *   - Affiche les cours actuels, plus hauts, plus bas, volumes et variations.
+ *   - Intègre le graphique d'évolution historique StockChart avec sélection de période (1J, 1S, 1M, 1A).
+ *   - Permet de passer un ordre d'achat ou de vente directement sur le titre.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { marketApi } from '../api/market';

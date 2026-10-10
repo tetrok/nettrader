@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Marché Financier (Market)
+ *
+ * Usage:
+ *   Mappe la table `marche` catégorisant les places de cotation (ex: Euronext Paris, Alternext).
+ */
+
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('market')

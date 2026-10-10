@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service d'Intégration Yahoo Finance
+ *
+ * Usage:
+ *   Interroge les API Yahoo Finance pour rechercher de nouveaux symboles et vérifier la validité des tickers avant import.
+ */
+
 import { Injectable, Logger } from '@nestjs/common';
 
 export interface YahooQuote {

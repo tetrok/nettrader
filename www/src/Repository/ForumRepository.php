@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * NetTrader 2 — Repository d'Accès aux Données des Forums de Discussion
+ *
+ * Usage:
+ *   Gère les interactions avec les tables `forum`, `forumsection`, `topic`, `topicpost` et `topicpostcontent`.
+ *
+ * Logique & Fonctionnement:
+ *   - getSections() / getForums() : navigation dans la structure du forum.
+ *   - getTopics() / getMessages() : extraction paginée des discussions et réponses.
+ *   - createTopic() / postMessage() : insertion de messages et synchronisation atomique des compteurs de posts.
+ */
+
 namespace NetTrader\Repository;
 
 use PDO;

@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Tableau des Positions Détenues en Portefeuille (PositionsTable)
+ *
+ * Usage:
+ *   Affiche les lignes de titres détenues par le joueur avec leur rentabilité.
+ *
+ * Logique & Fonctionnement:
+ *   - Calcule pour chaque titre la valorisation au cours actuel, le gain/perte latent en € et en %.
+ *   - Propose des boutons d'action rapide pour renforcer (acheter) ou solder (vendre) la position.
+ */
+
 import React from 'react';
 import { Position, Stock } from '../../types';
 import { ArrowUpRight, ArrowDownRight, ArrowRightLeft, Calendar } from 'lucide-react';

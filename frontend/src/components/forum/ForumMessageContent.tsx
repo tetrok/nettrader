@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Rendu Sécurisé du Contenu des Messages de Forum (ForumMessageContent)
+ *
+ * Usage:
+ *   Transforme le texte brut contenant des balises BBCode en éléments React stylisés et sécurisés.
+ *
+ * Logique & Fonctionnement:
+ *   - Interprète les balises [b], [i], [u], [quote], [code], [url] et [color].
+ *   - Assainit les liens pour neutraliser les attaques XSS et forcer rel="noopener noreferrer".
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, Quote } from 'lucide-react';

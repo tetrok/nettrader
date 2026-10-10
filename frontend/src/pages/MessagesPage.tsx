@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Page de Messagerie Privée Interne (MessagesPage)
+ *
+ * Usage:
+ *   Interface de messagerie entre les joueurs de la communauté NetTrader 2.
+ *
+ * Logique & Fonctionnement:
+ *   - Onglets Boîte de réception / Messages envoyés.
+ *   - Modal de rédaction avec validation du pseudonyme destinataire.
+ *   - Lecture des messages avec marquage automatique comme lu.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { messagesApi } from '../api/messages';
 import { Message } from '../types';

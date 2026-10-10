@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Client API de Gestion de Compte
+ *
+ * Usage:
+ *   Expose les requêtes pour la mise à jour de profil, le changement de mot de passe et le reset de capital.
+ */
+
 import { apiClient } from './client';
 
 export interface ProfileData {

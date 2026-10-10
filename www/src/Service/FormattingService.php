@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Service de Sécurisation & Formatage des Données
+ *
+ * Usage:
+ *   Fournit des méthodes utilitaires pour la présentation des montants, pourcentages et le parsing sécurisé du BBCode.
+ *
+ * Logique & Fonctionnement:
+ *   - escape() : neutralise les caractères spéciaux HTML (anti-XSS).
+ *   - parseBBCode() : transforme les balises [b], [i], [url], [quote], [color] en balises HTML sûres,
+ *     avec neutralisation stricte des pseudo-protocoles malveillants tels que javascript:.
+ *   - formatCurrency() / formatPercent() : formatage monétaire et de variations chiffrées selon les standards français.
+ */
+
 namespace NetTrader\Service;
 
 /**

@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Journal des Opérations sur Titres (StockMaj)
+ *
+ * Usage:
+ *   Mappe la table `stock_maj` qui consigne l'historique des modifications administratives (splits, ajustements de cours).
+ */
+
 import { Entity, PrimaryColumn, Column } from 'typeorm';
 
 @Entity('cacvalmaj')

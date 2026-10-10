@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Bandeau Défilant des Cotations en Direct (MarketTicker)
+ *
+ * Usage:
+ *   Affiche un ticker animé des cours boursiers sous la barre de navigation.
+ */
+
 import React, { useEffect, useState } from 'react';
 import { marketApi } from '../../api/market';
 import { MarketSummary } from '../../types';

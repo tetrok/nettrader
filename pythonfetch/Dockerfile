@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1
 
@@ -9,8 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install required python packages
-RUN pip install --no-cache-dir pymysql yfinance cryptography
+# Install required python packages via requirements.txt
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
 # Copy all python files
 COPY . /app/

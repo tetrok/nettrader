@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Modal de Modification d'un Ordre en Carnet (EditOrderModal)
+ *
+ * Usage:
+ *   Permet d'ajuster le volume ou les seuils de prix d'un ordre en attente avant son exécution.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Order, SimulationResult } from '../../types';
 import { tradingApi } from '../../api/trading';

@@ -1,5 +1,19 @@
 <?php
 
+/**
+ * NetTrader 2 — Contrôleur REST d'Administration & Supervision Système
+ *
+ * Usage:
+ *   Expose les fonctionnalités du panneau d'administration pour les modérateurs et super-admins (/api/admin).
+ *
+ * Logique & Fonctionnement:
+ *   - getDashboardStats() : métriques globales du jeu (joueurs inscrits, sessions actives, volume d'ordres).
+ *   - getStocks() / createStock() / updateStock() : gestion complète du catalogue des actions négociables.
+ *   - splitStock() : exécution d'une opération de fractionnement/regroupement sur les portefeuilles des joueurs.
+ *   - marketSync : vue d'ensemble du suivi des cotations, réinitialisation d'erreurs, activation/désactivation de titres.
+ *   - moderateForum() : modération des sujets, messages et rubriques.
+ */
+
 namespace NetTrader\Api;
 
 use NetTrader\Http\Request;

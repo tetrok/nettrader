@@ -1,3 +1,17 @@
+/**
+ * NetTrader 2 — Contrôleur REST d'Administration & Supervision Système
+ *
+ * Usage:
+ *   Regroupe tous les endpoints de gestion administrative réservés aux administrateurs (/api/admin).
+ *
+ * Logique & Fonctionnement:
+ *   - getDashboardStats() : indicateurs clés d'activité et synthèse du système.
+ *   - Catalogue d'actions : listing, création, mise à jour, archivage, split et suppression de titres.
+ *   - Market Sync Monitor : KPIs du fetcher, listing des cotations en échec, réinitialisation d'erreurs et bascule de suivi.
+ *   - Modération forum : suppression et déplacement de sujets, édition modératrice de posts.
+ *   - Déclenchement de jobs d'arrière-plan : exécution manuelle de checkscore ou executeorder.
+ */
+
 import {
   Controller,
   Get,

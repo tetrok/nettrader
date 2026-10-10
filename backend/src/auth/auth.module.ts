@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Module NestJS d'Authentification
+ *
+ * Usage:
+ *   Déclare AuthController, AuthService, les guards et injecte les entités User et Session.
+ */
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthController } from './auth.controller';

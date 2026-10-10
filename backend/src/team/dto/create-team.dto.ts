@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — DTO de Création d'Équipe
+ *
+ * Usage:
+ *   Valide le nom, le tag (2 à 5 caractères), la description et le site web éventuel de l'équipe.
+ */
+
 import { IsNotEmpty, IsOptional, IsString, IsUrl, Length } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 

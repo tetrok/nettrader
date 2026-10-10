@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — DTOs de Création de Contenu de Forum
+ *
+ * Usage:
+ *   Valide la création de nouveaux sujets et réponses de discussion.
+ */
+
 import { IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 

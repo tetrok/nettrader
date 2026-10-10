@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Client API des Équipes de Joueurs
+ *
+ * Usage:
+ *   Expose les requêtes pour la gestion collaborative d'équipe : création, adhésion, membres, invitations.
+ */
+
 import { apiClient } from './client';
 import {
   TeamRank,

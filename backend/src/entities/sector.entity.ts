@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Secteur d'Activité (Sector)
+ *
+ * Usage:
+ *   Mappe la table `secteur` catégorisant les branches économiques des entreprises cotées (Technologies, Santé, etc.).
+ */
+
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
 @Entity('secteurent')

@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service de Modération des Forums
+ *
+ * Usage:
+ *   Permet la modération administrative des rubriques, le déplacement de discussions et l'édition de messages.
+ */
+
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';

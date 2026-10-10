@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Tableau du Carnet d'Ordres en Cours (PendingOrdersTable)
+ *
+ * Usage:
+ *   Affiche la liste des ordres en attente d'exécution sur le marché.
+ *
+ * Logique & Fonctionnement:
+ *   - Détecte et signale visuellement les ordres ayant dépassé leur date limite de validité (expirés).
+ *   - Permet d'annuler individuellement un ordre ou d'annuler tous les ordres d'un seul clic.
+ *   - Permet d'ouvrir le modal de modification pour réajuster un ordre.
+ */
+
 import React from 'react';
 import { Order } from '../../types';
 import { X, Trash2, Clock, Pencil, AlertTriangle } from 'lucide-react';

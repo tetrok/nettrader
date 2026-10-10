@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Niveau d'Expertise (Niveau)
+ *
+ * Usage:
+ *   Mappe la table `niveau` définissant les règles et droits associés à chaque niveau (comptant, limites, VAD).
+ */
+
 import { Entity, PrimaryColumn, Column } from 'typeorm';
 
 @Entity('niveau')

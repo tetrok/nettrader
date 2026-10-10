@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Pied de Page de l'Application (Footer)
+ *
+ * Usage:
+ *   Affiche les mentions légales, la licence AGPL v3 et les liens d'aide au bas de chaque page.
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { TrendingUp, ExternalLink, ShieldCheck } from 'lucide-react';

@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service du Tableau de Bord d'Administration
+ *
+ * Usage:
+ *   Calcule les indicateurs globaux du jeu (traders enregistrés, sessions actives, volume d'ordres, statut des cotations).
+ */
+
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, MoreThan } from 'typeorm';

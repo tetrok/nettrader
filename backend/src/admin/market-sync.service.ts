@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Service de Supervision de la Synchronisation de Marché
+ *
+ * Usage:
+ *   Supervise la collecte des cours Yahoo Finance : indicateurs de taux de succès, suivi des pannes et réinitialisation d'erreurs.
+ */
+
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';

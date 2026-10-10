@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Gestion du Catalogue des Actions (AdminStockManagement)
+ *
+ * Usage:
+ *   Interface administrateur pour créer, modifier, archiver, diviser (split) ou supprimer des titres boursiers.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { adminApi } from '../../api/admin';
 import {

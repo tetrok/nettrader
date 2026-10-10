@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — DTO d'Envoi de Message Privé
+ *
+ * Usage:
+ *   Valide l'identifiant du destinataire, le titre du message et son contenu textuel.
+ */
+
 import { IsNotEmpty, IsString, Length } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 

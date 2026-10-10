@@ -1,38 +1,19 @@
 <?php
 
 /**
- * Fichier: include_interface.php
- * Ce fichier contient les fonctions suivantes :
- * - Html_radio
- * - getgooglePub
- * - Html_texte
- * - Html_textezone
- * - Html_pass
- * - Html_bouton
- * - Html_head_liste
- * - Html_liste
- * - opentab
- * - closetab
- * - openligne
- * - closeligne
- * - opencol
- * - closecol
- * - openfont
- * - closefont
- * - html_header
- * - html_footer
- * - html_login
- * - return_link_menu
- * - html_menu
+ * NetTrader 2 — Gabarit et Composants Graphiques du Thème par Défaut (Skin Default)
+ *
+ * Usage:
+ *   Définit les briques de rendu HTML utilisées par l'interface web legacy :
+ *   formulaires, tableaux, menus, en-têtes et pieds de page.
+ *
+ * Logique & Fonctionnement:
+ *   - Générateurs de champs de formulaires sécurisés (Html_texte, Html_pass, Html_radio, Html_bouton).
+ *   - Constructeurs de tableaux de données (opentab, closetab, openligne, opencol).
+ *   - html_header() et html_footer() : structure générale du document HTML5.
+ *   - html_menu() : barre de navigation contextuelle selon le statut de connexion du joueur.
  */
 
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
 function Html_radio($nom,$valeur,$texte,$checked,$add="")
 {
     $nom_safe = e($nom);

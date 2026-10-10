@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Entité TypeORM Ligne d'Actif en Portefeuille (Portfolio)
+ *
+ * Usage:
+ *   Mappe la table `portef` représentant les titres détenus par chaque joueur.
+ *
+ * Logique & Fonctionnement:
+ *   - Relie un compte utilisateur (idcompte) et une action (codesico) avec la quantité détenue
+ *     et le Prix de Revient Unitaire historique (ansvaleur / PRU).
+ */
+
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
 import { Stock } from './stock.entity';

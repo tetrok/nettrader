@@ -1,18 +1,16 @@
-
 <?php
 
 /**
- * Fichier: lang_pgsm.php
- * Ce fichier contient les fonctions suivantes :
- * - lang
+ * NetTrader 2 — Dictionnaire de Localisation Version Mobile / WAP (Archivé)
+ *
+ * Usage:
+ *   Fournit une version abrégée des messages et libellés français, initialement conçue
+ *   pour les interfaces légères sur terminaux mobiles historiques (WAP/PocketPC).
+ *
+ * Logique & Fonctionnement:
+ *   - Fonction lang($idphrase) : retourne les libellés condensés adaptés aux petits écrans.
  */
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
+
 function lang($idphrase)
 {
 switch($idphrase)

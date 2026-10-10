@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Section de Forum (ForumSection)
+ *
+ * Usage:
+ *   Mappe la table `forumsection` regroupant logiquement plusieurs rubriques de discussion.
+ */
+
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Forum } from './forum.entity';
 

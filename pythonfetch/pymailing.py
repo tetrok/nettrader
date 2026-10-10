@@ -1,10 +1,27 @@
 # -*- coding: utf-8 -*-
-#
-# NetTrader 2
-#
-# @package NetTrader
-# @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-# @author Nicolas Fortin <nfortin@nettrader.fr>
+"""
+NetTrader 2 — Microservice d'Envoi d'E-mails (Mailing Daemon)
+
+Usage:
+    Ce service d'arrière-plan tourne en continu sous conteneur Docker.
+    Il dépile les e-mails en attente dans la table `mail_tosend` et les expédie
+    via SMTP (Mailpit en développement / serveur SMTP de production).
+    Il orchestre également la génération et l'envoi des rapports de statistiques
+    quotidiens et hebdomadaires destinés aux joueurs.
+
+Logique & Fonctionnement:
+    1. Boucle de surveillance cadencée par `C_CHECKTIME` (10s) :
+       - Récupération des e-mails ayant l'état 'attente' et dont la date d'envoi est échue.
+       - Bascule en état 'traitement' pour verrouiller les messages lors d'un cycle.
+       - Envoi SMTP via `smtplib.SMTP(MAIL_HOST, MAIL_PORT)`.
+       - Mise à jour de l'état : 'traite' si succès, 'erreur' si exception.
+       - Suppression des e-mails traités avec succès et rapport récapitulatif à l'admin.
+    2. Envois récurrents automatisés :
+       - Statistiques hebdomadaires : chaque vendredi à 18h pour les comptes abonnés (`mailweekly='1'`).
+       - Statistiques quotidiennes : chaque soir de semaine (lundi-vendredi) à 18h (`maildaily='1'`).
+    3. Résilience et reconnexion automatique en cas de rupture de la connexion MySQL.
+"""
+
 import smtplib
 from email.message import EmailMessage
 import os
@@ -15,20 +32,34 @@ from pyconst import *
 from pynt2stats import *
 import re
 
+# Configuration SMTP et délais
 C_SENDMAILFORREAL = int(os.environ.get("SENDMAIL_FOR_REAL", 1))
 MAIL_HOST = os.environ.get("MAIL_HOST", "mailpit")
 MAIL_PORT = int(os.environ.get("MAIL_PORT", 1025))
-C_CHECKTIME = 10
-TIME_BETWEENMAIL = 1
+C_CHECKTIME = 10         # Intervalle de vérification de la file d'attente (secondes)
+TIME_BETWEENMAIL = 1     # Pause anti-flood entre chaque expédition unitaire (seconde)
 FROMMAILWEEK = "noreply@nettrader.fr"
 
 def convtomysl(inn):
+    """Échappe les caractères spéciaux pour l'insertion SQL."""
     return re.escape(inn)
 
 def sec(var):
+    """Nettoie les champs d'en-têtes pour prévenir l'injection d'en-têtes d'e-mail."""
     return var.replace(":", "")
 
 def f_sendmail(emailfrom, pseudofrom, emailto, pseudoto, titre, corps):
+    """
+    Expédie un courrier électronique via le serveur SMTP configuré.
+
+    :param emailfrom: Adresse e-mail de l'expéditeur
+    :param pseudofrom: Nom / pseudo de l'expéditeur
+    :param emailto: Adresse e-mail du destinataire
+    :param pseudoto: Nom / pseudo du destinataire
+    :param titre: Sujet du message
+    :param corps: Corps textuel du message
+    :return: True si envoyé avec succès, False en cas d'erreur ou en mode simulation
+    """
     if C_SENDMAILFORREAL:
         msg = EmailMessage()
         msg.set_content(corps)
@@ -59,14 +90,20 @@ def f_sendmail(emailfrom, pseudofrom, emailto, pseudoto, titre, corps):
 col = {"idmail": 0, "from_mail": 1, "from_pseudo": 2, "to_mail": 3, "to_pseudo": 4, "titre": 5, "corps": 6, "etat": 7}
 
 def get_db():
+    """Établit et retourne une connexion persistante à MariaDB avec retry automatique."""
     while True:
         try:
-            return pymysql.connect(host=C_HOST, user=C_USER, passwd=C_PWD, db=C_DBNAME)
+            return pymysql.connect(host=C_HOST, user=C_USER, password=C_PWD, database=C_DBNAME)
         except Exception as e:
             print("[%s] [ERREUR] Échec de connexion MySQL (pymailing): %s. Reconnexion dans 5s..." % (time.strftime("%d/%m/%Y %H:%M:%S"), str(e)))
             time.sleep(5)
 
 def process_cycle(db):
+    """
+    Exécute un cycle de dépilage de la file d'attente d'e-mails et vérifie
+    l'échéance des rapports de statistiques périodiques.
+    """
+
     cursor = db.cursor()
     cursor.execute("UPDATE mail_tosend SET etat='traitement' WHERE etat='attente' and dateenvoi<UNIX_TIMESTAMP()")
     db.commit()

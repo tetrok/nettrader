@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Client API de Messagerie Privée Interne
+ *
+ * Usage:
+ *   Expose les requêtes pour consulter la boîte de réception, envoyer des messages et marquer comme lu.
+ */
+
 import { apiClient } from './client';
 import { Message } from '../types';
 

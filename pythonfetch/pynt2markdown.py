@@ -1,10 +1,38 @@
-# -*- coding: ISO-8859-15 -*-
-#
-# NetTrader 2
-#
-# @package NetTrader
-# @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-# @author Nicolas Fortin <nfortin@nettrader.fr>
+# -*- coding: utf-8 -*-
+"""
+NetTrader 2 — Moteur de Collecte et Synchronisation des Cotations (Yahoo Finance)
+
+Usage:
+    Ce microservice est le cœur de la mise à jour des marchés financiers.
+    Il tourne en tâche de fond et télécharge en continu les cotations réelles
+    d'Euronext Paris via la bibliothèque `yfinance` pour actualiser la table `cacval`.
+    Il alimente également l'historique temporel (`stock_history`) et journalise
+    chaque cycle de synchronisation dans `market_sync_log`.
+
+Logique & Fonctionnement:
+    1. Planification et Horaires :
+       - Respecte les horaires d'ouverture d'Euronext Paris (lundi au vendredi, 09h00 à 17h35).
+       - Possibilité de forcer l'exécution 24/7 via la variable d'environnement `IGNORE_MARKET_HOURS=1`.
+       - Cadencement par `DOWNLOAD_INTERVAL` (120 secondes entre chaque cycle).
+    2. Téléchargement par Lots (Batches) :
+       - Récupère toutes les actions dont le suivi est activé (`cacval.down='1'`).
+       - Découpe la liste en paquets de 50 actions (`SICAV_COUNT_PER_DOWNLOAD`) pour optimiser
+         les requêtes réseau vers Yahoo Finance.
+       - En cas de valeur manquante ou de défaillance ponctuelle d'un titre, un mécanisme de
+         repli individuel (retry unitaire) est automatiquement déclenché.
+    3. Résilience et Disjoncteur (Circuit Breaker) :
+       - Détection des échecs consécutifs (`fail_count`) :
+         * Si `fail_count >= MAX_FAILURES_BLOCK_BUY` (défaut: 3) : l'achat du titre est suspendu (`authachat='0'`).
+         * Si `fail_count >= MAX_FAILURES_DISABLE_SYNC` (défaut: 15) : le suivi est désactivé (`down='0'`).
+       - En cas de succès : réinitialisation de `fail_count` à 0 et réactivation d'achat si le titre n'est pas archivé.
+    4. Alertes de Volatilité :
+       - Détecte les variations brutales (≥ 25%) ou passage à 0 pour générer une alerte administrateur.
+    5. Déclenchement des Tâches Métier PHP via Webhook Sécurisé :
+       - Appel HTTP GET vers `cmd.php?do=checkscore` (calcul des références quotidiennes).
+       - Appel HTTP GET vers `cmd.php?do=executeorder` (exécution du carnet d'ordres en attente).
+       - Sécurisé par le token partagé `CRON_SECRET` transmis en en-tête `X-Cron-Key`.
+"""
+
 import os
 import sys
 import pymysql
@@ -18,37 +46,26 @@ import io
 import traceback
 from pyconst import *
 
-DOWNLOAD_INTERVAL=120 #s
-SICAV_COUNT_PER_DOWNLOAD=50
+# Paramètres du cycle de téléchargement
+DOWNLOAD_INTERVAL = 120  # Intervalle cible entre deux cycles complets (secondes)
+SICAV_COUNT_PER_DOWNLOAD = 50  # Nombre d'actions regroupées par requête yfinance
 
+# Seuils de tolérance aux pannes (Circuit Breaker)
 MAX_FAILURES_BLOCK_BUY = int(os.environ.get("MAX_FAILURES_BLOCK_BUY", "3"))
 MAX_FAILURES_DISABLE_SYNC = int(os.environ.get("MAX_FAILURES_DISABLE_SYNC", "15"))
-# http://download.finance.yahoo.com/d/quotes.csv?s=ALU.PA&f=sl1d1t1c1ohgv&e=.csv
-# re.match("\"([^\"]*)\",([^,]*),\"([0-9]{1,2})/([0-9]{1,2})/([0-9]{4})\",\"([0-9]{1,2}):([0-9]{1,2})([a-z]{2})\",([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)",ligne).groups()
-#http://fr.old.finance.yahoo.com/d/quotes.csv?s=ALU.PA&f=snl1d1t1c1ohgv&e=.csv
-# ancien ([^.]*).([A-Z]{2});([^;]*);([^;]*);([0-9]{1,2})h([0-9]{1,2});([0-9]{1,2})/([0-9]{1,2})/([0-9]{4});([^;]*);([^;]*);([^;]*);([^;]*);([0-9]*)
-#   matchres=re.match("([^;]*);([^;]*);([^;]*);([0-9]{1,2})h([0-9]{1,2});([0-9]{1,2})/([0-9]{1,2})/([0-9]{4});([^;]*);([^;]*);([^;]*);([^;]*);([0-9]*)",downaction)
-#                if matchres:
-#                    yname,actionname,cours,heure,minutes,jour,mois,annee,variation,v1,v2,v3,volume=matchres.groups()
-def GetUrlStream( action_list):
-    #returl="http://fr.old.finance.yahoo.com/d/quotes.csv?s="
-    returl="http://download.finance.yahoo.com/d/quotes.csv?s="
-    for idact,name in enumerate(action_list):
-        if idact>0:
-            returl+="+"
-        returl+=name
-    returl+="&f=sl1d1t1c1ohgv&e=.csv"
-    return returl
 
 def getRowDict(cursor):
-    dicodata={}
-    rowData=cursor.fetchone()
-    desc=cursor.description
-    if(rowData!=None):
-        for i in range(0,len(rowData)):
-            dicodata[desc[i][0]]=rowData[i]
+    """Convertit la ligne courante du curseur MySQL en dictionnaire associatif clé-valeur."""
+    dicodata = {}
+    rowData = cursor.fetchone()
+    desc = cursor.description
+    if rowData is not None:
+        for i in range(0, len(rowData)):
+            dicodata[desc[i][0]] = rowData[i]
     return dicodata
+
 def ExecSql(db, sql, params=None):
+    """Exécute une requête d'écriture SQL préparée et valide la transaction (commit)."""
     cursor = db.cursor()
     if params is not None:
         cursor.execute(sql, params)
@@ -57,16 +74,17 @@ def ExecSql(db, sql, params=None):
     db.commit()
     cursor.close()
 
-def RunSelect(db,sql):
-        res=[]
-        cursor=db.cursor()
-        cursor.execute(sql)
-        line=getRowDict(cursor)
-        while len(line)!=0:
-            res.append(line)
-            line=getRowDict(cursor)
-        cursor.close()
-        return res
+def RunSelect(db, sql):
+    """Exécute une requête SQL de sélection et renvoie l'ensemble des résultats sous forme de dictionnaires."""
+    res = []
+    cursor = db.cursor()
+    cursor.execute(sql)
+    line = getRowDict(cursor)
+    while len(line) != 0:
+        res.append(line)
+        line = getRowDict(cursor)
+    cursor.close()
+    return res
 def GetActionName(ligne):
     return ligne[1:ligne[1:].find("\"")+1]
 def DisableAction(db,actionname):
@@ -304,7 +322,7 @@ def main():
 
             firstloop = False
             try:
-                db = pymysql.connect(host=C_HOST, user=C_USER, passwd=C_PWD, db=C_DBNAME)
+                db = pymysql.connect(host=C_HOST, user=C_USER, password=C_PWD, database=C_DBNAME)
                 print("[%s] [INFO] Connexion à la base de données MySQL établie avec succès." % time.strftime("%d/%m/%Y %H:%M:%S"))
             except Exception as e:
                 print("[%s] [ERREUR] Échec de la connexion à la base de données MySQL: %s" % (time.strftime("%d/%m/%Y %H:%M:%S"), str(e)))

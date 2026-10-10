@@ -1,3 +1,16 @@
+/**
+ * NetTrader 2 — Contrôleur REST de Gestion du Compte Joueur
+ *
+ * Usage:
+ *   Expose les routes /api/account pour le profil, la modification de mot de passe et la réinitialisation de portefeuille.
+ *
+ * Logique & Fonctionnement:
+ *   - getProfile() : consulte les détails du compte joueur connecté.
+ *   - updateProfile() : met à jour l'e-mail et les préférences de mailing (quotidien/hebdo).
+ *   - changePassword() : vérifie l'ancien mot de passe, applique le nouveau hash bcrypt et révoque les autres sessions.
+ *   - resetAccount() : purge le portefeuille et remet le capital liquide à 10 000 €.
+ */
+
 import {
   Controller,
   Get,

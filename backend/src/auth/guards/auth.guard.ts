@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Guard NestJS d'Authentification Utilisateur
+ *
+ * Usage:
+ *   Protège les endpoints nécessitant un compte joueur connecté.
+ *
+ * Logique & Fonctionnement:
+ *   - Extrait le token depuis l'en-tête "Authorization: Bearer <token>" ou le cookie de session.
+ *   - Valide l'existence et la non-expiration du jeton en base de données (table `session`).
+ *   - Injecte l'entité User correspondante dans l'objet Request (request.user).
+ */
+
 import {
   Injectable,
   CanActivate,
@@ -31,6 +43,11 @@ export class AuthGuard implements CanActivate {
 
     if (!token) {
       throw new UnauthorizedException('Non authentifié');
+    }
+
+    // Rejet strict des jetons de réinitialisation ou formats anormaux
+    if (token.startsWith('reset_') || !/^[a-f0-9]{32,64}$/i.test(token)) {
+      throw new UnauthorizedException('Session invalide ou expirée');
     }
 
     const now = Math.floor(Date.now() / 1000);

@@ -1,38 +1,18 @@
 <?php
 
 /**
- * Fichier: db_reqtableaux.php
- * Ce fichier contient les fonctions suivantes :
- * - get_messagelist
- * - get_messagelistenvoye
- * - get_playerconnected
- * - get_oldplayer
- * - get_players
- * - get_sicavcat
- * - get_acttotpossede
- * - getnbstats
- * - exepublicreq
- * - exeanspublicreq
- * - get_listeaide
- * - get_listecomment
- * - get_listefaq
- * - get_listecommentfaq
- * - get_lstactions
- * - get_listeforums
- * - get_listesujets
- * - get_infoforum
- * - get_listemessages
- * - get_infosujet
- * - get_infomessage
+ * NetTrader 2 — Requêtes Tabulaires et Listes de Données Legacy
+ *
+ * Usage:
+ *   Fournit les requêtes d'affichage paginé et d'extraction de collections pour l'interface web legacy :
+ *   messagerie privée, forums de discussion, listes d'actions et FAQs.
+ *
+ * Logique & Fonctionnement:
+ *   - Messagerie : extraction paginée des messages reçus (get_messagelist) et envoyés (get_messagelistenvoye).
+ *   - Forums : récupération des rubriques (get_listeforums), sujets ordonnés par dernier message
+ *     (get_listesujets), et pagination des messages d'un fil (get_listemessages).
+ *   - Marché & FAQ : inventaire complet des actions cotées (get_lstactions) et guides d'aide.
  */
-
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
 
 function get_messagelist($debligne, $nbligne, $idcompte)
 {

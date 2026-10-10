@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Guide du Jeu & Règles Boursières (HelpPage)
+ *
+ * Usage:
+ *   Documentation didactique sur les règles financières, les niveaux d'expertise et les types d'ordres.
+ */
+
 import React, { useState } from 'react';
 import { apiClient } from '../api/client';
 import { HelpCircle, BookOpen, Send, Mail, CheckCircle2, AlertCircle } from 'lucide-react';

@@ -1,3 +1,15 @@
+/**
+ * NetTrader 2 — Contexte Global d'Authentification (AuthContext)
+ *
+ * Usage:
+ *   Fournit l'état de connexion de l'utilisateur et les fonctions d'authentification à tous les composants.
+ *
+ * Logique & Fonctionnement:
+ *   - Stocke l'utilisateur actif (User) et son jeton de session dans le state React et localStorage.
+ *   - Vérifie la session active au chargement initial via l'appel API /api/auth/me.
+ *   - Expose les méthodes login(), register(), logout() et refreshUser() via le hook useAuth().
+ */
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { authApi } from '../api/auth';

@@ -1,3 +1,19 @@
+/**
+ * NetTrader 2 — Modal de Passage d'Ordre de Bourse (OrderModal)
+ *
+ * Usage:
+ *   Interface interactive pour acheter ou vendre des actions depuis le marché ou le portefeuille.
+ *
+ * Logique & Fonctionnement:
+ *   - Choix du sens (Achat ou Vente).
+ *   - Choix du type d'ordre selon le niveau d'expertise du joueur :
+ *     * Au Marché : exécution immédiate au dernier cours connu.
+ *     * Cours Limité : exécution conditionnée à un prix plafond (achat) ou plancher (vente).
+ *     * Seuil de déclenchement : déclenchement automatique dès franchissement d'un seuil.
+ *   - Simulation instantanée des frais de courtage (0,30% + TVA 19,6%, min 4,95 €) et du montant total net.
+ *   - Contrôle préventif des liquidités disponibles ou de la marge VAD autorisée.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Stock, SimulationResult, Position } from '../../types';
 import { tradingApi } from '../../api/trading';

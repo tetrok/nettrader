@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Module NestJS de Trading
+ *
+ * Usage:
+ *   Assemble TradingController, TradingService et injecte les entités User, Stock, Order, Portfolio et TradeHistory.
+ */
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TradingController } from './trading.controller';

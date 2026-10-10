@@ -1,3 +1,14 @@
+/**
+ * NetTrader 2 — Graphique Financier Interactif (StockChart)
+ *
+ * Usage:
+ *   Composant Recharts visualisant la courbe d'évolution temporelle du cours d'une action.
+ *
+ * Logique & Fonctionnement:
+ *   - Permet de basculer entre différentes périodes d'analyse : 1 Jour (1J), 1 Semaine (1S), 1 Mois (1M), 1 An (1A).
+ *   - Adapte la couleur de la courbe (vert/rouge) selon que la variation de la période est positive ou négative.
+ */
+
 import React, { useState } from 'react';
 import { StockHistoryPoint, ChartPeriod } from '../../types';
 import { RefreshCw } from 'lucide-react';

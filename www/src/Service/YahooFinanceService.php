@@ -1,5 +1,18 @@
 <?php
 
+/**
+ * NetTrader 2 — Client HTTP d'Intégration avec l'API Yahoo Finance
+ *
+ * Usage:
+ *   Permet aux administrateurs de rechercher des tickers boursiers et d'importer de nouvelles valeurs
+ *   directement depuis Yahoo Finance dans le catalogue NetTrader 2.
+ *
+ * Logique & Fonctionnement:
+ *   - search() : interroge l'API Yahoo Finance Search pour découvrir des actions par mot-clé ou ticker.
+ *   - getQuote() : récupère la dernière cotation et les métadonnées d'un symbole boursier.
+ *   - screenParisStocks() : filtre les actions négociées sur la place de Paris (.PA).
+ */
+
 namespace NetTrader\Service;
 
 /**

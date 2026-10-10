@@ -1,143 +1,23 @@
 <?php
 
 /**
- * Fichier: db_reqfunction.php
- * Ce fichier contient les fonctions suivantes :
- * - updatecptpost
- * - getcptpost
- * - portefeuille_joueur
- * - joueur_liste_sicav
- * - joueur_possede
- * - GetCashBack
- * - ModifLiquide
- * - AddHistorique
- * - ModifAction
- * - ChercheSkin
- * - get_FromFormatedTime
- * - creer_ordre
- * - listvaleur
- * - dansliste
- * - AjoutPort
- * - delete_sicav
- * - listmenu
- * - listhisto
- * - listclassementequipe
- * - gettabjoueursenequipes
- * - listclassement
- * - listclassementcount
- * - getclassementsicavlist
- * - cmd_update_sicav
- * - get_dernier_timestamp
- * - addordre
- * - niv_joueur
- * - get_ordre
- * - add_msg
- * - upd_msgetat
- * - dodelmessage
- * - efface_ordre
- * - get_ordrelist
- * - get_idmenu
- * - del_ordre
- * - get_info_ordre
- * - donnaction
- * - donnactionyn
- * - stataction
- * - ordreactionachat
- * - ordreactionvente
- * - exeadminreq
- * - listadminreq
- * - listhistocount
- * - getplayercapital
- * - getplayercapitalhorsvad
- * - getplayercapitalvad
- * - listmessagescount
- * - get_tempsbourse
- * - listskin
- * - skin_existe
- * - scoreestactuel
- * - teamscoreestactuel
- * - insertscore
- * - getperfgroupes
- * - insertgroupescore
- * - listmoisclass
- * - listmoisclassequipe
- * - getyahooname
- * - get_yahoosicavliste
- * - getinternauteinfo
- * - setmdp
- * - increcompensegroupe
- * - getheritier
- * - fctgetoffteammaster
- * - fctgetoffteam
- * - fctdoraz
- * - getCodesSicoSecteurPortef
- * - getCodesSicoPortef
- * - getCodesSicoCote
- * - ajoutcommentaire
- * - effacvieuxordres
- * - effacordresinactifs
- * - delcommentaire
- * - ajoutcommentairefaq
- * - delcommentairefaq
- * - modifetatactions
- * - delactions
- * - factoriseactions
- * - getnvmessages
- * - getnvmessagesenvoye
- * - getgroupbyadmin
- * - getgroupbymembre
- * - membreestinvite
- * - getmembrebygroup
- * - getjoueursnotingroupe
- * - doinvitejoueur
- * - delinvitejoueur
- * - doajgroupe
- * - dojoingroupe
- * - domodifgroupe
- * - getverifgroupe
- * - sauveipadress
- * - getiphome
- * - dogroupeaccepterefuse
- * - effacvieuxscores
- * - getscorejoueur
- * - get_sicavdown
- * - doundoallinvitegroupe
- * - getinfogroupe
- * - getcompositionequipe
- * - checkoutdated
- * - majclassement
- * - majlistmoisclass
- * - istableexist
- * - forumsyncquantity
- * - forumsyncidlastmessage
- * - getinfojoueur
- * - getinfosicav
- * - forum_getidmessagesujet
- * - forum_getlastmessagesujet
- * - forum_peutposter
- * - forum_peutlire
- * - setsujetlu
- * - forum_inc_nblectures
- * - forum_inc_joueur_nbposts
- * - forum_set_joueur_toutlu
- * - forum_majtoutvuforum
- * - forum_ajoutforum
- * - forum_newgroupeforum
- * - setsujetpaslu
- * - doforum_postmessage
- * - forum_giveforumtogroups
- * - incarnerjoueur
- * - deactivateweekstats
- * - deactivatedaystats
+ * NetTrader 2 — Bibliothèque Centrale d'Accès aux Données & Règles Métier Legacy
+ *
+ * Usage:
+ *   Contient l'ensemble des fonctions historiques de manipulation de la base de données :
+ *   portefeuilles, ordres boursiers, calculs de marges VAD, classements, scores et messagerie.
+ *
+ * Logique & Fonctionnement:
+ *   - Gestion de portefeuille : consultation des positions (portefeuille_joueur), solde liquide
+ *     (GetCashBack), débit/crédit atomique (ModifLiquide), ajustement d'actions (ModifAction).
+ *   - Carnet d'ordres : création d'ordres avec vérification des liquidités (creer_ordre),
+ *     exécution des ordres limites et seuils (ordreactionachat, ordreactionvente), annulation (efface_ordre).
+ *   - Calcul financier & VAD : valorisation totale (getplayercapital), séparation comptant vs VAD
+ *     (getplayercapitalhorsvad, getplayercapitalvad), calcul du pouvoir d'achat maximal.
+ *   - Classements & Compteurs : progression des joueurs et équipes (listclassement, getperfgroupes).
+ *   - Sécurité : toutes les requêtes SQL sont préparées via ExecRequete() avec paramètres liés.
  */
 
-/**
-* NetTrader 2
-*
-* @package NetTrader
-* @license http://www.gnu.org/licenses/agpl.html AGPL Version 3
-* @author Nicolas Fortin <nfortin@nettrader.fr>
-*/
 function updatecptpost()
 {
     //Met à jour le compteur de postage afin d'eviter les doublons d'envoie de formulaire

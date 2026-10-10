@@ -1,3 +1,16 @@
+/**
+ * NetTrader 2 — Contrôleur REST des Forums Communautaires
+ *
+ * Usage:
+ *   Expose les routes /api/forums pour les catégories, rubriques, sujets et discussions.
+ *
+ * Logique & Fonctionnement:
+ *   - getSections() : arborescence complète des salons de discussion.
+ *   - getTopics() : liste paginée des discussions d'une rubrique.
+ *   - getMessages() : affichage des messages d'un fil avec BBCode.
+ *   - createTopic() / reply() : publication de nouveau sujet ou réponse.
+ */
+
 import {
   Controller,
   Get,

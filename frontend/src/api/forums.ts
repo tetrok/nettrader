@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Client API des Forums Communautaires
+ *
+ * Usage:
+ *   Expose les requêtes pour naviguer dans les rubriques, lire et publier des sujets et messages.
+ */
+
 import { apiClient } from './client';
 import { Forum, Topic, TopicMessage } from '../types';
 

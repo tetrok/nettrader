@@ -1,3 +1,10 @@
+/**
+ * NetTrader 2 — Entité TypeORM Fil de Discussion (Topic)
+ *
+ * Usage:
+ *   Mappe la table `topic` représentant un sujet de discussion initié par un joueur.
+ */
+
 import {
   Entity,
   PrimaryGeneratedColumn,
