@@ -280,7 +280,11 @@ export class ForumService {
         throw new NotFoundException('Sujet introuvable');
       }
 
-      if (topic.forum?.authWrite === 'admin' && !user.isAdmin) {
+      if (!topic.forum) {
+        throw new NotFoundException('Forum associé introuvable');
+      }
+
+      if (topic.forum.authWrite === 'admin' && !user.isAdmin) {
         throw new ForbiddenException("Ce forum est réservé aux publications des administrateurs.");
       }
 

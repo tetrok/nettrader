@@ -6,6 +6,7 @@
  */
 
 import { Injectable, ForbiddenException, Logger } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { TradingService } from '../trading/trading.service';
 
 @Injectable()
@@ -27,7 +28,14 @@ export class AdminJobsService {
    */
   async handleCmdPhp(action: string, key?: string): Promise<string> {
     const expectedSecret = process.env.CRON_SECRET || 'nettrader_cron_secure_token_secret';
-    if (!key || key !== expectedSecret) {
+    if (!key) {
+      throw new ForbiddenException('Accès refusé. Clé de tâche de fond requise.');
+    }
+
+    const keyBuf = Buffer.from(key);
+    const expectedBuf = Buffer.from(expectedSecret);
+
+    if (keyBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(keyBuf, expectedBuf)) {
       throw new ForbiddenException('Accès refusé. Clé de tâche de fond requise.');
     }
 

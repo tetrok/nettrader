@@ -29,6 +29,7 @@ import { Portfolio } from '../entities/portfolio.entity';
 import { Order } from '../entities/order.entity';
 import { TradeHistory } from '../entities/trade-history.entity';
 import { Session } from '../entities/session.entity';
+import { Message } from '../entities/message.entity';
 import { MarketService } from '../market/market.service';
 import { PlaceOrderDto } from './dto/place-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -111,7 +112,8 @@ export class TradingService {
 
     let committed = 0.0;
     for (const ord of pendingOrders) {
-      const price = ord.coursMax > 0 ? ord.coursMax : (ord.stock?.price || 0.0);
+      const stockP = ord.stock ? Number(ord.stock.price) : 0.0;
+      const price = ord.coursMax > 0 ? Math.max(stockP, Number(ord.coursMax)) : stockP;
       if (price > 0 && ord.quantity > 0) {
         committed += ord.quantity * price + this.calculateTax(price, ord.quantity);
       }
@@ -483,6 +485,7 @@ export class TradingService {
       const user = await manager.findOne(User, {
         where: { id: userId },
         lock: { mode: 'pessimistic_write' },
+        relations: ['niveau'],
       });
 
       if (!user) {
@@ -561,6 +564,27 @@ export class TradingService {
         return `Achat de ${quantity} action(s) exécuté avec succès au cours de ${stockPrice.toLocaleString('fr-FR')} €.`;
       } else {
         // VENTE
+        const oldQty = position ? Number(position.quantity) : 0;
+        const oldPru = position ? Number(position.buyPrice) : stockPrice;
+        const newQty = oldQty - quantity;
+
+        // Contrôle de sécurité VAD dans la transaction verrouillée :
+        if (newQty < 0) {
+          if (!user.isVadAllowed) {
+            throw new BadRequestException(
+              "Vous ne possédez pas cette action dans votre portefeuille et vous n'avez pas l'autorisation de vente à découvert (VAD)."
+            );
+          }
+          const maxVad = await this.getMaxVadPossible(userId);
+          const vadShares = this.getMaxBuyableShares(maxVad, stockPrice);
+          const availableShares = Math.max(0, oldQty);
+          if (quantity > availableShares + vadShares) {
+            throw new BadRequestException(
+              `Quantité excessive pour votre capacité de vente VAD (disponible : ${availableShares}, capacité VAD : ${vadShares}).`
+            );
+          }
+        }
+
         const grossAmount = stockPrice * quantity;
         const netCredit = Number((grossAmount - tax).toFixed(2));
 
@@ -569,10 +593,6 @@ export class TradingService {
           cashback: Number((currentCashback + netCredit).toFixed(2)),
           dateactivite: now,
         });
-
-        const oldQty = position ? Number(position.quantity) : 0;
-        const oldPru = position ? Number(position.buyPrice) : stockPrice;
-        const newQty = oldQty - quantity;
 
         let newPru = oldPru;
         if (position && oldQty < 0) {
@@ -649,6 +669,9 @@ export class TradingService {
     if (!stock) {
       throw new BadRequestException("Ce titre n'existe pas.");
     }
+    if (stock.isArchived === '1' || (order.sens === 'achat' && stock.authBuy !== '1')) {
+      throw new BadRequestException("Ce titre n'est plus autorisé à la négociation.");
+    }
 
     const stockPrice = Number(stock.price);
     const newQuantity = dto.quantity !== undefined ? Number(dto.quantity) : Number(order.quantity);
@@ -722,7 +745,7 @@ export class TradingService {
         }
       }
     } else if (order.sens === 'achat') {
-      const priceRef = newCoursMax > 0 ? newCoursMax : stockPrice;
+      const priceRef = newCoursMax > 0 ? Math.max(stockPrice, newCoursMax) : stockPrice;
       const tax = this.calculateTax(priceRef, newQuantity);
       const totalRequired = Number((priceRef * newQuantity + tax).toFixed(2));
 
@@ -742,7 +765,8 @@ export class TradingService {
 
       let otherCommitted = 0.0;
       for (const ord of otherBuyOrders) {
-        const p = ord.coursMax > 0 ? ord.coursMax : (ord.stock?.price || 0.0);
+        const stockP = ord.stock ? Number(ord.stock.price) : 0.0;
+        const p = ord.coursMax > 0 ? Math.max(stockP, Number(ord.coursMax)) : stockP;
         if (p > 0 && ord.quantity > 0) {
           otherCommitted += ord.quantity * p + this.calculateTax(p, ord.quantity);
         }
@@ -915,9 +939,33 @@ export class TradingService {
   }
 
   /**
+   * Envoie une notification interne au joueur (message système).
+   */
+  async sendTradeNotification(userId: number, title: string, content: string): Promise<void> {
+    try {
+      const now = Math.floor(Date.now() / 1000);
+      await this.dataSource.getRepository(Message).save({
+        recipientId: userId,
+        senderId: 0,
+        title,
+        content,
+        date: now,
+        status: 'non lu',
+      });
+    } catch (err) {
+      this.logger.warn(`Impossible d'envoyer la notification de trading #${userId}: ${err.message}`);
+    }
+  }
+
+  /**
    * Exécute les ordres en attente dont les conditions de cours sont validées.
    */
   async executePendingOrders(): Promise<number> {
+    // Respect strict des horaires de cotation Euronext
+    if (!this.marketService.isMarketOpen()) {
+      return 0;
+    }
+
     const now = Math.floor(Date.now() / 1000);
     const pendingOrders = await this.orderRepository.find({
       where: { etat: '1' },
@@ -926,9 +974,25 @@ export class TradingService {
 
     let executedCount = 0;
     for (const ord of pendingOrders) {
-      // Expiration
+      // Expiration temporelle
       if (ord.tempsLimite > 0 && ord.tempsLimite < now) {
         await this.orderRepository.delete(ord.id);
+        await this.sendTradeNotification(
+          ord.userId,
+          `Ordre expiré : ${ord.stock?.name || 'Titre #' + ord.stockCode}`,
+          `Votre ordre n°${ord.id} (${ord.sens === 'achat' ? 'Achat' : 'Vente'} de ${ord.quantity} action(s)) est arrivé à expiration et a été retiré du carnet d'ordres.`,
+        );
+        continue;
+      }
+
+      // Vérification que le titre est toujours négociable et non archivé
+      if (!ord.stock || ord.stock.isArchived === '1' || (ord.sens === 'achat' && ord.stock.authBuy !== '1')) {
+        await this.orderRepository.delete(ord.id);
+        await this.sendTradeNotification(
+          ord.userId,
+          `Ordre annulé : ${ord.stock?.name || 'Titre #' + ord.stockCode}`,
+          `Votre ordre n°${ord.id} a été annulé car ce titre n'est plus disponible à la négociation.`,
+        );
         continue;
       }
 
@@ -952,6 +1016,13 @@ export class TradingService {
           executedCount++;
         } catch (err) {
           this.logger.warn(`Échec exécution ordre #${ord.id}: ${err.message}`);
+          // Annulation automatique de l'ordre en échec et notification du joueur
+          await this.orderRepository.delete(ord.id);
+          await this.sendTradeNotification(
+            ord.userId,
+            `Annulation d'ordre : ${ord.stock?.name || 'Titre #' + ord.stockCode}`,
+            `Votre ordre n°${ord.id} (${ord.sens === 'achat' ? 'Achat' : 'Vente'} de ${ord.quantity} action(s)) n'a pas pu être exécuté et a été annulé. Motif : ${err.message}`,
+          );
         }
       }
     }

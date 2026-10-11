@@ -95,6 +95,36 @@ export class AccountService {
     }
 
     if (dto.level !== undefined && dto.level >= 1 && dto.level <= 3) {
+      if (dto.level < (user.idniveau || 1)) {
+        // Vérifier s'il détient des positions courtes (VAD)
+        const hasVad = await this.dataSource.getRepository(Portfolio)
+          .createQueryBuilder('p')
+          .where('p.userId = :userId AND p.quantity < 0', { userId })
+          .getOne();
+
+        if (hasVad) {
+          throw new BadRequestException(
+            "Impossible de rétrograder votre niveau : vous détenez actuellement des positions de vente à découvert (VAD) ouvertes dans votre portefeuille."
+          );
+        }
+
+        // Vérifier s'il détient des ordres en attente incompatibles pour le niveau débutant
+        if (dto.level === 1) {
+          const complexOrders = await this.dataSource.getRepository(Order)
+            .createQueryBuilder('o')
+            .where('o.userId = :userId AND o.etat = :etat AND (o.coursMin > 0 AND o.coursMax > 0)', {
+              userId,
+              etat: '1',
+            })
+            .getOne();
+
+          if (complexOrders) {
+            throw new BadRequestException(
+              "Impossible de rétrograder votre niveau : vous avez des ordres à plage de cours en attente dans le carnet d'ordres."
+            );
+          }
+        }
+      }
       user.idniveau = dto.level;
     }
 

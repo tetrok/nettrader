@@ -26,6 +26,7 @@ export class PostMessageDto {
   @ApiPropertyOptional({ example: 'Voici mon avis sur le marché actuel...' })
   @IsNotEmpty({ message: 'Le contenu du message est obligatoire.' })
   @IsString()
+  @Length(1, 10000, { message: 'Le contenu du message ne doit pas dépasser 10 000 caractères.' })
   content: string;
 
   @ApiPropertyOptional()

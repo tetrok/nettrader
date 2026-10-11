@@ -33,6 +33,7 @@ import {
   Target,
   Compass,
 } from 'lucide-react';
+import { ForumMessageContent } from '../components/forum/ForumMessageContent';
 
 export const HomePage: React.FC = () => {
   const { user } = useAuth();
@@ -451,10 +452,9 @@ export const HomePage: React.FC = () => {
                       <span>{new Date(n.date * 1000).toLocaleDateString('fr-FR')}</span>
                     </div>
                     <h4 className="font-bold text-white text-xs line-clamp-1">{n.title}</h4>
-                    <p
-                      className="text-[11px] text-slate-300 line-clamp-2 leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: n.content }}
-                    />
+                    <div className="text-[11px] text-slate-300 line-clamp-2 leading-relaxed">
+                      <ForumMessageContent content={n.content} />
+                    </div>
                   </div>
                 ))}
               </div>
