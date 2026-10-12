@@ -23,15 +23,19 @@ import { Forum } from '../entities/forum.entity';
 import { Topic } from '../entities/topic.entity';
 import { TopicPost } from '../entities/topic-post.entity';
 import { TopicPostContent } from '../entities/topic-post-content.entity';
+import { MailToSend } from '../entities/mail-to-send.entity';
 import { TradingModule } from '../trading/trading.module';
+import { MarketModule } from '../market/market.module';
 import { YahooFinanceService } from './yahoo-finance.service';
 import { MarketSyncService } from './market-sync.service';
+import { MarketSyncScheduler } from './market-sync.scheduler';
+import { MailerQueueService } from './mailer-queue.service';
 import { AdminStockService } from './admin-stock.service';
 import { AdminForumService } from './admin-forum.service';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminJobsService } from './admin-jobs.service';
 import { AdminController } from './admin.controller';
-import { CmdController } from './cmd.controller';
+import { JobsController } from './jobs.controller';
 
 @Module({
   imports: [
@@ -52,18 +56,22 @@ import { CmdController } from './cmd.controller';
       Topic,
       TopicPost,
       TopicPostContent,
+      MailToSend,
     ]),
     TradingModule,
+    MarketModule,
   ],
   providers: [
     YahooFinanceService,
     MarketSyncService,
+    MarketSyncScheduler,
+    MailerQueueService,
     AdminStockService,
     AdminForumService,
     AdminDashboardService,
     AdminJobsService,
   ],
-  controllers: [AdminController, CmdController],
-  exports: [MarketSyncService, AdminJobsService],
+  controllers: [AdminController, JobsController],
+  exports: [MarketSyncService, AdminJobsService, MarketSyncScheduler, MailerQueueService],
 })
 export class AdminModule {}

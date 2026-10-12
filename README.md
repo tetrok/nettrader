@@ -7,7 +7,6 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Docker Compose](https://img.shields.io/badge/Docker_Compose-Multi--Container-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Database](https://img.shields.io/badge/MariaDB-10.5%20InnoDB-003545?logo=mariadb&logoColor=white)](https://mariadb.org/)
-[![Python](https://img.shields.io/badge/Python-3.12%20%2F%20yfinance-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 
 ---
 
@@ -31,7 +30,7 @@ Chaque joueur démarre avec un capital virtuel de **10 000 €** et doit bâtir 
 
 ## 🏛️ Architecture du Système
 
-Le projet a fait l'objet d'une **refonte et modernisation intégrale**, remplaçant définitivement l'ancienne pile PHP procédurale par une **architecture moderne multi-conteneurs 100% TypeScript / Node.js & Python** :
+Le projet repose sur une **architecture moderne et unifiée 100% TypeScript / Node.js & React** :
 
 ```mermaid
 flowchart TB
@@ -40,18 +39,13 @@ flowchart TB
     end
 
     subgraph ReverseProxy ["Conteneur Frontend (Nginx)"]
-        NGX["Nginx Web Server<br/>(Reverse Proxy /api/ & /cmd.php -> backend)"]
+        NGX["Nginx Web Server<br/>(Reverse Proxy /api/ -> backend:3000)"]
     end
 
     subgraph Backend ["Conteneur Backend (Node.js 22 / NestJS 10)"]
         API["API RESTful JSON (/api/...)<br/>Contrôleurs NestJS & TypeORM"]
-        CMD_CTRL["Webhook Interne (/cmd.php)<br/>CmdController (CRON_SECRET)"]
+        CRON["Schedulers & Crons Intégrés<br/>MarketSyncScheduler, MailerQueueService"]
         SWAGGER["Documentation OpenAPI (/api/docs)"]
-    end
-
-    subgraph Workers ["Microservices d'Arrière-Plan Python"]
-        FETCH["python-fetcher (pynt2markdown.py)<br/>yfinance batch scraping"]
-        MAIL["python-mailer (pymailing.py)<br/>Dépilage file mail_tosend"]
     end
 
     subgraph External ["Services Externes & Outils"]
@@ -68,14 +62,11 @@ flowchart TB
     NGX -->|Assets Statiques| SPA
     NGX -->|/api/*| API
     API --> DB
-    CMD_CTRL --> DB
 
-    FETCH -->|Télécharge cotations| YF
-    FETCH -->|Met à jour cacval| DB
-    FETCH -->|Déclenche checkscore & executeorder| CMD_CTRL
-
-    MAIL -->|Lit file d'attente| DB
-    MAIL -->|Envoie e-mails| MAILPIT
+    CRON -->|Synchronisation cotations| YF
+    CRON -->|Mise à jour cours & exécution ordres| DB
+    CRON -->|Dépilage file mail_tosend| DB
+    CRON -->|Envoi e-mails| MAILPIT
     PMA --> DB
 ```
 
@@ -105,7 +96,10 @@ flowchart TB
   - `AccountModule` : Profil utilisateur, mise à jour des coordonnées et paramètres.
   - `TeamModule` : Gestion des équipes et candidatures.
   - `ForumModule` & `MessageModule` : Discussions, sujets, posts et messagerie privée.
-  - `AdminModule` : Supervision, modération, synchronisation des marchés, et émulation `/cmd.php`.
+  - `AdminModule` : Supervision, modération, synchronisation des marchés, et `JobsController` (`/api/admin/jobs/*`).
+- **Tâches d'arrière-plan intégrées** :
+  - `MarketSyncScheduler` : Rafraîchissement automatique des cotations Yahoo Finance toutes les 2 minutes pendant les heures ouvrées et exécution immédiate des ordres.
+  - `MailerQueueService` : Dépilage de la file `mail_tosend` et génération des statistiques hebdomadaires et quotidiennes.
 - **Documentation d'API intégrée** : Swagger OpenAPI accessible sur `/api/docs`.
 
 ### 3. Durcissement & Sécurité Critique
@@ -113,13 +107,8 @@ flowchart TB
 - **Transactions ACID & Verrous Pessimistes** : Transactions de trading protégées contre les *race conditions*.
 - **Hachage BCRYPT** : Chiffrement robuste des mots de passe.
 - **Protection XSS Systématique** : Assainissement strict et validation DTO `class-validator`.
-- **Protection des Webhooks** : Sécurisation de `cmd.php` par clé secrète `CRON_SECRET` avec comparaison en temps constant (`timingSafeEqual`).
+- **Protection des Jobs d'Automatisation** : Sécurisation des endpoints `/api/admin/jobs/*` par clé secrète `CRON_SECRET` avec comparaison en temps constant (`timingSafeEqual`).
 - **Isolation Réseau & Reverse Proxy Nginx** : Exposition unifiée via Nginx sur le port 3000.
-
-### 4. Microservice de Cotation Boursière (`python-fetcher`)
-- Scraping en continu des cotations réelles via la librairie **`yfinance`** en Python 3.
-- Traitement optimisé par lots de 50 symboles avec repli unitaire automatique.
-- Déclenchement automatique des calculs de portefeuilles et de l'exécution des ordres via webhook `cmd.php` sur le backend NestJS.
 
 ---
 
@@ -165,7 +154,7 @@ Pour exécuter la documentation interactive et tester les endpoints de l'API :
 - **Gestion des Équipes & Messagerie** : Validation des contraintes de taille, invitations de groupe, prévention de l'envoi de message à soi-même, protection contre les caractères spéciaux.
 - **Parseur BBCode & Forums** : Support des syntaxes d'URL, citations, neutralisation des vecteurs d'attaque XSS `javascript:`.
 - **Modération & Administration** : Contrôles de permissions strictes (HTTP 403 aux utilisateurs non-admin), création, édition, synchronisation des compteurs et suppression de rubriques/sujets.
-- **Sécurité & Durcissement** : Authentification obligatoire par clé secrète sur `cmd.php` (HTTP 403), entropie des jetons de session (CSPRNG 256 bits), migration 100% InnoDB, politique CORS restrictive.
+- **Sécurité & Durcissement** : Authentification obligatoire par clé secrète sur les jobs internes (`/api/admin/jobs/*`), entropie des jetons de session (CSPRNG 256 bits), migration 100% InnoDB, politique CORS restrictive.
 - **Suivi des Cotations & Supervision Marché (Market Sync)** : Rejet HTTP 403 pour non-administrateurs, consultation de la vue d'ensemble (KPIs et logs récents), listing paginé avec indicateurs de statut, filtrage par statut (`failed`, `success`, `pending`), réinitialisation unitaire et globale des compteurs d'échecs, basculement dynamique du suivi d'un titre (`toggle-track`).
 
 ---
@@ -186,20 +175,15 @@ Pour exécuter la documentation interactive et tester les endpoints de l'API :
 │   ├── Dockerfile              # Multi-stage build Node.js Alpine
 │   ├── package.json            # Dépendances NestJS, TypeORM, MySQL2, class-validator
 │   └── src/                    # Modules NestJS (auth, trading, market, forum, admin, etc.)
-├── frontend/                   # Application SPA React / TypeScript
-│   ├── src/
-│   │   ├── api/                # Clients d'API typés (auth, trading, forums, admin...)
-│   │   ├── components/         # Composants d'interface (Navbar, OrderModal, StockChart...)
-│   │   ├── context/            # Contexte d'authentification (AuthContext)
-│   │   ├── pages/              # Pages de l'application (Portfolio, Market, Forums...)
-│   │   └── router.tsx          # Configuration des routes et guards d'authentification
-│   ├── nginx.conf              # Configuration Nginx et reverse proxy /api/ & /cmd.php
-│   └── Dockerfile              # Multi-stage build Node -> Nginx
-└── pythonfetch/                # Microservices d'arrière-plan Python
-    ├── pynt2markdown.py        # Récupération des cours Yahoo Finance et synchronisation
-    ├── pymailing.py            # Traitement de la file d'envoi d'e-mails
-    ├── pynt2stats.py           # Calcul des statistiques de jeu
-    └── Dockerfile              # Image Python 3 avec yfinance, pandas, pymysql
+└── frontend/                   # Application SPA React / TypeScript
+    ├── src/
+    │   ├── api/                # Clients d'API typés (auth, trading, forums, admin...)
+    │   ├── components/         # Composants d'interface (Navbar, OrderModal, StockChart...)
+    │   ├── context/            # Contexte d'authentification (AuthContext)
+    │   ├── pages/              # Pages de l'application (Portfolio, Market, Forums...)
+    │   └── router.tsx          # Configuration des routes et guards d'authentification
+    ├── nginx.conf              # Configuration Nginx et reverse proxy /api/
+    └── Dockerfile              # Multi-stage build Node -> Nginx
 ```
 
 ---

@@ -26,9 +26,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Préfixe global /api pour correspondre au routage frontend
-  app.setGlobalPrefix('api', {
-    exclude: ['cmd.php'],
-  });
+  app.setGlobalPrefix('api');
 
   // Validation globale des DTO
   app.useGlobalPipes(
