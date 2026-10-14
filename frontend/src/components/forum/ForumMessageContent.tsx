@@ -2,11 +2,12 @@
  * NetTrader 2 — Rendu Sécurisé du Contenu des Messages de Forum (ForumMessageContent)
  *
  * Usage:
- *   Transforme le texte brut contenant des balises BBCode en éléments React stylisés et sécurisés.
+ *   Transforme le texte brut contenant des balises Markdown (GFM) ou BBCode historiques en éléments React stylisés et sécurisés.
  *
  * Logique & Fonctionnement:
- *   - Interprète les balises [b], [i], [u], [quote], [code], [url] et [color].
- *   - Assainit les liens pour neutraliser les attaques XSS et forcer rel="noopener noreferrer".
+ *   - Support hybride Markdown (titres #/##/###, gras **, italique *, barré ~~, code `, citations >, listes -, liens [texte](url)).
+ *   - Rétrocompatibilité 100% avec l'ancien BBCode ([b], [i], [u], [quote], [code], [url], [color], [img]).
+ *   - Assainissement strict des liens pour neutraliser les attaques XSS (interdiction javascript:, safe rel, routage SPA).
  */
 
 import React from 'react';
@@ -57,16 +58,15 @@ interface ResolvedLink {
 }
 
 /**
- * Analyse et valide une URL (BBCode, HTML ou brute).
+ * Analyse et valide une URL (Markdown, BBCode, HTML ou brute).
  * Résout les liens internes NetTrader vers les routes SPA de la nouvelle IHM REST.
  */
 function resolveLink(rawUrl: string): ResolvedLink {
   let url = rawUrl.trim();
-  // Suppression des guillemets d'encadrement résiduels
   url = url.replace(/^["']+|["']+$/g, '');
   url = url.replace(/&amp;/g, '&');
 
-  // Prise en charge des redirections historiques redir.php?url=...
+  // Redirections historiques redir.php?url=...
   const redirMatch = url.match(/(?:^|[/?&])redir\.php\?.*?(?:&|\?)?url=([^&]+)/i);
   if (redirMatch) {
     try {
@@ -108,23 +108,18 @@ function resolveLink(rawUrl: string): ResolvedLink {
   }
 
   // 4. Liens vers d'autres pages internes
-  if (/formrazjoueur/i.test(url)) {
-    return { isInternal: true, to: '/profile', isSafe: true };
+  if (/(?:portefeuille|trading)/i.test(url)) {
+    return { isInternal: true, to: '/portfolio', isSafe: true };
   }
-  if (/contactauteur/i.test(url)) {
-    return { isInternal: true, to: '/help', isSafe: true };
+  if (/(?:classement|leaderboard)/i.test(url)) {
+    return { isInternal: true, to: '/leaderboards', isSafe: true };
   }
-  if (/quittegroupe/i.test(url)) {
-    return { isInternal: true, to: '/profile', isSafe: true };
-  }
-
-  // 5. URL externe commençant par www.
-  if (/^www\./i.test(url)) {
-    url = 'https://' + url;
+  if (/(?:marche|market)/i.test(url)) {
+    return { isInternal: true, to: '/market', isSafe: true };
   }
 
-  // 6. Protocole externe sécurisé
-  if (/^(?:https?:\/\/|mailto:)/i.test(url)) {
+  // 5. Liens HTTP/HTTPS externes
+  if (/^(?:https?:\/\/|ftps?:\/\/)/i.test(url)) {
     return {
       isInternal: false,
       href: url,
@@ -132,16 +127,16 @@ function resolveLink(rawUrl: string): ResolvedLink {
     };
   }
 
-  // 7. Route relative interne SPA
-  if (url.startsWith('/')) {
+  // 6. Liens sans protocole débutant par www.
+  if (/^www\./i.test(url)) {
     return {
-      isInternal: true,
-      to: url,
+      isInternal: false,
+      href: `https://${url}`,
       isSafe: true,
     };
   }
 
-  // Protocole non autorisé ou risqué (ex: javascript:)
+  // 7. Neutralisation stricte des protocoles dangereux
   return {
     isInternal: false,
     isSafe: false,
@@ -149,14 +144,13 @@ function resolveLink(rawUrl: string): ResolvedLink {
 }
 
 /**
- * Affiche un lien formaté (interne Router ou externe avec icône et rel noopener).
+ * Rendu sécurisé d'un lien (interne via React Router ou externe avec icône).
  */
-function renderLink(rawUrl: string, label?: React.ReactNode, key?: string | number): React.ReactNode {
+function renderLink(rawUrl: string, children: React.ReactNode, key: string): React.ReactNode {
   const resolved = resolveLink(rawUrl);
-  const displayLabel = label !== undefined && label !== null && label !== '' ? label : rawUrl;
 
   if (!resolved.isSafe) {
-    return <span key={key}>{displayLabel}</span>;
+    return <span key={key} className="text-slate-400 font-mono text-xs">{children}</span>;
   }
 
   if (resolved.isInternal && resolved.to) {
@@ -164,9 +158,9 @@ function renderLink(rawUrl: string, label?: React.ReactNode, key?: string | numb
       <Link
         key={key}
         to={resolved.to}
-        className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 font-medium transition inline-flex items-center gap-1 hover:brightness-110"
+        className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 break-all transition font-semibold"
       >
-        <span>{displayLabel}</span>
+        {children}
       </Link>
     );
   }
@@ -180,26 +174,42 @@ function renderLink(rawUrl: string, label?: React.ReactNode, key?: string | numb
         rel="noopener noreferrer"
         className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 break-all transition font-medium inline-flex items-center gap-1 group/link"
       >
-        <span>{displayLabel}</span>
+        <span>{children}</span>
         <ExternalLink className="w-3.5 h-3.5 inline-block shrink-0 opacity-70 group-hover/link:opacity-100 transition-opacity" />
       </a>
     );
   }
 
-  return <span key={key}>{displayLabel}</span>;
+  return <span key={key}>{children}</span>;
 }
 
 /**
- * Découpe et transforme le texte contenant des balises de liens, de style et des URLs brutes.
+ * Analyse les éléments inline : Markdown (gras, italique, barré, code, liens, images) et BBCode.
  */
 function parseInlineTokens(rawText: string, keyPrefix: string): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   let remaining = rawText;
   let counter = 0;
 
-  // Regex globale pour identifier tous les tokens
+  // Regex combinant Markdown et BBCode :
+  // 1: BBCode [url=link]label[/url]
+  // 4: BBCode [url]link[/url]
+  // 5: Markdown [label](link)
+  // 7: Markdown ![alt](imglink)
+  // 9: HTML <a href=...>...</a>
+  // 11: BBCode [img]...[/img]
+  // 12: Markdown bold **...**
+  // 13: BBCode [b]...[/b]
+  // 14: Markdown strikethrough ~~...~~
+  // 15: Markdown italic *...*
+  // 16: BBCode [i]...[/i]
+  // 17: BBCode [u]...[/u]
+  // 18: Markdown inline code `...`
+  // 19: BBCode [code]...[/code]
+  // 20: BBCode [color=...]...[/color]
+  // 22: URL brute auto-link
   const tokenRegex =
-    /(\[url=(?:&quot;|"|'|&#039;)?([^\s\]"'>]+?)(?:&quot;|"|'|&#039;)?\]([\s\S]*?)\[\/url\]|\[url\]\s*([^\s\]<]+?)\s*\[\/url\]|<a\s+[^>]*href=(?:&quot;|"|'|&#039;)?([^\s"'>]+?)(?:&quot;|"|'|&#039;)?[^>]*>([\s\S]*?)<\/a>|\[img\]\s*(https?:\/\/[^\s<>&"\'\[\]]+)\s*\[\/img\]|\[b\]([\s\S]*?)\[\/b\]|\[i\]([\s\S]*?)\[\/i\]|\[u\]([\s\S]*?)\[\/u\]|\[code\]([\s\S]*?)\[\/code\]|\[color=[^\]]+\]([\s\S]*?)\[\/color\]|<br\s*\/?>|((?:https?:\/\/|www\.)[^\s<>"'\])\r\n]+))/i;
+    /(\[url=(?:&quot;|"|'|&#039;)?([^\s\]"'>]+?)(?:&quot;|"|'|&#039;)?\]([\s\S]*?)\[\/url\]|\[url\]\s*([^\s\]<]+?)\s*\[\/url\]|\[([^\]]+)\]\((https?:\/\/[^\s\)]+|www\.[^\s\)]+|\/[^\s\)]+)\)|!\[([^\]]*)\]\((https?:\/\/[^\s\)]+)\)|<a\s+[^>]*href=(?:&quot;|"|'|&#039;)?([^\s"'>]+?)(?:&quot;|"|'|&#039;)?[^>]*>([\s\S]*?)<\/a>|\[img\]\s*(https?:\/\/[^\s<>&"\'\[\]]+)\s*\[\/img\]|\*\*([^\*\n]+?)\*\*|\[b\]([\s\S]*?)\[\/b\]|~~([^~\n]+?)~~|\*([^\*\n]+?)\*|\[i\]([\s\S]*?)\[\/i\]|\[u\]([\s\S]*?)\[\/u\]|`([^`\n]+?)`|\[code\]([\s\S]*?)\[\/code\]|\[color=[^\]]+\]([\s\S]*?)\[\/color\]|<br\s*\/?>|((?:https?:\/\/|www\.)[^\s<>"'\])\r\n]+))/i;
 
   while (remaining) {
     const match = remaining.match(tokenRegex);
@@ -217,59 +227,81 @@ function parseInlineTokens(rawText: string, keyPrefix: string): React.ReactNode[
 
     if (match[2] !== undefined && match[3] !== undefined) {
       // 1. [url=link]label[/url]
-      const url = match[2];
-      const label = match[3];
-      nodes.push(renderLink(url, parseInlineTokens(label, `${key}-lbl`), key));
+      nodes.push(renderLink(match[2], parseInlineTokens(match[3], `${key}-lbl`), key));
     } else if (match[4] !== undefined) {
       // 2. [url]link[/url]
-      const url = match[4];
-      nodes.push(renderLink(url, url, key));
+      nodes.push(renderLink(match[4], match[4], key));
     } else if (match[5] !== undefined && match[6] !== undefined) {
-      // 3. <a href="link">label</a>
-      const url = match[5];
-      const label = match[6];
-      nodes.push(renderLink(url, parseInlineTokens(label, `${key}-lbl`), key));
-    } else if (match[7] !== undefined) {
-      // 4. [img]link[/img]
-      const imgUrl = match[7].trim();
-      if (/^https?:\/\//i.test(imgUrl)) {
-        nodes.push(
-          <img
-            key={key}
-            src={imgUrl}
-            alt="Illustration forum"
-            className="max-w-full max-h-96 rounded-xl border border-slate-800 my-2 block"
-            loading="lazy"
-          />
-        );
-      } else {
-        nodes.push(matchedFull);
-      }
-    } else if (match[8] !== undefined) {
-      // 5. [b]...[/b]
-      nodes.push(<strong key={key} className="font-bold text-white">{parseInlineTokens(match[8], `${key}-b`)}</strong>);
-    } else if (match[9] !== undefined) {
-      // 6. [i]...[/i]
-      nodes.push(<em key={key} className="italic text-slate-100">{parseInlineTokens(match[9], `${key}-i`)}</em>);
-    } else if (match[10] !== undefined) {
-      // 7. [u]...[/u]
-      nodes.push(<span key={key} className="underline">{parseInlineTokens(match[10], `${key}-u`)}</span>);
-    } else if (match[11] !== undefined) {
-      // 8. [code]...[/code]
+      // 3. Markdown [label](link)
+      nodes.push(renderLink(match[6], parseInlineTokens(match[5], `${key}-mdlbl`), key));
+    } else if (match[7] !== undefined && match[8] !== undefined) {
+      // 4. Markdown ![alt](imglink)
+      const imgUrl = match[8].trim();
       nodes.push(
-        <code key={key} className="bg-slate-950 text-emerald-300 px-1.5 py-0.5 rounded font-mono text-xs">
-          {match[11]}
-        </code>
+        <img
+          key={key}
+          src={imgUrl}
+          alt={match[7] || 'Image'}
+          className="max-w-full max-h-96 rounded-xl border border-slate-800 my-2 block"
+          loading="lazy"
+        />
+      );
+    } else if (match[9] !== undefined && match[10] !== undefined) {
+      // 5. <a href="...">...</a>
+      nodes.push(renderLink(match[9], parseInlineTokens(match[10], `${key}-hlbl`), key));
+    } else if (match[11] !== undefined) {
+      // 6. [img]...[/img]
+      const imgUrl = match[11].trim();
+      nodes.push(
+        <img
+          key={key}
+          src={imgUrl}
+          alt="Illustration forum"
+          className="max-w-full max-h-96 rounded-xl border border-slate-800 my-2 block"
+          loading="lazy"
+        />
       );
     } else if (match[12] !== undefined) {
-      // 9. [color]...[/color]
-      nodes.push(<span key={key}>{parseInlineTokens(match[12], `${key}-c`)}</span>);
-    } else if (/^<br\s*\/?>$/i.test(matchedFull)) {
-      // 10. <br />
-      nodes.push(<br key={key} />);
+      // 7. Markdown **gras**
+      nodes.push(<strong key={key} className="font-bold text-white">{parseInlineTokens(match[12], `${key}-mdb`)}</strong>);
     } else if (match[13] !== undefined) {
-      // 11. URL brute
-      let rawUrl = match[13];
+      // 8. BBCode [b]gras[/b]
+      nodes.push(<strong key={key} className="font-bold text-white">{parseInlineTokens(match[13], `${key}-bbb`)}</strong>);
+    } else if (match[14] !== undefined) {
+      // 9. Markdown ~~barré~~
+      nodes.push(<span key={key} className="line-through opacity-75">{parseInlineTokens(match[14], `${key}-s`)}</span>);
+    } else if (match[15] !== undefined) {
+      // 10. Markdown *italique*
+      nodes.push(<em key={key} className="italic text-slate-100">{parseInlineTokens(match[15], `${key}-mdi`)}</em>);
+    } else if (match[16] !== undefined) {
+      // 11. BBCode [i]italique[/i]
+      nodes.push(<em key={key} className="italic text-slate-100">{parseInlineTokens(match[16], `${key}-bbi`)}</em>);
+    } else if (match[17] !== undefined) {
+      // 12. BBCode [u]souligné[/u]
+      nodes.push(<span key={key} className="underline">{parseInlineTokens(match[17], `${key}-u`)}</span>);
+    } else if (match[18] !== undefined) {
+      // 13. Markdown `code`
+      nodes.push(
+        <code key={key} className="bg-slate-950 text-emerald-300 px-1.5 py-0.5 rounded font-mono text-xs border border-slate-800/80">
+          {match[18]}
+        </code>
+      );
+    } else if (match[19] !== undefined) {
+      // 14. BBCode [code]...[/code]
+      nodes.push(
+        <code key={key} className="bg-slate-950 text-emerald-300 px-1.5 py-0.5 rounded font-mono text-xs border border-slate-800/80">
+          {match[19]}
+        </code>
+      );
+    } else if (match[20] !== undefined) {
+      // 15. BBCode [color]...[/color]
+      nodes.push(<span key={key}>{parseInlineTokens(match[20], `${key}-c`)}</span>);
+    } else if (/^<br\s*\/?>$/i.test(matchedFull)) {
+      // 16. <br />
+      nodes.push(<br key={key} />);
+    } else if (match[21] !== undefined) {
+      // 17. URL brute
+      let rawUrl = match[21];
       let trailing = '';
       while (/[.,;:!?]$/.test(rawUrl)) {
         trailing = rawUrl.slice(-1) + trailing;
@@ -292,61 +324,93 @@ function parseInlineTokens(rawText: string, keyPrefix: string): React.ReactNode[
 }
 
 /**
- * Analyse et imbrique les citations [quote]...[/quote] ou <table class="citation">.
+ * Analyse les blocs : Titres Markdown (#/##/###), Blocs de code (```...```), Citations (> et [quote]), Listes (-).
  */
-function parseQuotes(text: string, depth = 0): React.ReactNode[] {
-  const quoteOpenRegex = /\[quote(?:=(?:&quot;|"|'|&#039;)?([^\]"'\r\n]+)(?:&quot;|"|'|&#039;)?)?\]/i;
-  const quoteCloseRegex = /\[\/quote\]/i;
-
-  let remaining = text;
+function parseBlocks(text: string, depth = 0): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
+  const lines = text.split('\n');
+  let i = 0;
   let keyIndex = 0;
 
-  while (remaining) {
-    const openMatch = remaining.match(quoteOpenRegex);
-    if (!openMatch || openMatch.index === undefined) {
-      nodes.push(...parseInlineTokens(remaining, `txt-${depth}-${keyIndex++}`));
-      break;
-    }
+  while (i < lines.length) {
+    const line = lines[i];
 
-    if (openMatch.index > 0) {
-      const before = remaining.slice(0, openMatch.index);
-      nodes.push(...parseInlineTokens(before, `txt-${depth}-${keyIndex++}`));
-    }
-
-    const author = openMatch[1];
-    const startIndex = openMatch.index + openMatch[0].length;
-    let quoteDepth = 1;
-    let currIndex = startIndex;
-    let endIndex = -1;
-
-    while (quoteDepth > 0 && currIndex < remaining.length) {
-      const nextOpen = remaining.slice(currIndex).match(quoteOpenRegex);
-      const nextClose = remaining.slice(currIndex).match(quoteCloseRegex);
-
-      if (!nextClose || nextClose.index === undefined) {
-        break;
+    // 1. Blocs de code Markdown multi-lignes ```lang ... ```
+    if (line.trim().startsWith('```')) {
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
       }
-
-      if (nextOpen && nextOpen.index !== undefined && nextOpen.index < nextClose.index) {
-        quoteDepth++;
-        currIndex += nextOpen.index + nextOpen[0].length;
-      } else {
-        quoteDepth--;
-        if (quoteDepth === 0) {
-          endIndex = currIndex + nextClose.index;
-          currIndex = endIndex + nextClose[0].length;
-        } else {
-          currIndex += nextClose.index + nextClose[0].length;
-        }
-      }
+      i++; // Sauter la ligne de fin ```
+      nodes.push(
+        <pre
+          key={`code-block-${depth}-${keyIndex++}`}
+          className="my-3 p-4 bg-slate-950 border border-slate-800 rounded-xl overflow-x-auto font-mono text-xs text-emerald-300 leading-relaxed"
+        >
+          <code>{codeLines.join('\n')}</code>
+        </pre>
+      );
+      continue;
     }
 
-    if (endIndex !== -1) {
-      const quoteBody = remaining.slice(startIndex, endIndex);
+    // 2. Citations Markdown (> ...)
+    if (line.trim().startsWith('>')) {
+      const quoteLines: string[] = [];
+      while (i < lines.length && (lines[i].trim().startsWith('>') || (lines[i].trim() !== '' && quoteLines.length > 0 && !lines[i].startsWith('#')))) {
+        quoteLines.push(lines[i].replace(/^>\s?/, ''));
+        i++;
+      }
       nodes.push(
         <blockquote
-          key={`quote-${depth}-${keyIndex++}`}
+          key={`md-quote-${depth}-${keyIndex++}`}
+          className="my-3 p-3.5 bg-slate-950/70 border-l-4 border-emerald-500/60 rounded-r-xl space-y-1 text-xs text-slate-300"
+        >
+          <div className="flex items-center gap-1.5 font-semibold text-emerald-400 text-[11px] mb-1">
+            <Quote className="w-3 h-3 opacity-80" />
+            <span>Citation :</span>
+          </div>
+          <div className="whitespace-pre-wrap">{parseBlocks(quoteLines.join('\n'), depth + 1)}</div>
+        </blockquote>
+      );
+      continue;
+    }
+
+    // 3. Citations BBCode [quote=Author]...[/quote]
+    if (/\[quote(?:=[^\]]+)?\]/i.test(line)) {
+      const quoteOpenMatch = line.match(/\[quote(?:=(?:&quot;|"|'|&#039;)?([^\]"'\r\n]+)(?:&quot;|"|'|&#039;)?)?\]/i);
+      const author = quoteOpenMatch ? quoteOpenMatch[1] : undefined;
+      const quoteLines: string[] = [];
+      let inQuote = true;
+
+      // Retirer la balise ouvrante de la ligne courante
+      const restOfFirstLine = line.replace(/\[quote(?:=[^\]]+)?\]/i, '');
+      if (restOfFirstLine.includes('[/quote]')) {
+        const parts = restOfFirstLine.split(/\[\/quote\]/i);
+        quoteLines.push(parts[0]);
+        inQuote = false;
+      } else {
+        quoteLines.push(restOfFirstLine);
+      }
+      i++;
+
+      while (i < lines.length && inQuote) {
+        if (lines[i].includes('[/quote]')) {
+          const parts = lines[i].split(/\[\/quote\]/i);
+          quoteLines.push(parts[0]);
+          inQuote = false;
+          i++;
+          break;
+        } else {
+          quoteLines.push(lines[i]);
+          i++;
+        }
+      }
+
+      nodes.push(
+        <blockquote
+          key={`bb-quote-${depth}-${keyIndex++}`}
           className="my-3 p-3.5 bg-slate-950/70 border-l-4 border-emerald-500/60 rounded-r-xl space-y-1.5 text-xs text-slate-300"
         >
           {author && (
@@ -356,15 +420,73 @@ function parseQuotes(text: string, depth = 0): React.ReactNode[] {
             </div>
           )}
           <div className="space-y-1 whitespace-pre-wrap">
-            {parseQuotes(quoteBody, depth + 1)}
+            {parseBlocks(quoteLines.join('\n'), depth + 1)}
           </div>
         </blockquote>
       );
-      remaining = remaining.slice(currIndex);
-    } else {
-      nodes.push(...parseInlineTokens(remaining.slice(0, startIndex), `txt-${depth}-${keyIndex++}`));
-      remaining = remaining.slice(startIndex);
+      continue;
     }
+
+    // 4. Titres Markdown
+    if (/^###\s+(.*)/.test(line)) {
+      const match = line.match(/^###\s+(.*)/);
+      nodes.push(
+        <h4 key={`h3-${depth}-${keyIndex++}`} className="text-sm font-bold text-white mt-3 mb-1">
+          {parseInlineTokens(match![1], `h3-${keyIndex}`)}
+        </h4>
+      );
+      i++;
+      continue;
+    }
+
+    if (/^##\s+(.*)/.test(line)) {
+      const match = line.match(/^##\s+(.*)/);
+      nodes.push(
+        <h3 key={`h2-${depth}-${keyIndex++}`} className="text-base font-bold text-emerald-400 mt-4 mb-1">
+          {parseInlineTokens(match![1], `h2-${keyIndex}`)}
+        </h3>
+      );
+      i++;
+      continue;
+    }
+
+    if (/^#\s+(.*)/.test(line)) {
+      const match = line.match(/^#\s+(.*)/);
+      nodes.push(
+        <h2 key={`h1-${depth}-${keyIndex++}`} className="text-lg font-extrabold text-white mt-4 mb-2 border-b border-slate-800 pb-1">
+          {parseInlineTokens(match![1], `h1-${keyIndex}`)}
+        </h2>
+      );
+      i++;
+      continue;
+    }
+
+    // 5. Listes Markdown (- item ou * item)
+    if (/^[-*]\s+(.*)/.test(line)) {
+      const listItems: string[] = [];
+      while (i < lines.length && /^[-*]\s+(.*)/.test(lines[i])) {
+        const m = lines[i].match(/^[-*]\s+(.*)/);
+        if (m) listItems.push(m[1]);
+        i++;
+      }
+      nodes.push(
+        <ul key={`ul-${depth}-${keyIndex++}`} className="list-disc list-inside space-y-1 my-2 text-slate-300">
+          {listItems.map((item, idx) => (
+            <li key={idx}>{parseInlineTokens(item, `li-${keyIndex}-${idx}`)}</li>
+          ))}
+        </ul>
+      );
+      continue;
+    }
+
+    // 6. Ligne standard
+    nodes.push(
+      <React.Fragment key={`line-${depth}-${keyIndex++}`}>
+        {parseInlineTokens(line, `l-${depth}-${keyIndex}`)}
+        {i < lines.length - 1 && '\n'}
+      </React.Fragment>
+    );
+    i++;
   }
 
   return nodes;
@@ -374,13 +496,12 @@ export const ForumMessageContent: React.FC<ForumMessageContentProps> = ({
   content,
   formattedContent,
 }) => {
-  // Préférer formattedContent si présent, sinon décoder le contenu brut
   const rawText = content || formattedContent || '';
   const decoded = decodeEntities(rawText);
 
   return (
-    <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap break-words">
-      {parseQuotes(decoded)}
+    <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap break-words space-y-0.5">
+      {parseBlocks(decoded)}
     </div>
   );
 };

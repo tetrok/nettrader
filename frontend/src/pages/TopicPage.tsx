@@ -23,6 +23,12 @@ import {
   Shield,
   AlertTriangle,
   X,
+  Bold,
+  Italic,
+  Quote,
+  Code,
+  Link as LinkIcon,
+  List,
 } from 'lucide-react';
 import { ForumMessageContent } from '../components/forum/ForumMessageContent';
 
@@ -267,13 +273,69 @@ export const TopicPage: React.FC = () => {
       {/* Reply Box */}
       {user ? (
         <form onSubmit={handlePostReply} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-3">
-          <h3 className="text-sm font-bold text-white">Répondre à cette discussion</h3>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-bold text-white">Répondre à cette discussion</h3>
+            <span className="text-[11px] text-slate-400 font-medium">Formats supportés : Markdown & BBCode</span>
+          </div>
+
+          {/* Markdown/BBCode Toolbar */}
+          <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-950/80 border border-slate-800 rounded-xl text-slate-300 text-xs">
+            <button
+              type="button"
+              onClick={() => setReplyText((prev) => prev ? `${prev}\n**Texte en gras**` : '**Texte en gras**')}
+              title="Gras (**texte** ou [b])"
+              className="p-1.5 hover:bg-slate-800 hover:text-white rounded-lg transition"
+            >
+              <Bold className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setReplyText((prev) => prev ? `${prev}\n*Texte en italique*` : '*Texte en italique*')}
+              title="Italique (*texte* ou [i])"
+              className="p-1.5 hover:bg-slate-800 hover:text-white rounded-lg transition"
+            >
+              <Italic className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setReplyText((prev) => prev ? `${prev}\n> Citation` : '> Citation')}
+              title="Citation (> texte ou [quote])"
+              className="p-1.5 hover:bg-slate-800 hover:text-white rounded-lg transition"
+            >
+              <Quote className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setReplyText((prev) => prev ? `${prev}\n[Texte du lien](https://exemple.com)` : '[Texte du lien](https://exemple.com)')}
+              title="Lien ([texte](url) ou [url=...])"
+              className="p-1.5 hover:bg-slate-800 hover:text-white rounded-lg transition"
+            >
+              <LinkIcon className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setReplyText((prev) => prev ? `${prev}\n\`code en ligne\`` : '`code en ligne`')}
+              title="Code (`code` ou [code])"
+              className="p-1.5 hover:bg-slate-800 hover:text-white rounded-lg transition"
+            >
+              <Code className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setReplyText((prev) => prev ? `${prev}\n- Élément de liste` : '- Élément de liste')}
+              title="Liste à puces (- item)"
+              className="p-1.5 hover:bg-slate-800 hover:text-white rounded-lg transition"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           <textarea
             rows={4}
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
-            placeholder="Écrivez votre message..."
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition"
+            placeholder="Écrivez votre message (Markdown et BBCode acceptés)..."
+            className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 transition font-sans"
             required
           />
           <div className="flex justify-end">

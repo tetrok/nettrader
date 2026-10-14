@@ -19,7 +19,9 @@ export interface AdminDashboardData {
   activeSessions: number;
   totalStocks: number;
   pendingTeamApprovals: number;
-  phpVersion: string;
+  nodeVersion: string;
+  backendVersion?: string;
+  phpVersion?: string;
   serverTime: number;
 }
 

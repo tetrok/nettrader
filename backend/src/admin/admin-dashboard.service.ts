@@ -54,6 +54,8 @@ export class AdminDashboardService {
       activeSessions,
       totalStocks,
       pendingTeamApprovals,
+      nodeVersion: `${process.version} (Node.js / NestJS)`,
+      backendVersion: `${process.version} (NestJS 10)`,
       phpVersion: `${process.version} (NestJS)`,
       serverTime: now,
     };
