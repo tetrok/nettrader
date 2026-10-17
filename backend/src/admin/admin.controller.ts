@@ -24,8 +24,10 @@ import {
   UseGuards,
   ParseIntPipe,
   Req,
+  Res,
   Headers,
 } from '@nestjs/common';
+import * as fs from 'fs';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/guards/auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
@@ -35,6 +37,7 @@ import { MarketSyncService } from './market-sync.service';
 import { AdminStockService } from './admin-stock.service';
 import { AdminForumService } from './admin-forum.service';
 import { AdminJobsService } from './admin-jobs.service';
+import { AdminBackupService } from './admin-backup.service';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -47,6 +50,7 @@ export class AdminController {
     private readonly stockService: AdminStockService,
     private readonly forumService: AdminForumService,
     private readonly jobsService: AdminJobsService,
+    private readonly backupService: AdminBackupService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -67,6 +71,21 @@ export class AdminController {
     @Query('search') search?: string,
   ) {
     return this.dashboardService.getPlayers(page, limit, search);
+  }
+
+  @Get('teams/pending')
+  @ApiOperation({ summary: 'Liste des demandes d’équipes en attente' })
+  async getPendingTeams() {
+    return this.dashboardService.getPendingTeams();
+  }
+
+  @Post('teams/pending/:id/review')
+  @ApiOperation({ summary: 'Approuver ou rejeter une demande d’équipe' })
+  async reviewPendingTeam(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { action: string; comment?: string },
+  ) {
+    return this.dashboardService.reviewPendingTeam(id, body.action, body.comment);
   }
 
   @Post('jobs/execute-orders')
@@ -374,5 +393,41 @@ export class AdminController {
   async deleteAdminMessage(@Param('id', ParseIntPipe) id: number) {
     await this.forumService.deleteAdminMessage(id);
     return { message: 'Message supprimé avec succès.' };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sauvegardes de Base de Données (MariaDB Backups)
+  // ---------------------------------------------------------------------------
+
+  @Get('backups')
+  @ApiOperation({ summary: 'Liste et métriques des sauvegardes de la base de données' })
+  async getBackups() {
+    return this.backupService.getBackups();
+  }
+
+  @Post('backups/trigger')
+  @ApiOperation({ summary: 'Déclencher une sauvegarde manuelle immédiate' })
+  async triggerBackup(@Body() body: { type?: 'manual' | 'daily' | 'hourly' }) {
+    const backup = await this.backupService.createManualBackup(body?.type || 'manual');
+    return {
+      success: true,
+      message: `Sauvegarde ${backup.filename} (${backup.sizeFormatted}) générée avec succès.`,
+      backup,
+    };
+  }
+
+  @Get('backups/download/:filename')
+  @ApiOperation({ summary: 'Télécharger une archive de sauvegarde de base de données' })
+  async downloadBackup(
+    @Param('filename') filename: string,
+    @Res() res: any,
+  ) {
+    const filePath = this.backupService.getBackupFilePath(filename);
+    const stat = fs.statSync(filePath);
+    res.setHeader('Content-Type', filename.endsWith('.gz') ? 'application/gzip' : 'application/sql');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', stat.size);
+    const stream = fs.createReadStream(filePath);
+    stream.pipe(res);
   }
 }

@@ -33,8 +33,8 @@ export class TransformInterceptor<T>
   ): Observable<Response<T>> {
     return next.handle().pipe(
       map((data) => {
-        // Si la réponse est déjà au format { success, data }
-        if (data && typeof data === 'object' && 'success' in data) {
+        // Si la réponse est déjà au format unifié { success, data }
+        if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
           return data;
         }
         return {

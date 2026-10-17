@@ -130,11 +130,11 @@ export const AdminStockManagement: React.FC = () => {
         isTracked: trackedFilter,
         isArchived: archiveFilter,
       });
-      setStocks(res.items);
-      setTotal(res.total);
-      setTotalPages(res.totalPages);
+      setStocks(res?.items || []);
+      setTotal(res?.total || 0);
+      setTotalPages(res?.totalPages || 1);
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Erreur lors du chargement des actions.' });
+      setFeedback({ type: 'error', message: err?.message || 'Erreur lors du chargement des actions.' });
     } finally {
       setLoading(false);
     }
@@ -160,15 +160,15 @@ export const AdminStockManagement: React.FC = () => {
     try {
       const res = await adminApi.toggleStockAuthBuy(codesico);
       setStocks((prev) =>
-        prev.map((s) => (s.codesico === codesico ? { ...s, authBuy: res.authBuy } : s))
+        prev.map((s) => (s.codesico === codesico ? { ...s, authBuy: res?.authBuy ?? !s.authBuy } : s))
       );
       setFeedback({
         type: 'success',
-        message: res.authBuy ? `Achats activés pour l'action #${codesico}.` : `Achats bloqués pour l'action #${codesico}.`,
+        message: res?.authBuy ? `Achats activés pour l'action #${codesico}.` : `Achats bloqués pour l'action #${codesico}.`,
       });
       setTimeout(() => setFeedback(null), 3000);
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message });
+      setFeedback({ type: 'error', message: err?.message || 'Erreur lors du changement de statut d\'achat.' });
     }
   };
 
@@ -176,15 +176,15 @@ export const AdminStockManagement: React.FC = () => {
     try {
       const res = await adminApi.toggleStockTracking(codesico);
       setStocks((prev) =>
-        prev.map((s) => (s.codesico === codesico ? { ...s, isTracked: res.isTracked } : s))
+        prev.map((s) => (s.codesico === codesico ? { ...s, isTracked: res?.isTracked ?? !s.isTracked } : s))
       );
       setFeedback({
         type: 'success',
-        message: res.isTracked ? `Suivi scraper activé pour #${codesico}.` : `Suivi scraper désactivé pour #${codesico}.`,
+        message: res?.isTracked ? `Suivi scraper activé pour #${codesico}.` : `Suivi scraper désactivé pour #${codesico}.`,
       });
       setTimeout(() => setFeedback(null), 3000);
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message });
+      setFeedback({ type: 'error', message: err?.message || 'Erreur lors du changement de statut de suivi.' });
     }
   };
 
@@ -215,7 +215,7 @@ export const AdminStockManagement: React.FC = () => {
       setArchiveResultModal(res);
       loadStocks();
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Erreur lors de l\'archivage.' });
+      setFeedback({ type: 'error', message: err?.message || 'Erreur lors de l\'archivage.' });
       setArchiveCandidate(null);
     } finally {
       setIsProcessingArchive(false);
@@ -232,7 +232,7 @@ export const AdminStockManagement: React.FC = () => {
       loadStocks();
       setTimeout(() => setFeedback(null), 4000);
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Erreur lors du désarchivage.' });
+      setFeedback({ type: 'error', message: err?.message || 'Erreur lors du désarchivage.' });
     }
   };
 
@@ -246,7 +246,7 @@ export const AdminStockManagement: React.FC = () => {
       setArchiveResultModal(res);
       loadStocks();
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Erreur lors de l\'archivage groupé.' });
+      setFeedback({ type: 'error', message: err?.message || 'Erreur lors de l\'archivage groupé.' });
       setArchiveBulkCandidate(null);
     } finally {
       setIsProcessingArchive(false);

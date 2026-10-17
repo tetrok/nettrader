@@ -5,7 +5,7 @@
  *   Valide le nom, le tag (2 à 5 caractères), la description et le site web éventuel de l'équipe.
  */
 
-import { IsNotEmpty, IsOptional, IsString, IsUrl, Length } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsUrl, Length, ValidateIf } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTeamDto {
@@ -18,7 +18,7 @@ export class CreateTeamDto {
   @ApiProperty({ example: 'WST' })
   @IsNotEmpty({ message: 'Le sigle de l\'équipe est obligatoire.' })
   @IsString()
-  @Length(2, 10, { message: 'Le sigle doit comporter entre 2 et 10 caractères.' })
+  @Length(2, 5, { message: 'Le sigle doit comporter entre 2 et 5 caractères.' })
   tag: string;
 
   @ApiPropertyOptional({ example: 'Une équipe de traders passionnés.' })
@@ -30,6 +30,7 @@ export class CreateTeamDto {
   @ApiPropertyOptional({ example: 'https://example.com' })
   @IsOptional()
   @IsString()
+  @ValidateIf((o) => typeof o.website === 'string' && o.website.trim().length > 0)
   @IsUrl(
     { protocols: ['http', 'https'], require_protocol: true },
     { message: "L'adresse du site web doit être une URL valide (commençant par http:// ou https://)." },

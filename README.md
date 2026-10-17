@@ -137,6 +137,69 @@ docker compose up -d
 | **Mailpit Web UI** | Visualiseur d'e-mails pour le développement | [http://localhost:8025](http://localhost:8025) | — |
 | **Mailpit SMTP** | Serveur SMTP interne pour les e-mails | `localhost:1025` | Sans authentification |
 | **MariaDB** | Serveur de base de données relationnelle | `localhost:3306` | Base : `nettrader`, User : `nettrader_user`, Pass : `nettrader_password` |
+| **Backup Horaire** | Sauvegarde automatique horaire (rétention 24h) | Interne Docker | `nettrader-backup-hourly` (`databack/mysql-backup`) |
+| **Backup Journalier** | Sauvegarde quotidienne à 02h00 (rétention 30j) | Interne Docker | `nettrader-backup-daily` (`databack/mysql-backup`) |
+
+---
+
+## 📊 Analytique Produit, Pratiques & Diagnostic des Problèmes (100% Intégré)
+
+NetTrader 2 intègre une solution d'analytique et de télémétrie **100% monobloc**, nativement intégrée au frontend React, au backend NestJS et à la base MariaDB :
+- **0 conteneur supplémentaire** : Aucun outil tiers ou base externe n'est requis.
+- **Un seul `docker-compose.yml`** : Démarrage classique et unifié via `docker compose up -d`.
+- **Tableau de bord administrateur intégré** : Accessible directement dans l'espace d'administration ([http://localhost:3000/admin](http://localhost:3000/admin)), onglet **"Analytique & Télémétrie"**.
+
+### Capacités & Métriques Couvertes
+1. **Suivi des Usages** :
+   - Événements globaux capturés, sessions uniques anonymisées, nombre de traders actifs connectés.
+   - Pages les plus visitées avec barres de fréquentation relatives.
+2. **Pratiques de Trading** :
+   - Entonnoir de passage d'ordre : tickets ouverts -> ordres soumis -> ordres validés vs rejetés.
+   - Suivi des contraintes de jeu bloquantes (`order_validation_blocked` : solde insuffisant, marché fermé, VAD restreinte par niveau).
+   - Répartition par sens de transaction (Achat vs Vente) et type d'ordre (Au Marché vs À Seuil).
+3. **Diagnostic des Problèmes & Santé Système** :
+   - Journal en temps réel de tous les incidents utilisateurs avec filtres (`API_ERROR`, `ORDER_REJECTED`, `UI_CRASH`, `NETWORK_ERROR`).
+   - Détails extensibles avec code HTTP, route concernée, message d'erreur précis, paramètres contextuels et pile d'appels (*stack trace*).
+   - Limiteur d'erreur React (`ErrorBoundary`) prévenant les écrans blancs en cas de bug de composant avec rapport immédiat.
+
+## 💾 Sauvegardes & Restauration de la Base de Données
+
+NetTrader 2 intègre une solution de sauvegarde automatisée basée sur l'image open-source éprouvée [`databack/mysql-backup`](https://github.com/databacker/mysql-backup).
+
+### 1. Stratégie de Sauvegarde Multi-Niveau
+- **Fréquence Horaire (`db-backup-hourly`)** :
+  - **Planification** : Chaque heure à la minute 0 (`0 * * * *`).
+  - **Rétention** : 24 heures glissantes (`DB_DUMP_RETENTION: 24h`).
+  - **Emplacement** : Dossier monté `./backups/hourly/`.
+- **Fréquence Journalière (`db-backup-daily`)** :
+  - **Planification** : Chaque jour à 02:00 UTC (`0 2 * * *`).
+  - **Rétention** : 30 jours glissants (`DB_DUMP_RETENTION: 30d`).
+  - **Emplacement** : Dossier monté `./backups/daily/`.
+- **Format & Compression** : Archives compressées au format `.sql.gz` générées avec `mysqldump --single-transaction` pour garantir l'absence de verrouillage de tables en production.
+- **Persistance** : Les données MariaDB de production sont isolées dans le volume persistant Docker `mariadb_data:/var/lib/mysql`.
+
+### 2. Déclenchement d'une Sauvegarde Manuelle
+Un script d'aide est disponible pour forcer immédiatement une sauvegarde hors calendrier :
+
+```bash
+# Sauvegarde manuelle standard (sauvegardée dans ./backups/manual/)
+./scripts/backup-now.sh
+
+# Sauvegarde immédiate vers le dossier horaire ou journalier
+./scripts/backup-now.sh hourly
+./scripts/backup-now.sh daily
+```
+
+### 3. Procédure de Restauration
+Un script interactif sécurisé permet de restaurer un dump en validant le choix :
+
+```bash
+# Mode interactif (affiche les backups disponibles et demande confirmation)
+./scripts/restore-backup.sh
+
+# Ou en spécifiant directement le fichier d'archive à restaurer
+./scripts/restore-backup.sh backups/daily/nettrader_20261016_020000.sql.gz
+```
 
 ---
 

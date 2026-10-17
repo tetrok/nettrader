@@ -5,7 +5,7 @@
  *   Calcule les indicateurs globaux du jeu (traders enregistrés, sessions actives, volume d'ordres, statut des cotations).
  */
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, MoreThan } from 'typeorm';
 import { User } from '../entities/user.entity';
@@ -99,6 +99,100 @@ export class AdminDashboardService {
       page,
       limit: take,
       totalPages: Math.ceil(total / take),
+    };
+  }
+
+  /**
+   * Liste des demandes de création/modification d'équipes en attente de validation.
+   */
+  async getPendingTeams() {
+    try {
+      const rows = await this.dataSource.query(`
+        SELECT vg.*, c.pseudonyme, c.email
+        FROM verifgroupe vg
+        JOIN compte c ON vg.idcompte = c.idcompte
+        ORDER BY vg.idverifgroupe ASC
+      `);
+      return rows.map((r: any) => ({
+        id: Number(r.idverifgroupe),
+        teamId: Number(r.idgroupe || 0),
+        isModification: Number(r.idgroupe || 0) > 0,
+        userId: Number(r.idcompte),
+        pseudo: String(r.pseudonyme || ''),
+        email: String(r.email || ''),
+        name: String(r.titregroupe || ''),
+        tag: String(r.initialgroupe || ''),
+        website: String(r.urlsite || ''),
+        description: String(r.descriptiongroupe || ''),
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Valider ou rejeter une demande d'équipe.
+   */
+  async reviewPendingTeam(id: number, action: string, comment = '') {
+    const rows = await this.dataSource.query(
+      `SELECT * FROM verifgroupe WHERE idverifgroupe = ?`,
+      [id],
+    );
+    if (!rows || rows.length === 0) {
+      throw new NotFoundException("Demande d'équipe introuvable.");
+    }
+    const groupe = rows[0];
+    const isApprove = action === 'approve';
+
+    if (isApprove) {
+      const now = Math.floor(Date.now() / 1000);
+      if (Number(groupe.idgroupe) === 0) {
+        // Nouvelle équipe
+        const insertRes = await this.dataSource.query(
+          `INSERT INTO \`groupe\` (\`idcompte\`, \`titregroupe\`, \`initialgroupe\`, \`urlsite\`, \`etat\`, \`descriptiongroupe\`, \`medor\`, \`medargent\`, \`medbronze\`, \`datecreation\`, \`idforum\`)
+           VALUES (?, ?, ?, ?, 'actif', ?, 0, 0, 0, ?, 0)`,
+          [
+            groupe.idcompte,
+            groupe.titregroupe,
+            groupe.initialgroupe,
+            groupe.urlsite || '',
+            groupe.descriptiongroupe || '',
+            now,
+          ],
+        );
+        const newGroupId = insertRes.insertId;
+        await this.dataSource.query(
+          `INSERT INTO \`membregroupe\` (\`idcompte\`, \`idgroupe\`, \`datejoint\`, \`capitalinscr\`)
+           VALUES (?, ?, ?, 10000)`,
+          [groupe.idcompte, newGroupId, now],
+        );
+      } else {
+        // Modification
+        await this.dataSource.query(
+          `UPDATE \`groupe\` SET \`idcompte\` = ?, \`titregroupe\` = ?, \`initialgroupe\` = ?, \`urlsite\` = ?, \`descriptiongroupe\` = ?
+           WHERE \`idgroupe\` = ?`,
+          [
+            groupe.idcompte,
+            groupe.titregroupe,
+            groupe.initialgroupe,
+            groupe.urlsite || '',
+            groupe.descriptiongroupe || '',
+            groupe.idgroupe,
+          ],
+        );
+      }
+    }
+
+    await this.dataSource.query(
+      `DELETE FROM \`verifgroupe\` WHERE \`idverifgroupe\` = ?`,
+      [id],
+    );
+
+    return {
+      success: true,
+      message: isApprove
+        ? "La demande d'équipe a été approuvée."
+        : "La demande d'équipe a été rejetée.",
     };
   }
 }

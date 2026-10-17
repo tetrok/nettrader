@@ -12,6 +12,7 @@ import {
   ConflictException,
   ForbiddenException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
@@ -27,7 +28,7 @@ import { TradingService } from '../trading/trading.service';
 import { YahooFinanceService } from './yahoo-finance.service';
 
 @Injectable()
-export class AdminStockService {
+export class AdminStockService implements OnModuleInit {
   private readonly logger = new Logger(AdminStockService.name);
 
   constructor(
@@ -49,6 +50,27 @@ export class AdminStockService {
     private readonly yahooService: YahooFinanceService,
     private readonly dataSource: DataSource,
   ) {}
+
+  async onModuleInit() {
+    await this.ensureArchivedColumnExists();
+  }
+
+  private async ensureArchivedColumnExists(): Promise<void> {
+    try {
+      const columns: any[] = await this.dataSource.query(`
+        SHOW COLUMNS FROM \`cacval\` LIKE 'is_archived'
+      `);
+      if (!columns || columns.length === 0) {
+        await this.dataSource.query(`
+          ALTER TABLE \`cacval\` ADD COLUMN \`is_archived\` ENUM('1', '0') NOT NULL DEFAULT '0' COMMENT 'Drapeau d''archivage (1=archivé, 0=actif)' AFTER \`idmarket\`
+        `);
+        this.logger.log('Colonne is_archived ajoutée avec succès à la table cacval');
+      }
+    } catch (error) {
+      this.logger.error('Erreur lors de la vérification de la colonne is_archived sur cacval', error);
+    }
+  }
+
 
   /**
    * Métadonnées pour les formulaires d'actions (secteurs et marchés).

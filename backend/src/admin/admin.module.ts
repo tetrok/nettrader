@@ -34,6 +34,7 @@ import { AdminStockService } from './admin-stock.service';
 import { AdminForumService } from './admin-forum.service';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminJobsService } from './admin-jobs.service';
+import { AdminBackupService } from './admin-backup.service';
 import { AdminController } from './admin.controller';
 import { JobsController } from './jobs.controller';
 
@@ -70,8 +71,9 @@ import { JobsController } from './jobs.controller';
     AdminForumService,
     AdminDashboardService,
     AdminJobsService,
+    AdminBackupService,
   ],
   controllers: [AdminController, JobsController],
-  exports: [MarketSyncService, AdminJobsService, MarketSyncScheduler, MailerQueueService],
+  exports: [MarketSyncService, AdminJobsService, MarketSyncScheduler, MailerQueueService, AdminBackupService],
 })
 export class AdminModule {}

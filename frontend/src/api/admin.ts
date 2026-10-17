@@ -378,5 +378,73 @@ export const adminApi = {
       body: JSON.stringify({ items }),
     });
   },
+
+  // ---------------------------------------------------------------------------
+  // Sauvegardes de Base de Données (MariaDB Backups)
+  // ---------------------------------------------------------------------------
+
+  getBackups: async (): Promise<BackupStatusResponse> => {
+    return apiClient<BackupStatusResponse>('admin/backups');
+  },
+
+  triggerBackup: async (type: 'manual' | 'daily' | 'hourly' = 'manual'): Promise<{
+    success: boolean;
+    message: string;
+    backup: BackupItem;
+  }> => {
+    return apiClient('admin/backups/trigger', {
+      method: 'POST',
+      body: JSON.stringify({ type }),
+    });
+  },
+
+  downloadBackup: async (filename: string): Promise<void> => {
+    const token = localStorage.getItem('nt_token');
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`/api/admin/backups/download/${encodeURIComponent(filename)}`, {
+      headers,
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      throw new Error(`Erreur lors du téléchargement (${res.status})`);
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
 };
+
+export interface BackupItem {
+  id: string;
+  filename: string;
+  type: 'hourly' | 'daily' | 'manual';
+  size: number;
+  sizeFormatted: string;
+  createdAt: string;
+  timestamp: number;
+}
+
+export interface BackupStatusResponse {
+  items: BackupItem[];
+  summary: {
+    totalCount: number;
+    totalSize: number;
+    totalSizeFormatted: string;
+    lastBackup: BackupItem | null;
+    countsByType: {
+      hourly: number;
+      daily: number;
+      manual: number;
+    };
+  };
+  storagePath: string;
+}
 

@@ -21,6 +21,7 @@ import { marketApi } from '../../api/market';
 import { useAuth } from '../../context/AuthContext';
 import { X, ArrowDownRight, ArrowUpRight, Calculator, CheckCircle2, AlertTriangle, AlertCircle, Loader2 } from 'lucide-react';
 import { Tooltip } from '../ui/Tooltip';
+import { analytics } from '../../services/analytics';
 
 interface OrderModalProps {
   isOpen: boolean;
@@ -63,6 +64,13 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   // Load stocks list and portfolio positions
   useEffect(() => {
     if (isOpen) {
+      analytics.track('trade_modal_opened', {
+        initial_stock_code: initialStock?.code,
+        initial_ticker: initialStock?.ticker,
+        initial_name: initialStock?.name,
+        initial_sens: initialSens,
+      });
+
       marketApi.getStocks().then((data) => {
         setStocks(data);
       });
@@ -255,10 +263,42 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedStockCode || quantity <= 0 || validationIssue) return;
+    if (!selectedStockCode || quantity <= 0) return;
+
+    if (validationIssue) {
+      analytics.track('order_validation_blocked', {
+        stock_code: selectedStockCode,
+        sens,
+        quantity,
+        order_type: orderType,
+        reason: validationIssue,
+      }, 'trading');
+      analytics.captureError(
+        new Error(validationIssue),
+        {
+          stock_code: selectedStockCode,
+          sens,
+          quantity,
+          order_type: orderType,
+        },
+        'ORDER_REJECTED',
+      );
+      return;
+    }
 
     setSubmitting(true);
     setFeedback(null);
+
+    analytics.track('order_submitted', {
+      stock_code: selectedStockCode,
+      sens,
+      quantity,
+      order_type: orderType,
+      valmin: orderType === 'seuil' ? parseFloat(valMin) || 0 : 0,
+      valmax: orderType === 'seuil' ? parseFloat(valMax) || 0 : 0,
+      validity,
+      will_execute_immediately: willExecuteImmediately,
+    });
 
     try {
       const res = await tradingApi.placeOrder({
@@ -271,6 +311,13 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         select: '1',
       });
 
+      analytics.track('order_placed_success', {
+        stock_code: selectedStockCode,
+        sens,
+        quantity,
+        order_type: orderType,
+      });
+
       setFeedback({ type: 'success', message: res.message || "Ordre passé avec succès !" });
       if (onOrderCompleted) onOrderCompleted();
       setTimeout(() => {
@@ -278,6 +325,23 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         setFeedback(null);
       }, 1500);
     } catch (err: any) {
+      analytics.track('order_placed_failed', {
+        stock_code: selectedStockCode,
+        sens,
+        quantity,
+        order_type: orderType,
+        error_message: err.message,
+      }, 'trading');
+      analytics.captureError(
+        err,
+        {
+          stock_code: selectedStockCode,
+          sens,
+          quantity,
+          order_type: orderType,
+        },
+        'ORDER_FAILED',
+      );
       setFeedback({ type: 'error', message: err.message || "Erreur lors du passage de l'ordre" });
     } finally {
       setSubmitting(false);

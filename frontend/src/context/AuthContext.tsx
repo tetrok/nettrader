@@ -14,6 +14,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { authApi } from '../api/auth';
 import { getToken } from '../api/client';
+import { analytics } from '../services/analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -34,6 +35,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (getToken()) {
         const currentUser = await authApi.getMe();
         setUser(currentUser);
+        if (currentUser) {
+          analytics.identify(currentUser.id, {
+            pseudo: currentUser.pseudo,
+            email: currentUser.email,
+            level: currentUser.level,
+            vad: currentUser.vad,
+            is_admin: currentUser.isAdmin,
+          });
+        }
       } else {
         setUser(null);
       }
@@ -51,11 +61,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (loginStr: string, pass: string) => {
     const res = await authApi.login(loginStr, pass);
     setUser(res.user);
+    if (res.user) {
+      analytics.identify(res.user.id, {
+        pseudo: res.user.pseudo,
+        email: res.user.email,
+        level: res.user.level,
+        vad: res.user.vad,
+        is_admin: res.user.isAdmin,
+      });
+      analytics.track('user_logged_in', { method: 'password' });
+    }
   };
 
   const logout = async () => {
+    analytics.track('user_logged_out');
     await authApi.logout();
     setUser(null);
+    analytics.reset();
   };
 
   return (

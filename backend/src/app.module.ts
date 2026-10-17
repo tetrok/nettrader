@@ -25,6 +25,7 @@ import { MessageModule } from './message/message.module';
 import { ForumModule } from './forum/forum.module';
 import { ContentModule } from './content/content.module';
 import { AdminModule } from './admin/admin.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { AdminModule } from './admin/admin.module';
     ForumModule,
     ContentModule,
     AdminModule,
+    AnalyticsModule,
   ],
   controllers: [HealthController],
   providers: [],

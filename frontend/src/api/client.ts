@@ -10,6 +10,8 @@
  *   - Analyse et unifie les réponses d'erreur retournées par l'API ({ success: false, error: string }).
  */
 
+import { analytics } from '../services/analytics';
+
 const API_BASE = '/api';
 
 export class ApiError extends Error {
@@ -40,6 +42,7 @@ export async function apiClient<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
+  const startTime = performance.now();
   const token = getToken();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -50,22 +53,56 @@ export async function apiClient<T = any>(
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
 
-  const url = `${API_BASE}/${endpoint.replace(/^\//, '')}`;
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  const cleanEndpoint = endpoint.replace(/^\//, '');
+  const url = `${API_BASE}/${cleanEndpoint}`;
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
 
-  const json = await response.json().catch(() => ({}));
+    const durationMs = Math.round(performance.now() - startTime);
+    const json = await response.json().catch(() => ({}));
 
-  if (!response.ok || json.success === false) {
-    throw new ApiError(
-      json.error || response.statusText || 'Une erreur est survenue',
-      response.status,
-      json.data
-    );
+    if (!response.ok || json.success === false) {
+      const errorMessage = json.error || response.statusText || 'Une erreur est survenue';
+      
+      // Télémétrie d'erreur API
+      analytics.captureError(
+        new Error(errorMessage),
+        {
+          endpoint: cleanEndpoint,
+          method: options.method || 'GET',
+          statusCode: response.status,
+          durationMs,
+          data: json.data,
+        },
+        'API_ERROR',
+      );
+
+      throw new ApiError(errorMessage, response.status, json.data);
+    }
+
+    if (json && typeof json === 'object' && 'data' in json && json.data !== undefined) {
+      return json.data as T;
+    }
+    return (json ?? {}) as T;
+  } catch (error: any) {
+    if (error.name !== 'ApiError') {
+      const durationMs = Math.round(performance.now() - startTime);
+      analytics.captureError(
+        error,
+        {
+          endpoint: cleanEndpoint,
+          method: options.method || 'GET',
+          durationMs,
+        },
+        'NETWORK_ERROR',
+      );
+    }
+    throw error;
   }
-
-  return json.data as T;
 }
+

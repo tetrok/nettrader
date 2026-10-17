@@ -15,6 +15,8 @@ import { AdminMarketSync } from '../components/admin/AdminMarketSync';
 import { AdminStockManagement } from '../components/admin/AdminStockManagement';
 import { AdminYahooDiscovery } from '../components/admin/AdminYahooDiscovery';
 import { AdminTeamApprovals } from '../components/admin/AdminTeamApprovals';
+import { AdminAnalytics } from '../components/admin/AdminAnalytics';
+import { AdminBackupManagement } from '../components/admin/AdminBackupManagement';
 import { teamsApi } from '../api/teams';
 import { PendingTeamApproval } from '../types';
 import {
@@ -27,6 +29,7 @@ import {
   RefreshCw,
   AlertTriangle,
   Activity,
+  BarChart2,
   MessageSquare,
   Search,
   TrendingUp,
@@ -36,7 +39,7 @@ import {
 } from 'lucide-react';
 
 export const AdminPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'supervision' | 'stocks' | 'yahoo' | 'marketSync' | 'players' | 'teams' | 'forum'>('supervision');
+  const [activeTab, setActiveTab] = useState<'supervision' | 'analytics' | 'stocks' | 'yahoo' | 'marketSync' | 'players' | 'teams' | 'forum' | 'backups'>('supervision');
   const [dashboard, setDashboard] = useState<AdminDashboardData | null>(null);
   const [teamApprovals, setTeamApprovals] = useState<PendingTeamApproval[]>([]);
   const [players, setPlayers] = useState<any[]>([]);
@@ -45,21 +48,48 @@ export const AdminPage: React.FC = () => {
   const [playersTotalPages, setPlayersTotalPages] = useState(1);
   const [playersSearch, setPlayersSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [playersLoading, setPlayersLoading] = useState(false);
   const [runningJob, setRunningJob] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  const loadPlayers = async (page = playersPage, query = playersSearch) => {
+    setPlayersLoading(true);
+    try {
+      const p = await adminApi.getPlayers(page, 20, query);
+      setPlayers(p?.items || []);
+      setPlayersTotal(p?.total || 0);
+      setPlayersTotalPages(p?.totalPages || 1);
+    } catch (err) {
+      console.error('Erreur chargement joueurs:', err);
+    } finally {
+      setPlayersLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
       const [d, p, t] = await Promise.all([
-        adminApi.getDashboard(),
-        adminApi.getPlayers(playersPage, 20, playersSearch),
-        teamsApi.getPendingApprovals(),
+        adminApi.getDashboard().catch((err) => {
+          console.error('Erreur dashboard:', err);
+          return null;
+        }),
+        adminApi.getPlayers(playersPage, 20, playersSearch).catch((err) => {
+          console.error('Erreur players:', err);
+          return { items: [], total: 0, page: 1, totalPages: 1 };
+        }),
+        teamsApi.getPendingApprovals().catch((err) => {
+          console.error('Erreur pending approvals:', err);
+          return [];
+        }),
       ]);
-      setDashboard(d);
-      setPlayers(p.items);
-      setPlayersTotal(p.total);
-      setPlayersTotalPages(p.totalPages);
-      setTeamApprovals(t);
+
+      if (d) setDashboard(d);
+      if (p) {
+        setPlayers(p.items || []);
+        setPlayersTotal(p.total || 0);
+        setPlayersTotalPages(p.totalPages || 1);
+      }
+      if (t) setTeamApprovals(t);
     } finally {
       setLoading(false);
     }
@@ -69,14 +99,17 @@ export const AdminPage: React.FC = () => {
     loadData();
   }, [playersPage]);
 
+  // Chargement automatique lors du passage à l'onglet "Joueurs"
+  useEffect(() => {
+    if (activeTab === 'players') {
+      loadPlayers(playersPage, playersSearch);
+    }
+  }, [activeTab]);
+
   const handleSearchPlayers = (e: React.FormEvent) => {
     e.preventDefault();
     setPlayersPage(1);
-    adminApi.getPlayers(1, 20, playersSearch).then((p) => {
-      setPlayers(p.items);
-      setPlayersTotal(p.total);
-      setPlayersTotalPages(p.totalPages);
-    });
+    loadPlayers(1, playersSearch);
   };
 
   const handleExecuteOrders = async () => {
@@ -135,6 +168,17 @@ export const AdminPage: React.FC = () => {
         >
           <Activity className="w-4 h-4" />
           <span>Supervision Système</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('analytics')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+            activeTab === 'analytics'
+              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+              : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <BarChart2 className="w-4 h-4" />
+          <span>Analytique & Télémétrie</span>
         </button>
         <button
           onClick={() => setActiveTab('stocks')}
@@ -207,6 +251,17 @@ export const AdminPage: React.FC = () => {
           <MessageSquare className="w-4 h-4" />
           <span>Administration du Forum</span>
         </button>
+        <button
+          onClick={() => setActiveTab('backups')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+            activeTab === 'backups'
+              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20'
+              : 'bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800'
+          }`}
+        >
+          <Database className="w-4 h-4" />
+          <span>Sauvegardes BDD</span>
+        </button>
       </div>
 
       {/* TAB 1: SUPERVISION */}
@@ -244,10 +299,20 @@ export const AdminPage: React.FC = () => {
                 {runningJob ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                 <span>Exécuter les Ordres en Attente</span>
               </button>
+              <button
+                onClick={() => setActiveTab('backups')}
+                className="px-5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-xs flex items-center gap-2 transition"
+              >
+                <Database className="w-4 h-4 text-emerald-400" />
+                <span>Gérer les Sauvegardes BDD</span>
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* TAB: ANALYTIQUE, USAGES & PROBLÈMES */}
+      {activeTab === 'analytics' && <AdminAnalytics />}
 
       {/* TAB: CATALOGUE DES ACTIONS */}
       {activeTab === 'stocks' && <AdminStockManagement />}
@@ -296,20 +361,37 @@ export const AdminPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-mono text-xs">
-                {players.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-800/40 transition">
-                    <td className="px-5 py-3 text-slate-400">#{p.id}</td>
-                    <td className="px-5 py-3 font-sans font-medium text-white">{p.pseudo}</td>
-                    <td className="px-5 py-3 text-slate-400">{p.email}</td>
-                    <td className="px-5 py-3 text-right font-semibold text-emerald-400">
-                      {p.cashback.toFixed(2)} €
-                    </td>
-                    <td className="px-5 py-3 text-center font-sans">Niveau {p.level}</td>
-                    <td className="px-5 py-3 text-right text-slate-400">
-                      {p.lastActive ? new Date(p.lastActive * 1000).toLocaleString('fr-FR') : '—'}
+                {playersLoading ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-8 text-center text-slate-400">
+                      <div className="flex items-center justify-center gap-2">
+                        <RefreshCw className="w-4 h-4 animate-spin text-emerald-400" />
+                        <span>Chargement des joueurs...</span>
+                      </div>
                     </td>
                   </tr>
-                ))}
+                ) : players.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-8 text-center text-slate-400">
+                      Aucun joueur trouvé.
+                    </td>
+                  </tr>
+                ) : (
+                  players.map((p) => (
+                    <tr key={p.id} className="hover:bg-slate-800/40 transition">
+                      <td className="px-5 py-3 text-slate-400">#{p.id}</td>
+                      <td className="px-5 py-3 font-sans font-medium text-white">{p.pseudo}</td>
+                      <td className="px-5 py-3 text-slate-400">{p.email}</td>
+                      <td className="px-5 py-3 text-right font-semibold text-emerald-400">
+                        {p.cashback.toFixed(2)} €
+                      </td>
+                      <td className="px-5 py-3 text-center font-sans">Niveau {p.level}</td>
+                      <td className="px-5 py-3 text-right text-slate-400">
+                        {p.lastActive ? new Date(p.lastActive * 1000).toLocaleString('fr-FR') : '—'}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -345,6 +427,9 @@ export const AdminPage: React.FC = () => {
 
       {/* TAB 3: FORUM ADMINISTRATION */}
       {activeTab === 'forum' && <AdminForumManagement />}
+
+      {/* TAB: SAUVEGARDES BDD */}
+      {activeTab === 'backups' && <AdminBackupManagement />}
     </div>
   );
 };

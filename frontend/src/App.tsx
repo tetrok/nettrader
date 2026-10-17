@@ -11,17 +11,29 @@
  *     la zone principale de rendu des routes (AppRoutes) et le pied de page (Footer).
  */
 
-import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { Navbar } from './components/layout/Navbar';
 import { MarketTicker } from './components/layout/MarketTicker';
 import { Footer } from './components/layout/Footer';
 import { AppRoutes } from './router';
+import { analytics } from './services/analytics';
+
+const PageTracker: React.FC = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    analytics.pageView(location.pathname + location.search);
+  }, [location]);
+
+  return null;
+};
 
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
+      <PageTracker />
       <AuthProvider>
         <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 selection:bg-emerald-500 selection:text-white">
           <Navbar />

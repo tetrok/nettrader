@@ -12,10 +12,18 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { analytics } from './services/analytics';
 import './index.css';
+
+// Initialisation de la télémétrie et de l'analytique
+analytics.init();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>,
 );
+

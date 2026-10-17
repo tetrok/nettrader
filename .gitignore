@@ -9,3 +9,8 @@ mysql_dump_old.sql
 *.swp
 *.swo
 
+# Database Backups
+backups/**/*.gz
+backups/**/*.sql
+!backups/**/.gitkeep
+

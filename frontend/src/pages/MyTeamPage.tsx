@@ -611,11 +611,11 @@ export const MyTeamPage: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-300">Sigle (Tag)</label>
+                    <label className="text-xs font-semibold text-slate-300">Sigle (Tag - 2 à 5 car.)</label>
                     <input
                       type="text"
                       required
-                      maxLength={10}
+                      maxLength={5}
                       value={formTag}
                       onChange={(e) => setFormTag(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition font-mono uppercase"
@@ -742,11 +742,11 @@ export const MyTeamPage: React.FC = () => {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-300">Sigle / Tag (2-10 car.) *</label>
+                  <label className="text-xs font-semibold text-slate-300">Sigle / Tag (2-5 car.) *</label>
                   <input
                     type="text"
                     required
-                    maxLength={10}
+                    maxLength={5}
                     placeholder="Ex : GBT"
                     value={formTag}
                     onChange={(e) => setFormTag(e.target.value)}

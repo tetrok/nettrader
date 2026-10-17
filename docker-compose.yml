@@ -7,6 +7,7 @@ services:
       MYSQL_USER: nettrader_user
       MYSQL_PASSWORD: nettrader_password
     volumes:
+      - mariadb_data:/var/lib/mysql
       - ./mysql_dump.sql:/docker-entrypoint-initdb.d/mysql_dump.sql
     ports:
       - "3306:3306"
@@ -35,6 +36,9 @@ services:
       MAIL_HOST: mailpit
       MAIL_PORT: "1025"
       IGNORE_MARKET_HOURS: "${IGNORE_MARKET_HOURS:-0}"
+      BACKUP_DIR: /app/backups
+    volumes:
+      - ./backups:/app/backups
     depends_on:
       db:
         condition: service_healthy
@@ -72,3 +76,45 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+  db-backup-hourly:
+    image: databack/mysql-backup:latest
+    container_name: nettrader-backup-hourly
+    environment:
+      DB_SERVER: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASS: rootpassword
+      DB_DUMP_INCLUDE: nettrader
+      DB_DUMP_CRON: "0 * * * *"     # Exécution chaque heure (à la minute 0)
+      DB_DUMP_RETENTION: 24h        # Rétention glissante sur 24 heures
+      DB_DUMP_TARGET: /backups/hourly
+    volumes:
+      - ./backups/hourly:/backups/hourly
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db-backup-daily:
+    image: databack/mysql-backup:latest
+    container_name: nettrader-backup-daily
+    environment:
+      DB_SERVER: db
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASS: rootpassword
+      DB_DUMP_INCLUDE: nettrader
+      DB_DUMP_CRON: "0 2 * * *"     # Exécution quotidienne à 02:00
+      DB_DUMP_RETENTION: 30d        # Rétention glissante sur 30 jours
+      DB_DUMP_TARGET: /backups/daily
+    volumes:
+      - ./backups/daily:/backups/daily
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:
+

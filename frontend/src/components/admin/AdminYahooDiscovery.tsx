@@ -50,10 +50,10 @@ export const AdminYahooDiscovery: React.FC = () => {
         offset,
         search: query,
       });
-      setScreenerStocks(res.items);
-      setScreenerTotal(res.total);
+      setScreenerStocks(res?.items || []);
+      setScreenerTotal(res?.total || 0);
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || "Erreur lors du chargement du catalogue Yahoo." });
+      setFeedback({ type: 'error', message: err?.message || "Erreur lors du chargement du catalogue Yahoo." });
     } finally {
       setScreenerLoading(false);
     }
@@ -139,12 +139,12 @@ export const AdminYahooDiscovery: React.FC = () => {
       const res = await adminApi.importYahooStocks(itemsToImport);
       setFeedback({
         type: 'success',
-        message: res.message || `${res.created} actions ajoutées et ${res.updated} actions activées.`,
+        message: res?.message || `${res?.created ?? 0} actions ajoutées et ${res?.updated ?? 0} actions activées.`,
       });
       setSelectedTickers(new Set());
       await loadScreenerData(screenerPage, screenerSearch);
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || "Erreur lors de l'importation." });
+      setFeedback({ type: 'error', message: err?.message || "Erreur lors de l'importation." });
     } finally {
       setBulkImporting(false);
     }
@@ -161,11 +161,11 @@ export const AdminYahooDiscovery: React.FC = () => {
       }]);
       setFeedback({
         type: 'success',
-        message: `Action ${stock.symbol} (${stock.name}) importée et activée avec succès.`,
+        message: res?.message || `Action ${stock.symbol} (${stock.name}) importée et activée avec succès.`,
       });
       await loadScreenerData(screenerPage, screenerSearch);
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || `Erreur d'importation pour ${stock.symbol}.` });
+      setFeedback({ type: 'error', message: err?.message || `Erreur d'importation pour ${stock.symbol}.` });
     }
   };
 
